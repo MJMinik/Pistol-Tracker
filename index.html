@@ -1,0 +1,2497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pistol Practice & Maintenance Tracker</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --panel: #1a2028;
+    --panel-2: #232b36;
+    --border: #2d3744;
+    --text: #e6edf3;
+    --text-dim: #8b949e;
+    --accent: #ff6b35;
+    --accent-dim: #b8421f;
+    --success: #3fb950;
+    --warn: #d29922;
+    --danger: #f85149;
+    --info: #58a6ff;
+    --shadow: 0 4px 14px rgba(0,0,0,0.4);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg); color: var(--text);
+    line-height: 1.5; height: 100vh; overflow: hidden;
+  }
+  .app { display: flex; height: 100vh; }
+  .sidebar {
+    width: 240px; background: var(--panel);
+    border-right: 1px solid var(--border);
+    padding: 20px 0; display: flex; flex-direction: column;
+  }
+  .brand { padding: 0 20px 20px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+  .brand h1 { font-size: 18px; font-weight: 600; }
+  .brand .sub { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+  nav { flex: 1; }
+  nav a {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 20px; color: var(--text-dim);
+    text-decoration: none; cursor: pointer;
+    font-size: 14px; border-left: 3px solid transparent;
+  }
+  nav a:hover { background: var(--panel-2); color: var(--text); }
+  nav a.active { background: var(--panel-2); color: var(--accent); border-left-color: var(--accent); }
+  nav .icon { font-size: 16px; width: 20px; text-align: center; }
+  .sidebar-footer { padding: 12px 20px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-dim); }
+  main { flex: 1; overflow-y: auto; padding: 24px 32px; }
+  .view { display: none; }
+  .view.active { display: block; }
+  .view-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--border);
+  }
+  .view-header h2 { font-size: 22px; font-weight: 600; }
+  .view-header .sub { color: var(--text-dim); font-size: 13px; margin-top: 4px; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 14px; background: var(--accent);
+    color: #fff; border: none; border-radius: 6px;
+    cursor: pointer; font-size: 13px; font-weight: 500;
+  }
+  .btn:hover { background: var(--accent-dim); }
+  .btn.secondary { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); }
+  .btn.secondary:hover { background: var(--border); }
+  .btn.danger { background: var(--danger); }
+  .btn.small { padding: 5px 10px; font-size: 12px; }
+  .btn.success { background: var(--success); }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; padding: 20px; margin-bottom: 16px;
+    box-shadow: var(--shadow);
+  }
+  .card h3 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 12px; }
+
+  .grid { display: grid; gap: 16px; }
+  .grid-4 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+  .grid-3 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .grid-2 { grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); }
+
+  .stat {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px 20px;
+  }
+  .stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); }
+  .stat .value { font-size: 28px; font-weight: 600; margin-top: 6px; }
+  .stat .value.accent { color: var(--accent); }
+  .stat .delta { font-size: 12px; color: var(--success); margin-top: 4px; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); font-size: 13px; }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); font-weight: 500; }
+  tbody tr:hover { background: var(--panel-2); }
+
+  .badge {
+    display: inline-block; padding: 2px 8px;
+    border-radius: 10px; font-size: 11px; font-weight: 500;
+  }
+  .badge.success { background: rgba(63,185,80,0.15); color: var(--success); }
+  .badge.warn { background: rgba(210,153,34,0.15); color: var(--warn); }
+  .badge.danger { background: rgba(248,81,73,0.15); color: var(--danger); }
+  .badge.info { background: rgba(88,166,255,0.15); color: var(--info); }
+  .badge.neutral { background: var(--panel-2); color: var(--text-dim); }
+  .badge.pr { background: rgba(255,107,53,0.18); color: var(--accent); }
+
+  .modal-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6); z-index: 100;
+    justify-content: center; align-items: flex-start;
+    overflow-y: auto; padding: 40px 20px;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; width: 100%; max-width: 700px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+  }
+  .modal-header {
+    padding: 18px 24px; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .modal-header h3 { font-size: 16px; }
+  .modal-close { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 20px; }
+  .modal-body { padding: 24px; }
+  .modal-footer {
+    padding: 16px 24px; border-top: 1px solid var(--border);
+    display: flex; gap: 8px; justify-content: flex-end;
+  }
+
+  .form-row { margin-bottom: 14px; }
+  .form-row label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .form-row input, .form-row select, .form-row textarea {
+    width: 100%; padding: 8px 10px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text);
+    font-size: 13px; font-family: inherit;
+  }
+  .form-row textarea { resize: vertical; min-height: 60px; }
+  .form-row input:focus, .form-row select:focus, .form-row textarea:focus {
+    outline: none; border-color: var(--accent);
+  }
+  .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .form-grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 10px; }
+
+  .alert {
+    padding: 12px 16px; border-radius: 6px; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 10px; font-size: 13px;
+  }
+  .alert.warn { background: rgba(210,153,34,0.1); border: 1px solid var(--warn); color: var(--warn); }
+  .alert.danger { background: rgba(248,81,73,0.1); border: 1px solid var(--danger); color: var(--danger); }
+  .alert.info { background: rgba(88,166,255,0.1); border: 1px solid var(--info); color: var(--info); }
+  .alert.success { background: rgba(63,185,80,0.1); border: 1px solid var(--success); color: var(--success); }
+
+  .progress {
+    height: 6px; background: var(--panel-2);
+    border-radius: 3px; overflow: hidden; margin-top: 6px;
+  }
+  .progress-fill { height: 100%; background: var(--accent); transition: width 0.3s; }
+  .progress-fill.warn { background: var(--warn); }
+  .progress-fill.danger { background: var(--danger); }
+  .progress-fill.success { background: var(--success); }
+
+  .image-gallery { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .image-thumb {
+    width: 80px; height: 80px;
+    background-size: cover; background-position: center;
+    border-radius: 6px; border: 1px solid var(--border);
+    cursor: pointer; position: relative;
+  }
+  .image-thumb .remove {
+    position: absolute; top: 2px; right: 2px;
+    background: rgba(0,0,0,0.7); color: white;
+    border: none; border-radius: 50%;
+    width: 18px; height: 18px; font-size: 11px;
+    cursor: pointer; line-height: 1;
+  }
+
+  .chip-list { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+  .chip {
+    background: var(--panel-2); border: 1px solid var(--border);
+    padding: 4px 10px; border-radius: 12px; font-size: 12px;
+  }
+
+  .chart-container { padding: 12px 0; }
+  svg.chart { width: 100%; height: 220px; }
+
+  .empty {
+    text-align: center; padding: 40px 20px;
+    color: var(--text-dim); font-size: 14px;
+  }
+  .empty .icon { font-size: 36px; margin-bottom: 12px; opacity: 0.5; }
+
+  .lightbox {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.9); z-index: 200;
+    justify-content: center; align-items: center; cursor: zoom-out;
+  }
+  .lightbox.show { display: flex; }
+  .lightbox img { max-width: 90vw; max-height: 90vh; }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+  .help-text { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+  .text-dim { color: var(--text-dim); }
+  .text-accent { color: var(--accent); }
+  .text-success { color: var(--success); }
+  .text-warn { color: var(--warn); }
+  .text-danger { color: var(--danger); }
+  .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  details summary { cursor: pointer; padding: 8px 0; font-weight: 500; }
+  details summary:hover { color: var(--accent); }
+  details > div { padding: 8px 0 8px 16px; font-size: 13px; color: var(--text-dim); }
+
+  .skill-rating {
+    display: flex; align-items: center; gap: 4px;
+  }
+  .skill-rating input[type=range] {
+    flex: 1;
+    accent-color: var(--accent);
+  }
+  .skill-rating .val {
+    min-width: 28px; text-align: center;
+    font-weight: 600; color: var(--accent);
+  }
+
+  .pr-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .pr-row:last-child { border-bottom: none; }
+  .pr-row .name { font-weight: 500; }
+  .pr-row .meta { font-size: 11px; color: var(--text-dim); }
+  .pr-row .score { font-size: 18px; font-weight: 600; color: var(--accent); }
+
+  .goal-item {
+    display: flex; gap: 12px; padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .goal-item.done { opacity: 0.6; }
+  .goal-item.done .text { text-decoration: line-through; }
+  .goal-item input[type=checkbox] {
+    width: 18px; height: 18px; accent-color: var(--success);
+    margin-top: 2px;
+  }
+  .goal-item .text { flex: 1; font-size: 14px; }
+  .goal-item .meta { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+  .tabs .tab {
+    padding: 10px 16px; cursor: pointer; font-size: 13px;
+    color: var(--text-dim); border-bottom: 2px solid transparent;
+  }
+  .tabs .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">
+      <h1>Pistol Tracker</h1>
+      <div class="sub">Practice & Maintenance</div>
+    </div>
+    <nav>
+      <a data-view="dashboard" class="active"><span class="icon">&#9678;</span> Dashboard</a>
+      <a data-view="firearms"><span class="icon">&#9670;</span> Firearms</a>
+      <a data-view="ammo"><span class="icon">&#9679;</span> Ammunition</a>
+      <a data-view="sessions"><span class="icon">&#9650;</span> Sessions</a>
+      <a data-view="progress"><span class="icon">&#9733;</span> Progress</a>
+      <a data-view="malfunctions"><span class="icon">&#9888;</span> Malfunctions</a>
+      <a data-view="maintenance"><span class="icon">&#9881;</span> Maintenance</a>
+      <a data-view="reference"><span class="icon">&#9432;</span> Atlas Reference</a>
+      <a data-view="settings"><span class="icon">&#9776;</span> Settings</a>
+    </nav>
+    <div class="sidebar-footer">
+      v1.1 &middot; <a href="#" id="export-data" style="color:var(--accent)">Export Data</a>
+    </div>
+  </aside>
+
+  <main>
+    <div id="view-dashboard" class="view active"></div>
+    <div id="view-firearms" class="view"></div>
+    <div id="view-ammo" class="view"></div>
+    <div id="view-sessions" class="view"></div>
+    <div id="view-progress" class="view"></div>
+    <div id="view-malfunctions" class="view"></div>
+    <div id="view-maintenance" class="view"></div>
+    <div id="view-reference" class="view"></div>
+    <div id="view-settings" class="view"></div>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal" id="modal"></div>
+</div>
+
+<div class="lightbox" id="lightbox" onclick="this.classList.remove('show')">
+  <img id="lightbox-img" alt="">
+</div>
+
+<script>
+/* ============================================================
+   PISTOL PRACTICE & MAINTENANCE TRACKER  v1.0
+   Single-file app. All data persisted to localStorage.
+   ============================================================ */
+
+const STORAGE_KEY = 'pistolTrackerV1';
+const DEEP_CLEAN_INTERVAL = 10000;
+
+const SKILL_AREAS = [
+  { key: 'draw', label: 'Draw' },
+  { key: 'reload', label: 'Reload' },
+  { key: 'splits', label: 'Splits' },
+  { key: 'transitions', label: 'Transitions' },
+  { key: 'accuracy', label: 'Accuracy' },
+  { key: 'movement', label: 'Movement' },
+  { key: 'mental', label: 'Mental Game' },
+  { key: 'recoil', label: 'Recoil Control' }
+];
+
+const SEED = {
+  firearms: [
+    { id: 'fa-1', name: 'Atlas Erebus', model: 'Erebus', manufacturer: 'Atlas Gunworks', caliber: '9mm', dateAcquired: '', startingRoundCount: 0, recoilSpringInterval: 5000, recoilSpringWeight: '', notes: '' },
+    { id: 'fa-2', name: 'Atlas Apollo', model: 'Apollo', manufacturer: 'Atlas Gunworks', caliber: '9mm', dateAcquired: '', startingRoundCount: 0, recoilSpringInterval: 5000, recoilSpringWeight: '', notes: '' },
+    { id: 'fa-3', name: 'Atlas Eos', model: 'Eos', manufacturer: 'Atlas Gunworks', caliber: '9mm', dateAcquired: '', startingRoundCount: 0, recoilSpringInterval: 5000, recoilSpringWeight: '', notes: '' },
+    { id: 'fa-4', name: 'Staccato XC', model: 'XC', manufacturer: 'Staccato', caliber: '9mm', dateAcquired: '', startingRoundCount: 0, recoilSpringInterval: 5000, recoilSpringWeight: '', notes: '' }
+  ],
+  ammunition: [],
+  sessions: [],
+  maintenance: [],
+  drillLibrary: [
+    // Holster + live fire (classic competition drills)
+    { name: 'Bill Drill', description: '6 shots from holster at 7 yards on USPSA target.', scoring: 'time', requiresHolster: true, liveCompatible: true, dryCompatible: true, category: 'speed' },
+    { name: 'El Presidente', description: '3 targets, 6 shots, reload, 6 more shots at 10 yards.', scoring: 'time_score', maxScore: 60, requiresHolster: true, liveCompatible: true, dryCompatible: true, category: 'classic' },
+    { name: 'Mozambique / Failure Drill', description: '2 to body, 1 to head from holster or low ready.', scoring: 'time', requiresHolster: false, liveCompatible: true, dryCompatible: true, category: 'speed' },
+    { name: 'Draw to First Shot', description: 'Timed draws from holster to A-zone hit.', scoring: 'time', requiresHolster: true, liveCompatible: true, dryCompatible: true, category: 'speed' },
+    { name: 'Hackathorn Standards', description: 'Multi-position practical drill.', scoring: 'time_score', requiresHolster: true, liveCompatible: true, dryCompatible: true, category: 'classic' },
+    { name: 'Match Stage', description: 'USPSA / IDPA / steel match stage.', scoring: 'time_score', requiresHolster: true, liveCompatible: true, dryCompatible: false, category: 'competition' },
+    // No holster + live fire
+    { name: '10-10-10', description: '10 yards, 10 rounds, 10 seconds, B-8 target.', scoring: 'score', maxScore: 100, requiresHolster: false, liveCompatible: true, dryCompatible: false, category: 'standards' },
+    { name: 'Dot Torture', description: '50 rounds on 10 dots, drills per dot.', scoring: 'score', maxScore: 50, requiresHolster: false, liveCompatible: true, dryCompatible: false, category: 'accuracy' },
+    { name: 'Wilson 5x5', description: '5 yards, 5 shots, 5 seconds, from low ready.', scoring: 'time', requiresHolster: false, liveCompatible: true, dryCompatible: true, category: 'standards' },
+    { name: 'B-8 Standards', description: 'Slow / timed / rapid fire on B-8 bullseye at varying distances.', scoring: 'score', maxScore: 100, requiresHolster: false, liveCompatible: true, dryCompatible: false, category: 'accuracy' },
+    { name: 'Triple Nickel', description: '5 shots, 5 yards, 5-inch circle, 5 seconds.', scoring: 'score', maxScore: 5, requiresHolster: false, liveCompatible: true, dryCompatible: false, category: 'standards' },
+    { name: 'Strong-Hand Only', description: 'Single-hand shooting with dominant hand.', scoring: 'score', requiresHolster: false, liveCompatible: true, dryCompatible: true, category: 'fundamentals' },
+    { name: 'Weak-Hand Only', description: 'Single-hand shooting with support hand.', scoring: 'score', requiresHolster: false, liveCompatible: true, dryCompatible: true, category: 'fundamentals' },
+    { name: 'Slow Fire / Group Shooting', description: 'Slow deliberate accuracy work.', scoring: 'score', requiresHolster: false, liveCompatible: true, dryCompatible: false, category: 'accuracy' },
+    { name: 'Cadence Drill', description: 'Even-paced rhythm shots — splits work.', scoring: 'time', requiresHolster: false, liveCompatible: true, dryCompatible: true, category: 'speed' },
+    { name: 'Walk Back Drill', description: 'Engage target, step back each successful round.', scoring: 'score', requiresHolster: false, liveCompatible: true, dryCompatible: false, category: 'accuracy' },
+    { name: 'Press Out', description: 'Press out from compressed ready to first shot.', scoring: 'time', requiresHolster: false, liveCompatible: true, dryCompatible: true, category: 'fundamentals' },
+    { name: 'One Reload One', description: '1 shot, reload, 1 shot — par time.', scoring: 'time', requiresHolster: false, liveCompatible: true, dryCompatible: true, category: 'manipulation' },
+    { name: 'Reload Drill', description: 'Practice reloads under time.', scoring: 'time', requiresHolster: false, liveCompatible: true, dryCompatible: true, category: 'manipulation' },
+    { name: 'Transition Drill', description: 'Transition between 2+ targets, par time scored.', scoring: 'time', requiresHolster: false, liveCompatible: true, dryCompatible: true, category: 'speed' },
+    { name: 'Position Entry / Exit', description: 'Drill entering and exiting shooting positions.', scoring: 'time', requiresHolster: false, liveCompatible: true, dryCompatible: true, category: 'movement' },
+    // Dry fire only
+    { name: 'Wall Drill', description: 'Stand close to a wall, work trigger press without sight movement.', scoring: 'none', requiresHolster: false, liveCompatible: false, dryCompatible: true, category: 'fundamentals' },
+    { name: 'Coin Drill', description: 'Balance a coin on the front sight, dry fire without dropping it.', scoring: 'none', requiresHolster: false, liveCompatible: false, dryCompatible: true, category: 'fundamentals' },
+    { name: 'Dry Fire Reload', description: 'Reload practice with dummy/empty magazines.', scoring: 'time', requiresHolster: false, liveCompatible: false, dryCompatible: true, category: 'manipulation' },
+    { name: 'Index Drill', description: 'Eyes-closed presentation, open and check natural point of aim.', scoring: 'none', requiresHolster: false, liveCompatible: false, dryCompatible: true, category: 'fundamentals' },
+    { name: 'Dry Fire Draws', description: 'Holster draws to first sight picture, par time.', scoring: 'time', requiresHolster: true, liveCompatible: false, dryCompatible: true, category: 'speed' },
+    // General
+    { name: 'Standard Practice', description: 'General practice / freestyle / warm-up.', scoring: 'none', requiresHolster: false, liveCompatible: true, dryCompatible: true, category: 'general' }
+  ],
+  goals: [],
+  skillAssessments: [],
+  malfunctions: [],
+  settings: {
+    firstUse: true,
+    version: '1.2',
+    magazineSpringSchedule: { startDate: '2026-06-01', intervalMonths: 6 },
+    defaultRecoilSpringInterval: 5000
+  }
+};
+
+let DB = loadDB();
+
+function loadDB() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return JSON.parse(JSON.stringify(SEED));
+    const parsed = JSON.parse(raw);
+    for (const key of Object.keys(SEED)) {
+      if (parsed[key] === undefined) parsed[key] = JSON.parse(JSON.stringify(SEED[key]));
+    }
+    return parsed;
+  } catch (e) {
+    console.error('Failed to load DB', e);
+    return JSON.parse(JSON.stringify(SEED));
+  }
+}
+function saveDB() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
+  } catch (e) {
+    alert('Could not save data. localStorage may be full. Consider exporting and clearing target images.');
+    console.error(e);
+  }
+}
+function uid(prefix = 'id') {
+  return prefix + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
+}
+
+function formatDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d);
+  if (isNaN(dt)) return d;
+  return dt.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+function todayISO() { return new Date().toISOString().slice(0, 10); }
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function getFirearm(id) { return DB.firearms.find(f => f.id === id); }
+function getAmmo(id) { return DB.ammunition.find(a => a.id === id); }
+function getDrillDef(name) { return DB.drillLibrary.find(d => d.name === name); }
+
+function firearmRoundCount(firearmId) {
+  const fa = getFirearm(firearmId);
+  if (!fa) return 0;
+  let total = fa.startingRoundCount || 0;
+  for (const s of DB.sessions) if (s.firearmId === firearmId) total += (s.totalRounds || 0);
+  return total;
+}
+function roundsSinceDeepClean(firearmId) {
+  const lastDeep = [...DB.maintenance]
+    .filter(m => m.firearmId === firearmId && m.type === 'deep_clean')
+    .sort((a, b) => b.date.localeCompare(a.date))[0];
+  if (!lastDeep) return firearmRoundCount(firearmId);
+  let total = 0;
+  for (const s of DB.sessions) {
+    if (s.firearmId === firearmId && s.date > lastDeep.date) total += s.totalRounds || 0;
+  }
+  return total;
+}
+function lastMaintenance(firearmId, type) {
+  return DB.maintenance
+    .filter(m => m.firearmId === firearmId && (type ? m.type === type : true))
+    .sort((a, b) => b.date.localeCompare(a.date))[0];
+}
+function maintenanceStatus(firearmId) {
+  const sinceDeep = roundsSinceDeepClean(firearmId);
+  const annual = lastMaintenance(firearmId, 'annual_inspection');
+  const lastFS = lastMaintenance(firearmId, 'field_strip');
+  const lastFSDate = lastFS ? lastFS.date : '0000-00-00';
+  const sessionsAfter = DB.sessions.filter(s => s.firearmId === firearmId && s.date > lastFSDate).length;
+  let annualOverdue = false;
+  if (annual) {
+    const months = (new Date() - new Date(annual.date)) / (1000 * 60 * 60 * 24 * 30);
+    if (months > 12) annualOverdue = true;
+  }
+  return {
+    roundsSinceDeepClean: sinceDeep,
+    deepCleanProgress: Math.min(100, (sinceDeep / DEEP_CLEAN_INTERVAL) * 100),
+    deepCleanDue: sinceDeep >= DEEP_CLEAN_INTERVAL,
+    deepCleanWarning: sinceDeep >= DEEP_CLEAN_INTERVAL * 0.9 && sinceDeep < DEEP_CLEAN_INTERVAL,
+    sessionsSinceFieldStrip: sessionsAfter,
+    fieldStripDue: sessionsAfter > 0,
+    annualOverdue,
+    annualMissing: !annual,
+    lastFieldStrip: lastFS,
+    lastDeepClean: lastMaintenance(firearmId, 'deep_clean'),
+    lastAnnual: annual
+  };
+}
+
+/* Recoil spring tracking: round-count interval per firearm */
+function recoilSpringStatus(firearmId) {
+  const f = getFirearm(firearmId);
+  if (!f) return null;
+  const interval = f.recoilSpringInterval || (DB.settings.defaultRecoilSpringInterval || 5000);
+  const lastReplace = lastMaintenance(firearmId, 'recoil_spring');
+  const totalRounds = firearmRoundCount(firearmId);
+  let sinceReplace;
+  if (lastReplace) {
+    // Sum rounds in sessions after the replacement date
+    let after = 0;
+    for (const s of DB.sessions) {
+      if (s.firearmId === firearmId && s.date > lastReplace.date) after += s.totalRounds || 0;
+    }
+    sinceReplace = after;
+  } else {
+    sinceReplace = totalRounds;
+  }
+  return {
+    interval,
+    lastReplace,
+    sinceReplace,
+    progress: Math.min(100, (sinceReplace / interval) * 100),
+    due: sinceReplace >= interval,
+    warning: sinceReplace >= interval * 0.9 && sinceReplace < interval,
+    neverReplaced: !lastReplace
+  };
+}
+
+/* Magazine spring schedule: time-based, every N months from a start date */
+function magazineSpringStatus() {
+  const sched = (DB.settings && DB.settings.magazineSpringSchedule) || { startDate: '2026-06-01', intervalMonths: 6 };
+  const intervalMonths = sched.intervalMonths || 6;
+  const start = new Date(sched.startDate || '2026-06-01');
+  // Find most recent mag_springs maintenance across all firearms
+  const allMagSpring = DB.maintenance.filter(m => m.type === 'mag_springs').sort((a,b) => b.date.localeCompare(a.date));
+  const lastDone = allMagSpring[0];
+
+  function addMonths(d, m) {
+    const nd = new Date(d);
+    nd.setMonth(nd.getMonth() + m);
+    return nd;
+  }
+
+  let nextDue;
+  if (lastDone) {
+    nextDue = addMonths(new Date(lastDone.date), intervalMonths);
+  } else {
+    nextDue = new Date(start);
+    // Don't show as overdue before start date
+  }
+
+  const now = new Date();
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const daysUntil = Math.round((nextDue - now) / msPerDay);
+  const overdue = daysUntil < 0;
+  const dueSoon = daysUntil >= 0 && daysUntil <= 30;
+  return {
+    nextDue,
+    daysUntil,
+    overdue,
+    dueSoon,
+    lastDone,
+    intervalMonths,
+    startDate: sched.startDate
+  };
+}
+
+/* ============================================================
+   PROGRESS / PR HELPERS
+   ============================================================ */
+function allDrillRecords() {
+  // Returns flat list of drill instances with session date for analysis
+  const recs = [];
+  for (const s of DB.sessions) {
+    for (const d of (s.drills || [])) {
+      if (!d.name) continue;
+      recs.push({
+        date: s.date,
+        sessionId: s.id,
+        firearmId: s.firearmId,
+        name: d.name,
+        distance: d.distance || '',
+        time: typeof d.time === 'number' ? d.time : (d.time ? parseFloat(d.time) : null),
+        score: typeof d.score === 'number' ? d.score : (d.score ? parseFloat(d.score) : null),
+        maxScore: d.maxScore || (getDrillDef(d.name) || {}).maxScore || null,
+        notes: d.notes || ''
+      });
+    }
+  }
+  return recs;
+}
+function personalRecords() {
+  const recs = allDrillRecords();
+  const groups = {};
+  for (const r of recs) {
+    if (!groups[r.name]) groups[r.name] = [];
+    groups[r.name].push(r);
+  }
+  const prs = [];
+  for (const name of Object.keys(groups)) {
+    const list = groups[name];
+    const def = getDrillDef(name);
+    const scoring = def?.scoring || 'time';
+    let best = null;
+    if (scoring === 'time') {
+      const timed = list.filter(r => r.time != null && r.time > 0);
+      if (timed.length) best = timed.reduce((a, b) => (a.time <= b.time ? a : b));
+    } else if (scoring === 'score') {
+      const scored = list.filter(r => r.score != null);
+      if (scored.length) best = scored.reduce((a, b) => (a.score >= b.score ? a : b));
+    } else if (scoring === 'time_score') {
+      // Hit Factor proxy: score/time
+      const both = list.filter(r => r.score != null && r.time != null && r.time > 0);
+      if (both.length) best = both.reduce((a, b) => ((a.score / a.time) >= (b.score / b.time) ? a : b));
+    }
+    prs.push({ name, scoring, best, attempts: list.length });
+  }
+  prs.sort((a, b) => b.attempts - a.attempts);
+  return prs;
+}
+function formatDrillScore(r, scoring) {
+  if (!r) return '—';
+  if (scoring === 'time') return r.time != null ? r.time.toFixed(2) + 's' : '—';
+  if (scoring === 'score') return r.score != null ? r.score + (r.maxScore ? '/' + r.maxScore : '') : '—';
+  if (scoring === 'time_score') {
+    const hf = r.time && r.time > 0 ? (r.score / r.time).toFixed(2) : '—';
+    return `${r.score}/${r.maxScore || '?'} in ${r.time?.toFixed(2)}s (HF ${hf})`;
+  }
+  return '—';
+}
+
+/* ============================================================
+   ROUTING
+   ============================================================ */
+function setView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  const view = document.getElementById('view-' + name);
+  const link = document.querySelector(`nav a[data-view="${name}"]`);
+  if (view) view.classList.add('active');
+  if (link) link.classList.add('active');
+  renderView(name);
+}
+function renderView(name) {
+  const fns = {
+    dashboard: renderDashboard, firearms: renderFirearms, ammo: renderAmmo,
+    sessions: renderSessions, progress: renderProgress, malfunctions: renderMalfunctions,
+    maintenance: renderMaintenance, reference: renderReference, settings: renderSettings
+  };
+  if (fns[name]) fns[name]();
+}
+document.querySelectorAll('nav a').forEach(a => a.addEventListener('click', () => setView(a.dataset.view)));
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+function openModal(html, onMount) {
+  const m = document.getElementById('modal');
+  m.innerHTML = html;
+  document.getElementById('modal-backdrop').classList.add('show');
+  if (onMount) onMount(m);
+}
+function closeModal() {
+  document.getElementById('modal-backdrop').classList.remove('show');
+}
+document.getElementById('modal-backdrop').addEventListener('click', e => {
+  if (e.target.id === 'modal-backdrop') closeModal();
+});
+
+/* ============================================================
+   DASHBOARD
+   ============================================================ */
+function renderDashboard() {
+  const v = document.getElementById('view-dashboard');
+  const totalRounds = DB.firearms.reduce((s, f) => s + firearmRoundCount(f.id), 0);
+  const totalSessions = DB.sessions.length;
+  const totalAmmo = DB.ammunition.reduce((s, a) => s + (a.quantity || 0), 0);
+  const lastSession = [...DB.sessions].sort((a, b) => b.date.localeCompare(a.date))[0];
+  const openGoals = DB.goals.filter(g => !g.achieved).length;
+
+  const alerts = [];
+  for (const f of DB.firearms) {
+    const st = maintenanceStatus(f.id);
+    if (st.deepCleanDue) alerts.push({ level: 'danger', text: `${f.name}: Deep clean overdue (${st.roundsSinceDeepClean.toLocaleString()} rounds since last deep clean).` });
+    else if (st.deepCleanWarning) alerts.push({ level: 'warn', text: `${f.name}: Deep clean due soon (${st.roundsSinceDeepClean.toLocaleString()} / ${DEEP_CLEAN_INTERVAL.toLocaleString()} rounds).` });
+    if (st.annualOverdue) alerts.push({ level: 'warn', text: `${f.name}: Annual inspection overdue.` });
+    if (st.fieldStripDue) alerts.push({ level: st.sessionsSinceFieldStrip > 1 ? 'warn' : 'info', text: `${f.name}: ${st.sessionsSinceFieldStrip} session${st.sessionsSinceFieldStrip!==1?'s':''} logged since last field strip — clean recommended.` });
+    const rs = recoilSpringStatus(f.id);
+    if (rs.due) alerts.push({ level: 'danger', text: `${f.name}: Recoil spring replacement overdue (${rs.sinceReplace.toLocaleString()} / ${rs.interval.toLocaleString()} rounds).` });
+    else if (rs.warning) alerts.push({ level: 'warn', text: `${f.name}: Recoil spring replacement approaching (${rs.sinceReplace.toLocaleString()} / ${rs.interval.toLocaleString()} rounds).` });
+  }
+  // Magazine spring schedule
+  const ms = magazineSpringStatus();
+  if (ms.overdue) alerts.push({ level: 'danger', text: `Magazine springs: replacement overdue (was due ${formatDate(ms.nextDue)}).` });
+  else if (ms.dueSoon) alerts.push({ level: 'warn', text: `Magazine springs: replacement due in ${ms.daysUntil} day${ms.daysUntil!==1?'s':''} (${formatDate(ms.nextDue)}).` });
+  for (const a of DB.ammunition) {
+    if ((a.quantity || 0) <= 50 && (a.quantity || 0) > 0) alerts.push({ level: 'warn', text: `Low ammo: ${a.brand} ${a.grain}gr ${a.bulletType} (${a.caliber}) — ${a.quantity} rounds left.` });
+  }
+
+  v.innerHTML = `
+    <div class="view-header">
+      <div>
+        <h2>Dashboard</h2>
+        <div class="sub">${formatDate(new Date())} &middot; Training since January 2025</div>
+      </div>
+      <button class="btn" onclick="openSessionModal()">+ Log Session</button>
+    </div>
+
+    ${alerts.length ? alerts.map(a => `<div class="alert ${a.level}">&#9888; ${escapeHtml(a.text)}</div>`).join('') : ''}
+
+    <div class="grid grid-4">
+      <div class="stat"><div class="label">Total Rounds Fired</div><div class="value accent">${totalRounds.toLocaleString()}</div></div>
+      <div class="stat"><div class="label">Range Sessions</div><div class="value">${totalSessions}</div></div>
+      <div class="stat"><div class="label">Ammo Inventory</div><div class="value">${totalAmmo.toLocaleString()}</div></div>
+      <div class="stat"><div class="label">Open Goals</div><div class="value">${openGoals}</div></div>
+    </div>
+
+    <div class="grid grid-2" style="margin-top:16px">
+      <div class="card">
+        <h3>Firearm Status</h3>
+        ${DB.firearms.map(f => firearmStatusBlock(f)).join('')}
+      </div>
+      <div class="card">
+        <h3>Rounds by Month (last 12)</h3>
+        <div class="chart-container">${roundsChart()}</div>
+      </div>
+    </div>
+
+    <div class="grid grid-2" style="margin-top:16px">
+      <div class="card">
+        <h3>Recent Sessions</h3>
+        ${recentSessionsTable()}
+      </div>
+      <div class="card">
+        <h3>Top Personal Records</h3>
+        ${topPRs()}
+      </div>
+    </div>
+  `;
+}
+
+function firearmStatusBlock(f) {
+  const st = maintenanceStatus(f.id);
+  const total = firearmRoundCount(f.id);
+  const fillClass = st.deepCleanDue ? 'danger' : st.deepCleanWarning ? 'warn' : '';
+  return `
+    <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <strong>${escapeHtml(f.name)}</strong>
+        <span class="text-dim" style="font-size:12px">${total.toLocaleString()} total rounds</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);margin-top:6px">
+        <span>Deep clean: ${st.roundsSinceDeepClean.toLocaleString()} / ${DEEP_CLEAN_INTERVAL.toLocaleString()}</span>
+        <span>${st.lastFieldStrip ? 'Last cleaned ' + formatDate(st.lastFieldStrip.date) : 'Never field stripped'}</span>
+      </div>
+      <div class="progress"><div class="progress-fill ${fillClass}" style="width:${st.deepCleanProgress}%"></div></div>
+    </div>
+  `;
+}
+function recentSessionsTable() {
+  const recent = [...DB.sessions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
+  if (!recent.length) return `<div class="empty"><div class="icon">&#9650;</div>No sessions logged yet.<br><br><button class="btn" onclick="openSessionModal()">Log first session</button></div>`;
+  return `<table>
+    <thead><tr><th>Date</th><th>Firearm</th><th>Rounds</th><th>Location</th></tr></thead>
+    <tbody>${recent.map(s => {
+      const f = getFirearm(s.firearmId);
+      return `<tr><td>${formatDate(s.date)}</td><td>${escapeHtml(f ? f.name : '—')}</td><td>${s.totalRounds || 0}</td><td>${escapeHtml(s.location || '—')}</td></tr>`;
+    }).join('')}</tbody></table>`;
+}
+function topPRs() {
+  const prs = personalRecords().filter(p => p.best).slice(0, 5);
+  if (!prs.length) return `<div class="empty"><div class="icon">&#9733;</div>Log drills with scores in your sessions to start tracking PRs.</div>`;
+  return prs.map(p => `
+    <div class="pr-row">
+      <div>
+        <div class="name">${escapeHtml(p.name)}</div>
+        <div class="meta">${p.attempts} attempt${p.attempts!==1?'s':''} &middot; PR ${formatDate(p.best.date)}</div>
+      </div>
+      <div class="score">${formatDrillScore(p.best, p.scoring)}</div>
+    </div>
+  `).join('');
+}
+
+/* ============================================================
+   FIREARMS
+   ============================================================ */
+function renderFirearms() {
+  const v = document.getElementById('view-firearms');
+  v.innerHTML = `
+    <div class="view-header">
+      <div>
+        <h2>Firearms</h2>
+        <div class="sub">Cumulative round counts and maintenance status</div>
+      </div>
+      <button class="btn" onclick="openFirearmModal()">+ Add Firearm</button>
+    </div>
+    <div class="grid grid-2">
+      ${DB.firearms.map(f => firearmCard(f)).join('')}
+    </div>
+  `;
+}
+function firearmCard(f) {
+  const st = maintenanceStatus(f.id);
+  const total = firearmRoundCount(f.id);
+  const sessionsCount = DB.sessions.filter(s => s.firearmId === f.id).length;
+  const fillClass = st.deepCleanDue ? 'danger' : st.deepCleanWarning ? 'warn' : 'success';
+  const statusBadge = st.deepCleanDue
+    ? '<span class="badge danger">Deep clean overdue</span>'
+    : st.deepCleanWarning ? '<span class="badge warn">Deep clean approaching</span>'
+    : st.fieldStripDue ? '<span class="badge info">Needs field strip</span>'
+    : '<span class="badge success">Up to date</span>';
+  return `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:18px;font-weight:600">${escapeHtml(f.name)}</div>
+          <div class="text-dim" style="font-size:12px">${escapeHtml(f.manufacturer)} &middot; ${escapeHtml(f.caliber)}${f.dateAcquired ? ' &middot; Acquired ' + formatDate(f.dateAcquired) : ''}</div>
+        </div>
+        ${statusBadge}
+      </div>
+      <hr>
+      <div class="grid grid-3">
+        <div><div class="text-dim" style="font-size:11px;text-transform:uppercase">Total Rounds</div><div style="font-size:20px;font-weight:600;color:var(--accent)">${total.toLocaleString()}</div></div>
+        <div><div class="text-dim" style="font-size:11px;text-transform:uppercase">Sessions</div><div style="font-size:20px;font-weight:600">${sessionsCount}</div></div>
+        <div><div class="text-dim" style="font-size:11px;text-transform:uppercase">Since Deep Clean</div><div style="font-size:20px;font-weight:600">${st.roundsSinceDeepClean.toLocaleString()}</div></div>
+      </div>
+      <div style="margin-top:12px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim)">
+          <span>Deep clean progress</span><span>${st.roundsSinceDeepClean.toLocaleString()} / ${DEEP_CLEAN_INTERVAL.toLocaleString()}</span>
+        </div>
+        <div class="progress"><div class="progress-fill ${fillClass}" style="width:${st.deepCleanProgress}%"></div></div>
+      </div>
+      ${(() => {
+        const rs = recoilSpringStatus(f.id);
+        const rsFill = rs.due ? 'danger' : rs.warning ? 'warn' : 'success';
+        const weightLabel = f.recoilSpringWeight ? ` &middot; ${escapeHtml(f.recoilSpringWeight)}` : '';
+        return `<div style="margin-top:10px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim)">
+            <span>Recoil spring${weightLabel}${rs.neverReplaced ? ' (never replaced)' : ''}</span><span>${rs.sinceReplace.toLocaleString()} / ${rs.interval.toLocaleString()}</span>
+          </div>
+          <div class="progress"><div class="progress-fill ${rsFill}" style="width:${rs.progress}%"></div></div>
+        </div>`;
+      })()}
+      <hr>
+      <div style="font-size:12px;color:var(--text-dim);line-height:1.8">
+        Last field strip: <strong style="color:var(--text)">${st.lastFieldStrip ? formatDate(st.lastFieldStrip.date) : 'Never'}</strong><br>
+        Last deep clean: <strong style="color:var(--text)">${st.lastDeepClean ? formatDate(st.lastDeepClean.date) : 'Never'}</strong><br>
+        Last annual inspection: <strong style="color:var(--text)">${st.lastAnnual ? formatDate(st.lastAnnual.date) : 'Never'}</strong><br>
+        Last recoil spring: <strong style="color:var(--text)">${(() => { const lr = lastMaintenance(f.id, 'recoil_spring'); return lr ? formatDate(lr.date) : 'Never'; })()}</strong>
+      </div>
+      ${f.notes ? `<hr><div style="font-size:12px;color:var(--text-dim)">${escapeHtml(f.notes)}</div>` : ''}
+      <div class="row-actions" style="margin-top:14px">
+        <button class="btn small secondary" onclick="openFirearmModal('${f.id}')">Edit</button>
+        <button class="btn small secondary" onclick="openMaintenanceModal(null,'${f.id}')">+ Log Maintenance</button>
+        <button class="btn small danger" onclick="deleteFirearm('${f.id}')">Delete</button>
+      </div>
+    </div>
+  `;
+}
+function openFirearmModal(id) {
+  const f = id ? getFirearm(id) : { name:'', model:'', manufacturer:'', caliber:'9mm', dateAcquired:'', startingRoundCount:0, recoilSpringInterval:5000, recoilSpringWeight:'', notes:'' };
+  openModal(`
+    <div class="modal-header"><h3>${id?'Edit':'Add'} Firearm</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-row"><label>Name</label><input id="fa-name" value="${escapeHtml(f.name)}" placeholder="e.g. Atlas Erebus"></div>
+      <div class="form-grid-2">
+        <div class="form-row"><label>Manufacturer</label><input id="fa-mfr" value="${escapeHtml(f.manufacturer)}"></div>
+        <div class="form-row"><label>Model</label><input id="fa-model" value="${escapeHtml(f.model)}"></div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row"><label>Caliber</label><input id="fa-caliber" value="${escapeHtml(f.caliber)}"></div>
+        <div class="form-row"><label>Date Acquired</label><input id="fa-date" type="date" value="${f.dateAcquired || ''}"></div>
+      </div>
+      <div class="form-grid-3">
+        <div class="form-row"><label>Starting Round Count</label>
+          <input id="fa-start" type="number" min="0" value="${f.startingRoundCount || 0}">
+          <div class="help-text">Set if rounds existed before tracking.</div>
+        </div>
+        <div class="form-row"><label>Recoil Spring Interval (rounds)</label>
+          <input id="fa-recoil" type="number" min="500" step="500" value="${f.recoilSpringInterval || 5000}">
+          <div class="help-text">Typical: 5,000-7,500 rounds.</div>
+        </div>
+        <div class="form-row"><label>Spring Weight</label>
+          <input id="fa-recoil-weight" value="${escapeHtml(f.recoilSpringWeight || '')}" placeholder="e.g. 9 lb, 11 lb, 13 lb">
+          <div class="help-text">Current installed weight (lb).</div>
+        </div>
+      </div>
+      <div class="form-row"><label>Notes</label><textarea id="fa-notes">${escapeHtml(f.notes)}</textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="saveFirearm('${id || ''}')">Save</button>
+    </div>
+  `);
+}
+function saveFirearm(id) {
+  const data = {
+    name: document.getElementById('fa-name').value.trim(),
+    manufacturer: document.getElementById('fa-mfr').value.trim(),
+    model: document.getElementById('fa-model').value.trim(),
+    caliber: document.getElementById('fa-caliber').value.trim(),
+    dateAcquired: document.getElementById('fa-date').value,
+    startingRoundCount: parseInt(document.getElementById('fa-start').value) || 0,
+    recoilSpringInterval: parseInt(document.getElementById('fa-recoil').value) || 5000,
+    recoilSpringWeight: document.getElementById('fa-recoil-weight').value.trim(),
+    notes: document.getElementById('fa-notes').value.trim()
+  };
+  if (!data.name) { alert('Name required'); return; }
+  if (id) Object.assign(getFirearm(id), data);
+  else DB.firearms.push({ id: uid('fa'), ...data });
+  saveDB(); closeModal(); renderFirearms();
+}
+function deleteFirearm(id) {
+  if (!confirm('Delete this firearm? Sessions linked to it will keep historical record but lose firearm reference.')) return;
+  DB.firearms = DB.firearms.filter(f => f.id !== id);
+  saveDB(); renderFirearms();
+}
+
+/* ============================================================
+   AMMUNITION
+   ============================================================ */
+function renderAmmo() {
+  const v = document.getElementById('view-ammo');
+  const total = DB.ammunition.reduce((s, a) => s + (a.quantity || 0), 0);
+  const used = DB.sessions.reduce((s, sess) => s + (sess.ammoUsage || []).reduce((x, u) => x + (u.rounds || 0), 0), 0);
+  v.innerHTML = `
+    <div class="view-header">
+      <div><h2>Ammunition</h2><div class="sub">Inventory and consumption</div></div>
+      <button class="btn" onclick="openAmmoModal()">+ Add Ammo</button>
+    </div>
+    <div class="grid grid-3" style="margin-bottom:16px">
+      <div class="stat"><div class="label">Total in Inventory</div><div class="value accent">${total.toLocaleString()}</div></div>
+      <div class="stat"><div class="label">Total Used</div><div class="value">${used.toLocaleString()}</div></div>
+      <div class="stat"><div class="label">SKU Count</div><div class="value">${DB.ammunition.length}</div></div>
+    </div>
+    <div class="card">
+      ${DB.ammunition.length ? `
+      <table>
+        <thead><tr><th>Brand</th><th>Caliber</th><th>Grain</th><th>Type</th><th>Inventory</th><th>Cost / round</th><th></th></tr></thead>
+        <tbody>${DB.ammunition.map(a => `
+          <tr>
+            <td>${escapeHtml(a.brand)}</td>
+            <td>${escapeHtml(a.caliber)}</td>
+            <td>${escapeHtml(a.grain)}gr</td>
+            <td>${escapeHtml(a.bulletType)}</td>
+            <td><strong>${(a.quantity||0).toLocaleString()}</strong></td>
+            <td>${a.costPerRound ? '$' + Number(a.costPerRound).toFixed(3) : '—'}</td>
+            <td class="row-actions">
+              <button class="btn small secondary" onclick="openAmmoModal('${a.id}')">Edit</button>
+              <button class="btn small danger" onclick="deleteAmmo('${a.id}')">Delete</button>
+            </td>
+          </tr>`).join('')}</tbody>
+      </table>` : `<div class="empty"><div class="icon">&#9679;</div>No ammunition tracked yet.<br><br><button class="btn" onclick="openAmmoModal()">Add first ammo</button></div>`}
+    </div>
+  `;
+}
+function openAmmoModal(id) {
+  const a = id ? getAmmo(id) : { brand:'', grain:'', bulletType:'FMJ', caliber:'9mm', quantity:0, costPerRound:'', notes:'' };
+  openModal(`
+    <div class="modal-header"><h3>${id?'Edit':'Add'} Ammunition</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-grid-2">
+        <div class="form-row"><label>Brand</label><input id="am-brand" value="${escapeHtml(a.brand)}" placeholder="e.g. Federal"></div>
+        <div class="form-row"><label>Caliber</label><input id="am-caliber" value="${escapeHtml(a.caliber)}"></div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row"><label>Grain</label><input id="am-grain" type="number" value="${escapeHtml(a.grain)}" placeholder="124"></div>
+        <div class="form-row"><label>Bullet Type</label>
+          <select id="am-type">
+            ${['FMJ','JHP','HP','Frangible','Lead Round Nose','Plated','Match'].map(t => `<option ${a.bulletType===t?'selected':''}>${t}</option>`).join('')}
+            ${a.bulletType && !['FMJ','JHP','HP','Frangible','Lead Round Nose','Plated','Match'].includes(a.bulletType) ? `<option selected>${escapeHtml(a.bulletType)}</option>` : ''}
+          </select>
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row"><label>Quantity in Inventory</label><input id="am-qty" type="number" min="0" value="${a.quantity || 0}"></div>
+        <div class="form-row"><label>Cost per round (optional)</label><input id="am-cost" type="number" step="0.001" value="${a.costPerRound || ''}" placeholder="0.30"></div>
+      </div>
+      <div class="form-row"><label>Notes</label><textarea id="am-notes">${escapeHtml(a.notes)}</textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="saveAmmo('${id || ''}')">Save</button>
+    </div>
+  `);
+}
+function saveAmmo(id) {
+  const data = {
+    brand: document.getElementById('am-brand').value.trim(),
+    caliber: document.getElementById('am-caliber').value.trim(),
+    grain: document.getElementById('am-grain').value,
+    bulletType: document.getElementById('am-type').value,
+    quantity: parseInt(document.getElementById('am-qty').value) || 0,
+    costPerRound: parseFloat(document.getElementById('am-cost').value) || '',
+    notes: document.getElementById('am-notes').value.trim()
+  };
+  if (!data.brand) { alert('Brand required'); return; }
+  if (id) Object.assign(getAmmo(id), data);
+  else DB.ammunition.push({ id: uid('am'), ...data });
+  saveDB(); closeModal(); renderAmmo();
+}
+function deleteAmmo(id) {
+  if (!confirm('Delete this ammunition record?')) return;
+  DB.ammunition = DB.ammunition.filter(a => a.id !== id);
+  saveDB(); renderAmmo();
+}
+
+/* ============================================================
+   SESSIONS
+   ============================================================ */
+function renderSessions() {
+  const v = document.getElementById('view-sessions');
+  const sessions = [...DB.sessions].sort((a, b) => b.date.localeCompare(a.date));
+
+  // Build field-strip-needed list: each firearm with one or more sessions after their last field strip
+  const fsNeeded = [];
+  for (const f of DB.firearms) {
+    const st = maintenanceStatus(f.id);
+    if (st.fieldStripDue && st.sessionsSinceFieldStrip > 0) {
+      fsNeeded.push({ firearm: f, count: st.sessionsSinceFieldStrip, lastFS: st.lastFieldStrip });
+    }
+  }
+  // Identify the firearm of the most recent session for the prominent button
+  const latestSession = sessions[0];
+  const latestFirearmId = latestSession ? latestSession.firearmId : (DB.firearms[0] && DB.firearms[0].id);
+  const latestFirearm = latestFirearmId ? getFirearm(latestFirearmId) : null;
+
+  v.innerHTML = `
+    <div class="view-header">
+      <div><h2>Range Sessions</h2><div class="sub">Practice and competition log</div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${latestFirearm ? `<button class="btn secondary" onclick="quickFieldStrip('${latestFirearm.id}')" title="Log field strip & clean for ${escapeHtml(latestFirearm.name)}">&#9881; Field Strip ${escapeHtml(latestFirearm.name)}</button>` : ''}
+        <button class="btn" onclick="openSessionModal()">+ Log Session</button>
+      </div>
+    </div>
+    ${fsNeeded.length ? `<div class="alert warn" style="flex-direction:column;align-items:stretch">
+      <div style="display:flex;align-items:center;gap:10px"><strong style="font-size:13px">&#9888; Field strip pending</strong><span style="color:var(--text-dim);font-size:12px">Atlas guidance: clean after every session.</span></div>
+      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+        ${fsNeeded.map(n => `<button class="btn small secondary" onclick="quickFieldStrip('${n.firearm.id}')">Log field strip: ${escapeHtml(n.firearm.name)} (${n.count} session${n.count!==1?'s':''} pending)</button>`).join('')}
+      </div>
+    </div>` : ''}
+    ${sessions.length ? sessions.map(s => sessionCard(s)).join('') : `<div class="empty"><div class="icon">&#9650;</div>No sessions yet.<br><br><button class="btn" onclick="openSessionModal()">Log first session</button></div>`}
+  `;
+}
+
+/* Quick field-strip logger - opens the maintenance modal pre-filled */
+function quickFieldStrip(firearmId) {
+  openMaintenanceModal(null, firearmId);
+  setTimeout(() => {
+    const sel = document.getElementById('ma-type');
+    if (sel) {
+      sel.value = 'field_strip';
+      sel.dispatchEvent(new Event('change'));
+    }
+  }, 0);
+}
+
+/* Quick mag-spring log - opens the maintenance modal pre-filled */
+function quickMagSpringLog() {
+  openMaintenanceModal(null, DB.firearms[0]?.id || '');
+  setTimeout(() => {
+    const sel = document.getElementById('ma-type');
+    if (sel) {
+      sel.value = 'mag_springs';
+      sel.dispatchEvent(new Event('change'));
+    }
+    const notes = document.getElementById('ma-notes');
+    if (notes && !notes.value) notes.value = 'Replaced springs in all magazines (6-month schedule).';
+  }, 0);
+}
+function sessionCard(s) {
+  const f = getFirearm(s.firearmId);
+  const ammoLines = (s.ammoUsage || []).map(u => {
+    const a = getAmmo(u.ammoId);
+    return a ? `${u.rounds} &times; ${escapeHtml(a.brand)} ${escapeHtml(a.grain)}gr ${escapeHtml(a.bulletType)}` : `${u.rounds} rounds (ammo deleted)`;
+  });
+  const drillsHtml = (s.drills || []).filter(d => d.name).map(d => {
+    const def = getDrillDef(d.name);
+    const scoring = def?.scoring || 'time';
+    const scoreText = formatDrillScore({time:d.time, score:d.score, maxScore:d.maxScore}, scoring);
+    return `<span class="chip">${escapeHtml(d.name)}${d.distance ? ' &middot; ' + escapeHtml(d.distance) : ''}${scoreText && scoreText !== '—' ? ' &middot; <strong style="color:var(--accent)">' + scoreText + '</strong>' : ''}</span>`;
+  }).join('');
+  return `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:16px;font-weight:600">${formatDate(s.date)} <span class="badge ${s.type==='competition'?'info':'neutral'}">${escapeHtml(s.type||'practice')}</span></div>
+          <div class="text-dim" style="font-size:12px;margin-top:2px">${escapeHtml(f ? f.name : '—')} &middot; ${escapeHtml(s.location || 'Location not set')}</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:24px;font-weight:600;color:var(--accent)">${(s.totalRounds||0).toLocaleString()}</div>
+          <div class="text-dim" style="font-size:11px">rounds</div>
+        </div>
+      </div>
+      ${ammoLines.length ? `<hr><div style="font-size:13px"><strong style="color:var(--text-dim)">Ammo:</strong> ${ammoLines.join(' &middot; ')}</div>` : ''}
+      ${drillsHtml ? `<div style="margin-top:10px"><strong style="color:var(--text-dim);font-size:12px;text-transform:uppercase">Drills</strong><div class="chip-list">${drillsHtml}</div></div>` : ''}
+      ${s.distances ? `<div style="margin-top:10px;font-size:13px"><strong style="color:var(--text-dim)">Distances:</strong> ${escapeHtml(s.distances)}</div>` : ''}
+      ${(s.malfunctions && s.malfunctions.length) ? `<div style="margin-top:10px"><strong style="color:var(--danger);font-size:12px;text-transform:uppercase">Malfunctions (${s.malfunctions.length})</strong><div class="chip-list">${s.malfunctions.map(m => `<span class="chip" style="border-color:var(--danger);color:var(--danger)">${escapeHtml(m.type)}${m.roundCount ? ' @ ' + m.roundCount : ''}</span>`).join('')}</div></div>` : ''}
+      ${s.notes ? `<div style="margin-top:10px;font-size:13px;color:var(--text-dim);white-space:pre-wrap">${escapeHtml(s.notes)}</div>` : ''}
+      ${(s.targetImages && s.targetImages.length) ? `<div class="image-gallery">${s.targetImages.map((img) => `<div class="image-thumb" style="background-image:url('${img}')" onclick="showLightbox('${img}')"></div>`).join('')}</div>` : ''}
+      <div class="row-actions" style="margin-top:14px">
+        <button class="btn small secondary" onclick="openSessionModal('${s.id}')">Edit</button>
+        <button class="btn small danger" onclick="deleteSession('${s.id}')">Delete</button>
+      </div>
+    </div>
+  `;
+}
+function openSessionModal(id) {
+  const s = id ? DB.sessions.find(x => x.id === id) : {
+    date: todayISO(), type: 'practice', firearmId: DB.firearms[0]?.id || '',
+    location:'', distances:'', notes:'', totalRounds:0,
+    ammoUsage:[], drills:[], targetImages:[],
+    selfRating: { focus: 5, fundamentals: 5, satisfaction: 5 }
+  };
+  if (!DB.firearms.length) { alert('Add at least one firearm first.'); return; }
+  if (!s.selfRating) s.selfRating = { focus: 5, fundamentals: 5, satisfaction: 5 };
+
+  openModal(`
+    <div class="modal-header"><h3>${id?'Edit':'Log'} Session</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body" style="max-height:70vh;overflow-y:auto">
+      <div class="form-grid-3">
+        <div class="form-row"><label>Date</label><input id="se-date" type="date" value="${s.date}"></div>
+        <div class="form-row"><label>Type</label>
+          <select id="se-type">
+            <option value="practice" ${s.type==='practice'?'selected':''}>Practice</option>
+            <option value="competition" ${s.type==='competition'?'selected':''}>Competition</option>
+            <option value="class" ${s.type==='class'?'selected':''}>Class / Training</option>
+            <option value="dry_fire" ${s.type==='dry_fire'?'selected':''}>Dry Fire</option>
+          </select>
+        </div>
+        <div class="form-row"><label>Firearm</label>
+          <select id="se-firearm">${DB.firearms.map(f => `<option value="${f.id}" ${s.firearmId===f.id?'selected':''}>${escapeHtml(f.name)}</option>`).join('')}</select>
+        </div>
+      </div>
+      <div class="form-row"><label>Location</label><input id="se-location" value="${escapeHtml(s.location)}" placeholder="e.g. Local Range, USPSA Match"></div>
+      <div class="form-row"><label>Distances Practiced</label><input id="se-dist" value="${escapeHtml(s.distances)}" placeholder="e.g. 7yd, 15yd, 25yd"></div>
+
+      <hr>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <strong>Ammunition Used</strong>
+        <button class="btn small secondary" onclick="addAmmoRow()">+ Add</button>
+      </div>
+      <div id="se-ammo-rows"></div>
+      <div class="help-text">Total rounds auto-sum from ammo lines. Inventory will decrement on save.</div>
+
+      <hr>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <strong>Drills Practiced</strong>
+        <div style="display:flex;gap:8px;align-items:center">
+          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-dim)"><input id="se-no-holster" type="checkbox" onchange="toggleNoHolster(this.checked)"> No-holster only</label>
+          <button class="btn small secondary" onclick="addDrillRow()">+ Add</button>
+        </div>
+      </div>
+      <div id="se-drill-rows"></div>
+      <div class="help-text">Drill list filters by session type (dry-fire shows only dry-compatible drills). Add time and/or score to track Personal Records over time.</div>
+
+      <hr>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <strong>Malfunctions</strong>
+        <button class="btn small secondary" onclick="addMalfunctionRow()">+ Add</button>
+      </div>
+      <div id="se-malf-rows"></div>
+      <div class="help-text">Log any stoppages or issues that happened during this session. Patterns are aggregated in the Malfunctions tab.</div>
+
+      <hr>
+      <strong>Self-Assessment for this session</strong>
+      <div class="help-text">Quick gut check (1-10) — fuels your progress trend without pulling out a calculator.</div>
+      <div class="form-grid-3" style="margin-top:8px">
+        <div class="form-row"><label>Focus</label><div class="skill-rating"><input id="se-focus" type="range" min="1" max="10" value="${s.selfRating.focus}"><span class="val" id="se-focus-val">${s.selfRating.focus}</span></div></div>
+        <div class="form-row"><label>Fundamentals</label><div class="skill-rating"><input id="se-fund" type="range" min="1" max="10" value="${s.selfRating.fundamentals}"><span class="val" id="se-fund-val">${s.selfRating.fundamentals}</span></div></div>
+        <div class="form-row"><label>Satisfaction</label><div class="skill-rating"><input id="se-sat" type="range" min="1" max="10" value="${s.selfRating.satisfaction}"><span class="val" id="se-sat-val">${s.selfRating.satisfaction}</span></div></div>
+      </div>
+
+      <hr>
+      <div class="form-row"><label>Target Images</label>
+        <input id="se-img-input" type="file" accept="image/*" multiple onchange="handleImageUpload(event)">
+        <div class="help-text">Photos stored locally. Auto-resized to ~1000px wide.</div>
+        <div id="se-img-gallery" class="image-gallery"></div>
+      </div>
+      <div class="form-row"><label>Notes</label><textarea id="se-notes" rows="4">${escapeHtml(s.notes)}</textarea></div>
+
+      <div class="form-row"><label>Total Rounds (auto)</label><input id="se-total" type="number" readonly value="${s.totalRounds||0}" style="background:var(--panel-2)"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="saveSession('${id || ''}')">Save</button>
+    </div>
+  `, () => {
+    window._tempSession = JSON.parse(JSON.stringify(s));
+    if (!window._tempSession.ammoUsage.length) window._tempSession.ammoUsage.push({ ammoId:'', rounds:0 });
+    if (!window._tempSession.drills.length) window._tempSession.drills.push({ name:'', distance:'', time:null, score:null, maxScore:null, notes:'' });
+    if (!window._tempSession.malfunctions) window._tempSession.malfunctions = [];
+    if (window._tempSession.noHolsterOnly === undefined) window._tempSession.noHolsterOnly = false;
+    document.getElementById('se-no-holster').checked = !!window._tempSession.noHolsterOnly;
+    renderAmmoRows();
+    renderDrillRows();
+    renderMalfunctionRows();
+    renderSessionImages();
+    ['focus','fund','sat'].forEach(k => {
+      const inp = document.getElementById('se-'+k);
+      const lbl = document.getElementById('se-'+k+'-val');
+      inp.addEventListener('input', () => lbl.textContent = inp.value);
+    });
+    // Re-render drill list when session type changes
+    document.getElementById('se-type').addEventListener('change', renderDrillRows);
+  });
+}
+function toggleNoHolster(val) {
+  window._tempSession.noHolsterOnly = val;
+  renderDrillRows();
+}
+function renderMalfunctionRows() {
+  const c = document.getElementById('se-malf-rows');
+  if (!c) return;
+  const list = window._tempSession.malfunctions || [];
+  if (!list.length) {
+    c.innerHTML = '<div class="text-dim" style="font-size:12px;padding:6px 0">No malfunctions logged for this session.</div>';
+    return;
+  }
+  c.innerHTML = list.map((m, i) => `
+    <div style="background:var(--panel-2);padding:10px;border-radius:6px;margin-bottom:8px">
+      <div class="form-grid-3">
+        <div class="form-row"><label>Type</label>
+          <select onchange="updateMalfunctionRow(${i},'type',this.value)">
+            ${['Failure to Feed','Failure to Eject','Failure to Extract','Stovepipe','Double Feed','Failure to Return to Battery','Light Strike','Mag Issue','Slide Lock (early)','Other'].map(t => `<option ${m.type===t?'selected':''}>${t}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-row"><label>Round Count (approx)</label><input type="number" min="0" value="${m.roundCount||''}" onchange="updateMalfunctionRow(${i},'roundCount',parseInt(this.value)||null)"></div>
+        <div class="form-row"><label>Resolution</label>
+          <select onchange="updateMalfunctionRow(${i},'resolution',this.value)">
+            ${['Tap-Rack-Bang','Tap-Rack-Reassess','Mortar (double feed)','Manual clear','Disassembly required','Mag swap','Resolved itself','Other'].map(r => `<option ${m.resolution===r?'selected':''}>${r}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row"><label>Ammo (optional)</label>
+          <select onchange="updateMalfunctionRow(${i},'ammoId',this.value)">
+            <option value="">— Unknown —</option>
+            ${DB.ammunition.map(a => `<option value="${a.id}" ${m.ammoId===a.id?'selected':''}>${escapeHtml(a.brand)} ${escapeHtml(a.grain)}gr ${escapeHtml(a.bulletType)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-row"><label>Magazine (optional)</label><input value="${escapeHtml(m.magazine||'')}" placeholder="e.g. Mag #2, Mec-Gar" onchange="updateMalfunctionRow(${i},'magazine',this.value)"></div>
+      </div>
+      <div class="form-row" style="margin-bottom:0"><label>Notes</label><input value="${escapeHtml(m.notes||'')}" placeholder="What you saw, conditions" onchange="updateMalfunctionRow(${i},'notes',this.value)"></div>
+      <div style="text-align:right;margin-top:4px"><button class="btn small danger" onclick="removeMalfunctionRow(${i})">Remove</button></div>
+    </div>
+  `).join('');
+}
+function addMalfunctionRow() {
+  if (!window._tempSession.malfunctions) window._tempSession.malfunctions = [];
+  window._tempSession.malfunctions.push({ type:'Failure to Feed', roundCount:null, resolution:'Tap-Rack-Bang', ammoId:'', magazine:'', notes:'' });
+  renderMalfunctionRows();
+}
+function removeMalfunctionRow(i) { window._tempSession.malfunctions.splice(i, 1); renderMalfunctionRows(); }
+function updateMalfunctionRow(i, key, val) { window._tempSession.malfunctions[i][key] = val; }
+function renderAmmoRows() {
+  const c = document.getElementById('se-ammo-rows');
+  c.innerHTML = window._tempSession.ammoUsage.map((u, i) => `
+    <div class="form-grid-3" style="align-items:end">
+      <div class="form-row"><label>Ammunition</label>
+        <select onchange="updateAmmoRow(${i},'ammoId',this.value)">
+          <option value="">— Select ammo —</option>
+          ${DB.ammunition.map(a => `<option value="${a.id}" ${u.ammoId===a.id?'selected':''}>${escapeHtml(a.brand)} ${escapeHtml(a.grain)}gr ${escapeHtml(a.bulletType)} (${(a.quantity||0).toLocaleString()} avail)</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-row"><label>Rounds</label>
+        <input type="number" min="0" value="${u.rounds||0}" onchange="updateAmmoRow(${i},'rounds',parseInt(this.value)||0)">
+      </div>
+      <div class="form-row"><button class="btn small danger" onclick="removeAmmoRow(${i})">Remove</button></div>
+    </div>
+  `).join('');
+  recalcTotal();
+}
+function addAmmoRow() { window._tempSession.ammoUsage.push({ ammoId:'', rounds:0 }); renderAmmoRows(); }
+function removeAmmoRow(i) { window._tempSession.ammoUsage.splice(i, 1); renderAmmoRows(); }
+function updateAmmoRow(i, key, val) { window._tempSession.ammoUsage[i][key] = val; recalcTotal(); }
+function recalcTotal() {
+  const total = window._tempSession.ammoUsage.reduce((s, u) => s + (u.rounds || 0), 0);
+  document.getElementById('se-total').value = total;
+}
+
+function renderDrillRows() {
+  const c = document.getElementById('se-drill-rows');
+  // Determine session type to filter drills
+  const sessTypeEl = document.getElementById('se-type');
+  const sessType = sessTypeEl ? sessTypeEl.value : 'practice';
+  const isDry = sessType === 'dry_fire';
+  const noHolsterFilter = window._tempSession.noHolsterOnly === true;
+
+  // Filter drill library based on session type and holster preference
+  const filteredDrills = DB.drillLibrary.filter(dr => {
+    if (isDry && !dr.dryCompatible) return false;
+    if (!isDry && !dr.liveCompatible) return false;
+    if (noHolsterFilter && dr.requiresHolster) return false;
+    return true;
+  });
+
+  c.innerHTML = window._tempSession.drills.map((d, i) => {
+    const def = getDrillDef(d.name);
+    const scoring = def?.scoring || 'time';
+    const showTime = scoring === 'time' || scoring === 'time_score';
+    const showScore = scoring === 'score' || scoring === 'time_score';
+    const isCustom = d.name && !DB.drillLibrary.find(dr => dr.name === d.name);
+    // Show currently-selected drill even if filter excludes it (so editing works)
+    const optList = filteredDrills.slice();
+    if (d.name && !optList.find(x => x.name === d.name)) {
+      const existing = DB.drillLibrary.find(x => x.name === d.name);
+      if (existing) optList.push(existing);
+    }
+    return `
+    <div style="background:var(--panel-2);padding:10px;border-radius:6px;margin-bottom:8px">
+      <div class="form-grid-2">
+        <div class="form-row"><label>Drill ${def && def.requiresHolster ? '<span class="badge neutral" style="margin-left:6px">holster</span>' : ''}${def && !def.liveCompatible ? '<span class="badge info" style="margin-left:6px">dry</span>' : ''}</label>
+          <select onchange="updateDrillRow(${i},'name',this.value)">
+            <option value="">— Select drill —</option>
+            ${optList.map(dr => `<option value="${escapeHtml(dr.name)}" ${d.name===dr.name?'selected':''}>${escapeHtml(dr.name)}${dr.requiresHolster?' (holster)':''}${!dr.liveCompatible?' (dry only)':''}</option>`).join('')}
+            <option value="__custom" ${isCustom?'selected':''}>Custom...</option>
+          </select>
+          ${isCustom ? `<input style="margin-top:4px" placeholder="Custom drill name" value="${escapeHtml(d.name)}" onchange="updateDrillRow(${i},'name',this.value)">` : ''}
+        </div>
+        <div class="form-row"><label>Distance</label>
+          <input value="${escapeHtml(d.distance||'')}" placeholder="e.g. 7yd" onchange="updateDrillRow(${i},'distance',this.value)">
+        </div>
+      </div>
+      ${d.name ? `
+        <div class="form-grid-3">
+          ${showTime ? `<div class="form-row"><label>Time (sec)</label><input type="number" step="0.01" min="0" value="${d.time != null ? d.time : ''}" onchange="updateDrillRow(${i},'time',parseFloat(this.value)||null)"></div>` : '<div></div>'}
+          ${showScore ? `<div class="form-row"><label>Score</label><input type="number" min="0" value="${d.score != null ? d.score : ''}" onchange="updateDrillRow(${i},'score',parseFloat(this.value)||null)"></div>` : '<div></div>'}
+          ${showScore ? `<div class="form-row"><label>Max Score</label><input type="number" min="0" value="${d.maxScore || (def?.maxScore || '')}" onchange="updateDrillRow(${i},'maxScore',parseFloat(this.value)||null)"></div>` : '<div></div>'}
+        </div>
+        <div class="form-row" style="margin-bottom:0"><label>Drill Notes</label><input value="${escapeHtml(d.notes||'')}" placeholder="What worked / didn't work" onchange="updateDrillRow(${i},'notes',this.value)"></div>
+      ` : ''}
+      <div style="text-align:right;margin-top:4px"><button class="btn small danger" onclick="removeDrillRow(${i})">Remove drill</button></div>
+    </div>
+    `;
+  }).join('');
+}
+function addDrillRow() { window._tempSession.drills.push({ name:'', distance:'', time:null, score:null, maxScore:null, notes:'' }); renderDrillRows(); }
+function removeDrillRow(i) { window._tempSession.drills.splice(i, 1); renderDrillRows(); }
+function updateDrillRow(i, key, val) {
+  window._tempSession.drills[i][key] = val;
+  if (key === 'name') {
+    if (val === '__custom') window._tempSession.drills[i].name = '';
+    renderDrillRows();
+  }
+}
+
+function renderSessionImages() {
+  const c = document.getElementById('se-img-gallery');
+  c.innerHTML = (window._tempSession.targetImages || []).map((img, i) => `
+    <div class="image-thumb" style="background-image:url('${img}')">
+      <button class="remove" onclick="removeSessionImage(${i})">&times;</button>
+    </div>
+  `).join('');
+}
+function removeSessionImage(i) { window._tempSession.targetImages.splice(i, 1); renderSessionImages(); }
+function handleImageUpload(evt) {
+  const files = evt.target.files;
+  if (!files || !files.length) return;
+  for (const file of files) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxW = 1000;
+        const ratio = Math.min(1, maxW / img.width);
+        canvas.width = img.width * ratio;
+        canvas.height = img.height * ratio;
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        if (!window._tempSession.targetImages) window._tempSession.targetImages = [];
+        window._tempSession.targetImages.push(dataUrl);
+        renderSessionImages();
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+  evt.target.value = '';
+}
+function showLightbox(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('show');
+}
+function saveSession(id) {
+  const t = window._tempSession;
+  t.date = document.getElementById('se-date').value;
+  t.type = document.getElementById('se-type').value;
+  t.firearmId = document.getElementById('se-firearm').value;
+  t.location = document.getElementById('se-location').value.trim();
+  t.distances = document.getElementById('se-dist').value.trim();
+  t.notes = document.getElementById('se-notes').value.trim();
+  t.selfRating = {
+    focus: parseInt(document.getElementById('se-focus').value),
+    fundamentals: parseInt(document.getElementById('se-fund').value),
+    satisfaction: parseInt(document.getElementById('se-sat').value)
+  };
+  t.ammoUsage = t.ammoUsage.filter(u => u.ammoId && u.rounds > 0);
+  t.drills = t.drills.filter(d => d.name);
+  t.malfunctions = (t.malfunctions || []).filter(m => m.type);
+  t.totalRounds = t.ammoUsage.reduce((s, u) => s + u.rounds, 0);
+
+  if (!t.date) { alert('Date required'); return; }
+  if (!t.firearmId) { alert('Firearm required'); return; }
+
+  let prevAmmo = [];
+  if (id) {
+    const existing = DB.sessions.find(x => x.id === id);
+    prevAmmo = existing ? existing.ammoUsage || [] : [];
+  }
+  for (const u of prevAmmo) {
+    const a = getAmmo(u.ammoId);
+    if (a) a.quantity = (a.quantity || 0) + u.rounds;
+  }
+  for (const u of t.ammoUsage) {
+    const a = getAmmo(u.ammoId);
+    if (a) a.quantity = Math.max(0, (a.quantity || 0) - u.rounds);
+  }
+
+  if (id) {
+    const idx = DB.sessions.findIndex(x => x.id === id);
+    DB.sessions[idx] = { ...DB.sessions[idx], ...t };
+  } else {
+    DB.sessions.push({ id: uid('se'), ...t });
+  }
+  saveDB(); closeModal(); renderSessions();
+  // Offer field strip log if this session is the latest and a field strip is now pending
+  if (!id) {
+    const latestForFirearm = [...DB.sessions].filter(x => x.firearmId === t.firearmId).sort((a,b)=>b.date.localeCompare(a.date))[0];
+    const isLatest = latestForFirearm && latestForFirearm.id !== id && latestForFirearm.date === t.date;
+    const lastFS = lastMaintenance(t.firearmId, 'field_strip');
+    const needsFS = !lastFS || lastFS.date < t.date;
+    if (isLatest && needsFS) {
+      const f = getFirearm(t.firearmId);
+      setTimeout(() => {
+        if (confirm(`Session saved. Log a field strip & clean for ${f ? f.name : 'this firearm'} now?\n\n(Atlas guidance: clean after every range session.)`)) {
+          quickFieldStrip(t.firearmId);
+        }
+      }, 100);
+    }
+  }
+}
+function deleteSession(id) {
+  if (!confirm('Delete this session? Ammo will be returned to inventory.')) return;
+  const s = DB.sessions.find(x => x.id === id);
+  if (s) {
+    for (const u of (s.ammoUsage || [])) {
+      const a = getAmmo(u.ammoId);
+      if (a) a.quantity = (a.quantity || 0) + u.rounds;
+    }
+  }
+  DB.sessions = DB.sessions.filter(x => x.id !== id);
+  saveDB(); renderSessions();
+}
+
+/* ============================================================
+   PROGRESS — PRs, Goals, Skill Self-Assessment
+   ============================================================ */
+function renderProgress() {
+  const v = document.getElementById('view-progress');
+  v.innerHTML = `
+    <div class="view-header">
+      <div><h2>Personal Progress</h2><div class="sub">Personal records, goals, and skill development</div></div>
+    </div>
+
+    <div class="tabs" id="prog-tabs">
+      <div class="tab active" data-pane="prs">Personal Records</div>
+      <div class="tab" data-pane="goals">Goals</div>
+      <div class="tab" data-pane="skills">Skill Assessment</div>
+      <div class="tab" data-pane="trends">Trends</div>
+    </div>
+
+    <div id="pane-prs" class="tab-pane active">${renderPRsPane()}</div>
+    <div id="pane-goals" class="tab-pane">${renderGoalsPane()}</div>
+    <div id="pane-skills" class="tab-pane">${renderSkillsPane()}</div>
+    <div id="pane-trends" class="tab-pane">${renderTrendsPane()}</div>
+  `;
+  document.querySelectorAll('#prog-tabs .tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('#prog-tabs .tab').forEach(x => x.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      document.getElementById('pane-' + t.dataset.pane).classList.add('active');
+    });
+  });
+}
+
+function renderPRsPane() {
+  const prs = personalRecords();
+  const recs = allDrillRecords();
+  if (!recs.length) {
+    return `<div class="card"><div class="empty"><div class="icon">&#9733;</div>No drill data yet. Log a session with drill scores to start tracking PRs.</div></div>`;
+  }
+  return `
+    <div class="grid grid-2">
+      <div class="card">
+        <h3>Personal Records by Drill</h3>
+        ${prs.map(p => `
+          <div class="pr-row">
+            <div>
+              <div class="name">${escapeHtml(p.name)}</div>
+              <div class="meta">${p.attempts} attempt${p.attempts!==1?'s':''}${p.best ? ' &middot; PR set ' + formatDate(p.best.date) : ''}</div>
+            </div>
+            <div class="score">${p.best ? formatDrillScore(p.best, p.scoring) : '<span class="text-dim" style="font-size:13px">No scored attempt</span>'}</div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="card">
+        <h3>Recent Scored Drills</h3>
+        <table>
+          <thead><tr><th>Date</th><th>Drill</th><th>Score</th></tr></thead>
+          <tbody>
+          ${[...recs].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,15).map(r => {
+            const def = getDrillDef(r.name);
+            const scoring = def?.scoring || 'time';
+            const isPR = (() => {
+              const all = recs.filter(x => x.name === r.name);
+              if (scoring === 'time') {
+                const timed = all.filter(x => x.time != null && x.time > 0);
+                return timed.length && r.time === Math.min(...timed.map(x=>x.time));
+              }
+              if (scoring === 'score') {
+                const scored = all.filter(x => x.score != null);
+                return scored.length && r.score === Math.max(...scored.map(x=>x.score));
+              }
+              return false;
+            })();
+            return `<tr>
+              <td>${formatDate(r.date)}</td>
+              <td>${escapeHtml(r.name)} ${isPR?'<span class="badge pr">PR</span>':''}</td>
+              <td>${formatDrillScore(r, scoring)}</td>
+            </tr>`;
+          }).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function renderGoalsPane() {
+  const open = DB.goals.filter(g => !g.achieved);
+  const done = DB.goals.filter(g => g.achieved);
+  return `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 style="margin-bottom:0">Goals</h3>
+        <button class="btn" onclick="openGoalModal()">+ Add Goal</button>
+      </div>
+      <hr>
+      <strong style="font-size:13px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Open (${open.length})</strong>
+      ${open.length ? open.map(g => goalRow(g)).join('') : '<div class="empty">No open goals. Set one to give your training direction.</div>'}
+      ${done.length ? `<hr><strong style="font-size:13px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Achieved (${done.length})</strong>${done.map(g => goalRow(g)).join('')}` : ''}
+    </div>
+    <div class="card">
+      <h3>Suggested Goals to Get Started</h3>
+      <ul style="line-height:2;padding-left:20px;color:var(--text-dim);font-size:13px">
+        <li>Bill Drill (7 yards, 6A) under 2.5 seconds &mdash; then 2.0</li>
+        <li>Clean Dot Torture (50/50) at 3 yards, then 5, then 7</li>
+        <li>Score 90+ on 10-10-10 (B-8 at 10 yards, 10 rounds, 10 seconds)</li>
+        <li>USPSA classification &mdash; Production / Carry Optics / Limited Optics</li>
+        <li>Sub-1.5 second draw to A-zone hit at 7 yards</li>
+        <li>Attend at least 1 USPSA / IDPA match per month</li>
+        <li>Complete a formal class (e.g. Hackathorn, Ron Avery, etc.)</li>
+        <li>Reach 10K rounds on each Atlas pistol</li>
+      </ul>
+    </div>
+  `;
+}
+function goalRow(g) {
+  return `
+    <div class="goal-item ${g.achieved?'done':''}">
+      <input type="checkbox" ${g.achieved?'checked':''} onchange="toggleGoal('${g.id}')">
+      <div class="text">
+        <div>${escapeHtml(g.text)}</div>
+        <div class="meta">${escapeHtml(g.category||'General')} &middot; Set ${formatDate(g.dateSet)}${g.achieved ? ' &middot; Achieved ' + formatDate(g.dateAchieved) : ''}${g.target ? ' &middot; Target: ' + escapeHtml(g.target) : ''}</div>
+      </div>
+      <button class="btn small danger" onclick="deleteGoal('${g.id}')">&times;</button>
+    </div>
+  `;
+}
+function openGoalModal() {
+  openModal(`
+    <div class="modal-header"><h3>Add Goal</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-row"><label>Goal</label><input id="g-text" placeholder="e.g. Bill Drill under 2.0 seconds"></div>
+      <div class="form-grid-2">
+        <div class="form-row"><label>Category</label>
+          <select id="g-cat">
+            <option>Speed</option><option>Accuracy</option><option>Competition</option>
+            <option>Training</option><option>Equipment</option><option>Volume</option><option>General</option>
+          </select>
+        </div>
+        <div class="form-row"><label>Target Metric (optional)</label><input id="g-target" placeholder="e.g. <2.0s, 95/100, B class"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="saveGoal()">Save</button>
+    </div>
+  `);
+}
+function saveGoal() {
+  const text = document.getElementById('g-text').value.trim();
+  if (!text) { alert('Goal text required'); return; }
+  DB.goals.push({
+    id: uid('g'),
+    text,
+    category: document.getElementById('g-cat').value,
+    target: document.getElementById('g-target').value.trim(),
+    achieved: false,
+    dateSet: todayISO(),
+    dateAchieved: null
+  });
+  saveDB(); closeModal(); renderProgress();
+}
+function toggleGoal(id) {
+  const g = DB.goals.find(x => x.id === id);
+  if (!g) return;
+  g.achieved = !g.achieved;
+  g.dateAchieved = g.achieved ? todayISO() : null;
+  saveDB(); renderProgress();
+}
+function deleteGoal(id) {
+  if (!confirm('Delete this goal?')) return;
+  DB.goals = DB.goals.filter(g => g.id !== id);
+  saveDB(); renderProgress();
+}
+
+function renderSkillsPane() {
+  const latest = [...DB.skillAssessments].sort((a,b) => b.date.localeCompare(a.date))[0];
+  return `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 style="margin-bottom:0">Skill Self-Assessment</h3>
+        <button class="btn" onclick="openSkillAssessment()">+ New Assessment</button>
+      </div>
+      <hr>
+      <p class="text-dim" style="font-size:13px">Rate yourself periodically (every 1-2 months) on these skill areas. Snapshots build a trend line of your perceived development.</p>
+      ${latest ? `
+        <hr>
+        <strong>Latest assessment: ${formatDate(latest.date)}</strong>
+        <div class="grid grid-4" style="margin-top:12px">
+          ${SKILL_AREAS.map(sa => `
+            <div class="stat">
+              <div class="label">${sa.label}</div>
+              <div class="value accent" style="font-size:24px">${latest.ratings[sa.key] || 0}<span style="font-size:13px;color:var(--text-dim)">/10</span></div>
+            </div>
+          `).join('')}
+        </div>
+        ${latest.notes ? `<hr><div style="font-size:13px;color:var(--text-dim)"><strong>Notes:</strong> ${escapeHtml(latest.notes)}</div>` : ''}
+      ` : '<div class="empty">No assessments yet. Make your first one.</div>'}
+    </div>
+
+    ${DB.skillAssessments.length > 1 ? `<div class="card">
+      <h3>Skill Progression</h3>
+      <div class="chart-container">${skillTrendChart()}</div>
+    </div>` : ''}
+
+    ${DB.skillAssessments.length ? `<div class="card">
+      <h3>All Assessments</h3>
+      <table>
+        <thead><tr><th>Date</th>${SKILL_AREAS.map(s=>`<th>${s.label}</th>`).join('')}<th>Avg</th><th></th></tr></thead>
+        <tbody>${[...DB.skillAssessments].sort((a,b)=>b.date.localeCompare(a.date)).map(a => {
+          const vals = SKILL_AREAS.map(s => a.ratings[s.key] || 0);
+          const avg = (vals.reduce((s,v)=>s+v,0) / vals.length).toFixed(1);
+          return `<tr>
+            <td>${formatDate(a.date)}</td>
+            ${vals.map(v => `<td>${v}</td>`).join('')}
+            <td><strong>${avg}</strong></td>
+            <td><button class="btn small danger" onclick="deleteAssessment('${a.id}')">&times;</button></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>
+    </div>` : ''}
+  `;
+}
+function openSkillAssessment() {
+  const last = [...DB.skillAssessments].sort((a,b)=>b.date.localeCompare(a.date))[0];
+  const seed = last ? last.ratings : {};
+  openModal(`
+    <div class="modal-header"><h3>Skill Self-Assessment</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-row"><label>Date</label><input id="sa-date" type="date" value="${todayISO()}"></div>
+      <p class="text-dim" style="font-size:13px;margin-bottom:12px">Rate each area 1 (beginner) to 10 (mastery).</p>
+      ${SKILL_AREAS.map(sa => `
+        <div class="form-row">
+          <label>${sa.label}</label>
+          <div class="skill-rating">
+            <input id="sa-${sa.key}" type="range" min="1" max="10" value="${seed[sa.key] || 5}">
+            <span class="val" id="sa-${sa.key}-val">${seed[sa.key] || 5}</span>
+          </div>
+        </div>
+      `).join('')}
+      <div class="form-row"><label>Reflection / Notes</label><textarea id="sa-notes" placeholder="What's improving? What needs work?"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="saveAssessment()">Save</button>
+    </div>
+  `, () => {
+    SKILL_AREAS.forEach(sa => {
+      const inp = document.getElementById('sa-'+sa.key);
+      const lbl = document.getElementById('sa-'+sa.key+'-val');
+      inp.addEventListener('input', () => lbl.textContent = inp.value);
+    });
+  });
+}
+function saveAssessment() {
+  const ratings = {};
+  for (const sa of SKILL_AREAS) ratings[sa.key] = parseInt(document.getElementById('sa-'+sa.key).value);
+  DB.skillAssessments.push({
+    id: uid('sa'),
+    date: document.getElementById('sa-date').value,
+    ratings,
+    notes: document.getElementById('sa-notes').value.trim()
+  });
+  saveDB(); closeModal(); renderProgress();
+}
+function deleteAssessment(id) {
+  if (!confirm('Delete this assessment?')) return;
+  DB.skillAssessments = DB.skillAssessments.filter(a => a.id !== id);
+  saveDB(); renderProgress();
+}
+
+function renderTrendsPane() {
+  const sessions = DB.sessions.filter(s => s.selfRating).sort((a,b)=>a.date.localeCompare(b.date));
+  return `
+    <div class="grid grid-2">
+      <div class="card">
+        <h3>Rounds Over Time (cumulative)</h3>
+        <div class="chart-container">${cumulativeRoundsChart()}</div>
+      </div>
+      <div class="card">
+        <h3>Session Self-Ratings</h3>
+        <div class="chart-container">${sessionRatingsChart(sessions)}</div>
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="card">
+        <h3>Drill Progression (most attempted)</h3>
+        <div class="chart-container">${drillProgressionChart()}</div>
+      </div>
+      <div class="card">
+        <h3>Sessions by Type</h3>
+        ${sessionTypeBreakdown()}
+      </div>
+    </div>
+  `;
+}
+
+/* ============================================================
+   MALFUNCTIONS
+   ============================================================ */
+function allMalfunctions() {
+  // Malfunctions can live inside sessions or as standalone records in DB.malfunctions
+  const list = [];
+  for (const s of DB.sessions) {
+    for (const m of (s.malfunctions || [])) {
+      list.push({ ...m, sessionId: s.id, date: s.date, firearmId: s.firearmId, source: 'session' });
+    }
+  }
+  for (const m of (DB.malfunctions || [])) {
+    list.push({ ...m, source: 'standalone' });
+  }
+  return list.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+}
+
+function renderMalfunctions() {
+  const v = document.getElementById('view-malfunctions');
+  const all = allMalfunctions();
+  // Aggregations
+  const byType = {};
+  const byFirearm = {};
+  const byAmmo = {};
+  for (const m of all) {
+    byType[m.type] = (byType[m.type] || 0) + 1;
+    byFirearm[m.firearmId] = (byFirearm[m.firearmId] || 0) + 1;
+    if (m.ammoId) byAmmo[m.ammoId] = (byAmmo[m.ammoId] || 0) + 1;
+  }
+  const totalRounds = DB.firearms.reduce((s, f) => s + firearmRoundCount(f.id), 0);
+  const rate = totalRounds > 0 ? (all.length / totalRounds * 1000).toFixed(2) : '—';
+
+  v.innerHTML = `
+    <div class="view-header">
+      <div><h2>Malfunctions</h2><div class="sub">Stoppage tracking and analytics</div></div>
+      <button class="btn" onclick="openStandaloneMalfunctionModal()">+ Log Malfunction</button>
+    </div>
+
+    <div class="grid grid-4" style="margin-bottom:16px">
+      <div class="stat"><div class="label">Total Logged</div><div class="value">${all.length}</div></div>
+      <div class="stat"><div class="label">Per 1,000 Rounds</div><div class="value accent">${rate}</div></div>
+      <div class="stat"><div class="label">Distinct Types</div><div class="value">${Object.keys(byType).length}</div></div>
+      <div class="stat"><div class="label">Last 30 Days</div><div class="value">${all.filter(m => {
+        const d = new Date(m.date);
+        return (Date.now() - d.getTime()) < 30*86400*1000;
+      }).length}</div></div>
+    </div>
+
+    ${all.length ? `<div class="grid grid-2">
+      <div class="card">
+        <h3>Breakdown by Type</h3>
+        ${Object.entries(byType).sort((a,b)=>b[1]-a[1]).map(([t, c]) => `
+          <div style="margin:8px 0">
+            <div style="display:flex;justify-content:space-between;font-size:13px"><strong>${escapeHtml(t)}</strong><span class="text-dim">${c} (${Math.round(c/all.length*100)}%)</span></div>
+            <div class="progress"><div class="progress-fill danger" style="width:${(c/all.length)*100}%"></div></div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="card">
+        <h3>Breakdown by Firearm</h3>
+        ${Object.entries(byFirearm).sort((a,b)=>b[1]-a[1]).map(([fid, c]) => {
+          const f = getFirearm(fid);
+          return `
+          <div style="margin:8px 0">
+            <div style="display:flex;justify-content:space-between;font-size:13px"><strong>${escapeHtml(f ? f.name : '—')}</strong><span class="text-dim">${c} malfunctions / ${firearmRoundCount(fid).toLocaleString()} rounds</span></div>
+            <div class="progress"><div class="progress-fill warn" style="width:${(c/all.length)*100}%"></div></div>
+          </div>
+        `;
+        }).join('')}
+      </div>
+    </div>` : ''}
+
+    <div class="card">
+      <h3>Full Malfunction Log</h3>
+      ${all.length ? `<table>
+        <thead><tr><th>Date</th><th>Firearm</th><th>Type</th><th>Round Count</th><th>Resolution</th><th>Ammo</th><th>Notes</th></tr></thead>
+        <tbody>${all.map(m => {
+          const f = getFirearm(m.firearmId);
+          const a = getAmmo(m.ammoId);
+          return `<tr>
+            <td>${formatDate(m.date)}</td>
+            <td>${escapeHtml(f ? f.name : '—')}</td>
+            <td><span class="badge danger">${escapeHtml(m.type)}</span></td>
+            <td>${m.roundCount || '—'}</td>
+            <td>${escapeHtml(m.resolution || '—')}</td>
+            <td>${a ? escapeHtml(a.brand + ' ' + a.grain + 'gr') : '<span class="text-dim">—</span>'}</td>
+            <td style="max-width:280px">${escapeHtml(m.notes||'')}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>` : `<div class="empty"><div class="icon">&#9888;</div>No malfunctions logged. That's a good thing!<br><br><div class="text-dim" style="font-size:12px">Log them inside sessions or as standalone entries.</div></div>`}
+    </div>
+  `;
+}
+
+function openStandaloneMalfunctionModal() {
+  if (!DB.firearms.length) { alert('Add a firearm first.'); return; }
+  openModal(`
+    <div class="modal-header"><h3>Log Malfunction</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-grid-2">
+        <div class="form-row"><label>Date</label><input id="mf-date" type="date" value="${todayISO()}"></div>
+        <div class="form-row"><label>Firearm</label>
+          <select id="mf-firearm">${DB.firearms.map(f => `<option value="${f.id}">${escapeHtml(f.name)}</option>`).join('')}</select>
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row"><label>Type</label>
+          <select id="mf-type">${['Failure to Feed','Failure to Eject','Failure to Extract','Stovepipe','Double Feed','Failure to Return to Battery','Light Strike','Mag Issue','Slide Lock (early)','Other'].map(t => `<option>${t}</option>`).join('')}</select>
+        </div>
+        <div class="form-row"><label>Round Count (approx)</label><input id="mf-rounds" type="number" min="0"></div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row"><label>Resolution</label>
+          <select id="mf-res">${['Tap-Rack-Bang','Tap-Rack-Reassess','Mortar (double feed)','Manual clear','Disassembly required','Mag swap','Resolved itself','Other'].map(r => `<option>${r}</option>`).join('')}</select>
+        </div>
+        <div class="form-row"><label>Magazine</label><input id="mf-mag" placeholder="optional"></div>
+      </div>
+      <div class="form-row"><label>Ammo (optional)</label>
+        <select id="mf-ammo"><option value="">— Unknown —</option>${DB.ammunition.map(a => `<option value="${a.id}">${escapeHtml(a.brand)} ${escapeHtml(a.grain)}gr ${escapeHtml(a.bulletType)}</option>`).join('')}</select>
+      </div>
+      <div class="form-row"><label>Notes</label><textarea id="mf-notes"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="saveStandaloneMalfunction()">Save</button>
+    </div>
+  `);
+}
+function saveStandaloneMalfunction() {
+  if (!DB.malfunctions) DB.malfunctions = [];
+  DB.malfunctions.push({
+    id: uid('mf'),
+    date: document.getElementById('mf-date').value,
+    firearmId: document.getElementById('mf-firearm').value,
+    type: document.getElementById('mf-type').value,
+    roundCount: parseInt(document.getElementById('mf-rounds').value) || null,
+    resolution: document.getElementById('mf-res').value,
+    magazine: document.getElementById('mf-mag').value.trim(),
+    ammoId: document.getElementById('mf-ammo').value,
+    notes: document.getElementById('mf-notes').value.trim()
+  });
+  saveDB(); closeModal(); renderMalfunctions();
+}
+
+/* ============================================================
+   MAINTENANCE
+   ============================================================ */
+function renderMaintenance() {
+  const v = document.getElementById('view-maintenance');
+  const log = [...DB.maintenance].sort((a, b) => b.date.localeCompare(a.date));
+  v.innerHTML = `
+    <div class="view-header">
+      <div><h2>Maintenance</h2><div class="sub">Field strips, deep cleans, and inspections</div></div>
+      <button class="btn" onclick="openMaintenanceModal()">+ Log Maintenance</button>
+    </div>
+
+    <div class="card">
+      <h3>Schedule by Firearm</h3>
+      <table>
+        <thead><tr><th>Firearm</th><th>Total Rounds</th><th>Since Deep Clean</th><th>Recoil Spring</th><th>Last Field Strip</th><th>Last Deep Clean</th><th>Last Inspection</th><th>Status</th></tr></thead>
+        <tbody>${DB.firearms.map(f => {
+          const st = maintenanceStatus(f.id);
+          const rs = recoilSpringStatus(f.id);
+          const status = st.deepCleanDue ? '<span class="badge danger">Deep clean overdue</span>'
+                       : st.deepCleanWarning ? '<span class="badge warn">Deep clean soon</span>'
+                       : rs.due ? '<span class="badge danger">Recoil spring due</span>'
+                       : rs.warning ? '<span class="badge warn">Recoil spring soon</span>'
+                       : st.annualOverdue ? '<span class="badge warn">Annual overdue</span>'
+                       : st.fieldStripDue ? '<span class="badge info">Field strip due</span>'
+                       : '<span class="badge success">OK</span>';
+          const rsCellClass = rs.due ? 'text-danger' : rs.warning ? 'text-warn' : '';
+          return `<tr>
+            <td><strong>${escapeHtml(f.name)}</strong></td>
+            <td>${firearmRoundCount(f.id).toLocaleString()}</td>
+            <td>${st.roundsSinceDeepClean.toLocaleString()} / ${DEEP_CLEAN_INTERVAL.toLocaleString()}</td>
+            <td class="${rsCellClass}">${rs.sinceReplace.toLocaleString()} / ${rs.interval.toLocaleString()}${f.recoilSpringWeight ? ` <span class="text-dim" style="font-size:11px">(${escapeHtml(f.recoilSpringWeight)})</span>` : ''}</td>
+            <td>${st.lastFieldStrip ? formatDate(st.lastFieldStrip.date) : '<span class="text-dim">Never</span>'}</td>
+            <td>${st.lastDeepClean ? formatDate(st.lastDeepClean.date) : '<span class="text-dim">Never</span>'}</td>
+            <td>${st.lastAnnual ? formatDate(st.lastAnnual.date) : '<span class="text-dim">Never</span>'}</td>
+            <td>${status}</td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>Magazine Spring Schedule (all firearms)</h3>
+      ${(() => {
+        const ms = magazineSpringStatus();
+        const stateClass = ms.overdue ? 'danger' : ms.dueSoon ? 'warn' : 'success';
+        const stateLabel = ms.overdue ? `Overdue by ${Math.abs(ms.daysUntil)} day${Math.abs(ms.daysUntil)!==1?'s':''}`
+          : ms.dueSoon ? `Due in ${ms.daysUntil} day${ms.daysUntil!==1?'s':''}` : `Due in ${ms.daysUntil} days`;
+        return `
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <strong>Next replacement: ${formatDate(ms.nextDue)}</strong>
+              <div class="text-dim" style="font-size:12px;margin-top:4px">Schedule: every ${ms.intervalMonths} months &middot; Started ${formatDate(ms.startDate)} &middot; ${ms.lastDone ? 'Last done ' + formatDate(ms.lastDone.date) : 'Never replaced in app'}</div>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <span class="badge ${stateClass}">${stateLabel}</span>
+              <button class="btn small" onclick="quickMagSpringLog()">Log Replacement</button>
+            </div>
+          </div>
+        `;
+      })()}
+    </div>
+
+    <div class="card">
+      <h3>Maintenance Log</h3>
+      ${log.length ? `<table>
+        <thead><tr><th>Date</th><th>Firearm</th><th>Type</th><th>Notes</th><th></th></tr></thead>
+        <tbody>${log.map(m => {
+          const f = getFirearm(m.firearmId);
+          const typeLabel = { field_strip:'Field Strip', deep_clean:'Deep Clean', annual_inspection:'Annual Inspection', repair:'Repair', mag_maintenance:'Magazine Maintenance', comp_clean:'Comp Cleaning', recoil_spring:'Recoil Spring', mag_springs:'Mag Springs', other:'Other' }[m.type] || m.type;
+          const typeBadge = { field_strip:'neutral', deep_clean:'warn', annual_inspection:'info', repair:'danger', mag_maintenance:'neutral', comp_clean:'neutral', recoil_spring:'warn', mag_springs:'warn', other:'neutral' }[m.type] || 'neutral';
+          return `<tr>
+            <td>${formatDate(m.date)}</td>
+            <td>${escapeHtml(f ? f.name : '—')}</td>
+            <td><span class="badge ${typeBadge}">${typeLabel}</span></td>
+            <td style="max-width:400px">${escapeHtml(m.notes||'')}</td>
+            <td class="row-actions">
+              <button class="btn small secondary" onclick="openMaintenanceModal('${m.id}')">Edit</button>
+              <button class="btn small danger" onclick="deleteMaintenance('${m.id}')">Delete</button>
+            </td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table>` : `<div class="empty">No maintenance logged yet.</div>`}
+    </div>
+  `;
+}
+function openMaintenanceModal(id, firearmId) {
+  const m = id ? DB.maintenance.find(x => x.id === id) : {
+    date: todayISO(), firearmId: firearmId || DB.firearms[0]?.id || '', type: 'field_strip', notes: '', performedBy: 'Self', partsReplaced:''
+  };
+  openModal(`
+    <div class="modal-header"><h3>${id?'Edit':'Log'} Maintenance</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-grid-2">
+        <div class="form-row"><label>Date</label><input id="ma-date" type="date" value="${m.date}"></div>
+        <div class="form-row"><label>Firearm</label>
+          <select id="ma-firearm">${DB.firearms.map(f => `<option value="${f.id}" ${m.firearmId===f.id?'selected':''}>${escapeHtml(f.name)}</option>`).join('')}</select>
+        </div>
+      </div>
+      <div class="form-row"><label>Type</label>
+        <select id="ma-type">
+          <option value="field_strip" ${m.type==='field_strip'?'selected':''}>Field Strip & Clean (after each session)</option>
+          <option value="deep_clean" ${m.type==='deep_clean'?'selected':''}>Deep Clean (every 10,000 rounds)</option>
+          <option value="annual_inspection" ${m.type==='annual_inspection'?'selected':''}>Annual Inspection</option>
+          <option value="recoil_spring" ${m.type==='recoil_spring'?'selected':''}>Recoil Spring Replacement</option>
+          <option value="mag_springs" ${m.type==='mag_springs'?'selected':''}>Magazine Spring Replacement (6-month service)</option>
+          <option value="mag_maintenance" ${m.type==='mag_maintenance'?'selected':''}>Magazine Maintenance / Cleaning</option>
+          <option value="comp_clean" ${m.type==='comp_clean'?'selected':''}>Comp / Compensator Cleaning</option>
+          <option value="repair" ${m.type==='repair'?'selected':''}>Repair / Parts Replacement</option>
+          <option value="other" ${m.type==='other'?'selected':''}>Other</option>
+        </select>
+      </div>
+      <div class="form-row"><label>Performed By</label><input id="ma-by" value="${escapeHtml(m.performedBy||'')}" placeholder="Self / Atlas Gunworks Service / Gunsmith"></div>
+      <div class="form-row"><label>Parts Replaced (optional)</label><input id="ma-parts" value="${escapeHtml(m.partsReplaced||'')}" placeholder="e.g. recoil spring, firing pin"></div>
+      <div class="form-row"><label>Notes</label><textarea id="ma-notes">${escapeHtml(m.notes)}</textarea></div>
+
+      <details style="margin-top:8px">
+        <summary class="text-accent">Show Atlas-recommended steps for this type</summary>
+        <div id="ma-recs"></div>
+      </details>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="saveMaintenance('${id || ''}')">Save</button>
+    </div>
+  `, () => {
+    const sel = document.getElementById('ma-type');
+    const recs = document.getElementById('ma-recs');
+    function showRecs() { recs.innerHTML = maintenanceRecommendations(sel.value); }
+    sel.addEventListener('change', showRecs);
+    showRecs();
+  });
+}
+function maintenanceRecommendations(type) {
+  const r = {
+    field_strip: `<ul>
+      <li>Clear the firearm. Verify empty chamber and magazine well.</li>
+      <li>Field strip per Atlas/2011 procedure: remove slide stop, slide assembly, recoil spring, barrel.</li>
+      <li>Brush bore from chamber to muzzle. Push patches through until clean.</li>
+      <li>Wipe slide rails, frame rails, and barrel hood. Use a nylon brush on the breech face.</li>
+      <li><strong>Atlas guidance:</strong> Use oil, not grease. Atlas advises against greasing 1911s/2011s.</li>
+      <li>Apply oil sparingly to slide rails, barrel hood/lugs, disconnector, and frame rails.</li>
+      <li>Wipe down the magazine well. Inspect extractor function.</li>
+      <li>Reassemble and function-check.</li>
+    </ul>`,
+    deep_clean: `<ul>
+      <li>Complete field strip first.</li>
+      <li>Remove firing pin and firing pin spring; clean firing pin channel thoroughly.</li>
+      <li>Remove extractor; clean extractor and channel; verify tension.</li>
+      <li>Clean the breech face deeply with a nylon brush and solvent.</li>
+      <li>Inspect recoil spring for wear and replace if needed.</li>
+      <li>Inspect firing pin stop, ejector, and slide stop for wear.</li>
+      <li>Detail-clean comp/compensator if equipped.</li>
+      <li>Check trigger group for fouling. Light solvent, minimal re-oil.</li>
+      <li>Inspect grip/grip screws, bushings, and any tuning components.</li>
+      <li>Re-oil per Atlas guidance and function-check.</li>
+    </ul>`,
+    annual_inspection: `<ul>
+      <li>Full deep clean as above.</li>
+      <li>Inspect frame and slide for cracks (especially around rails and slide stop pin hole).</li>
+      <li>Check timing and lockup.</li>
+      <li>Verify safety, slide stop, and grip safety function.</li>
+      <li>Measure trigger pull and reset.</li>
+      <li>Consider sending pistol to <strong>Atlas Gunworks Pistol Service</strong> for factory-level inspection.</li>
+      <li>Replace recoil spring and firing pin spring if not recently done.</li>
+      <li>Inspect magazines: tubes, springs, followers, feed lips.</li>
+    </ul>`,
+    comp_clean: `<ul>
+      <li>Atlas has a dedicated procedure for compensator cleaning.</li>
+      <li>Use solvent and bronze brush to remove carbon from comp ports.</li>
+      <li>Avoid abrasive tools that can damage finish or thread fit.</li>
+      <li>Confirm comp is properly torqued after reassembly.</li>
+    </ul>`,
+    repair: `<ul>
+      <li>Document the issue, parts replaced, and source.</li>
+      <li>Function-check thoroughly before next live-fire session.</li>
+      <li>Consider Atlas Gunworks Pistol Service for factory-supported repairs.</li>
+    </ul>`,
+    recoil_spring: `<ul>
+      <li>Replacement interval is per-firearm and depends on use; 5,000-7,500 rounds is typical for competition 2011s.</li>
+      <li>Look for symptoms suggesting an old spring: sluggish slide return, brass landing close/short, light-strike issues, or unusually heavy felt recoil.</li>
+      <li>Use the Atlas-recommended spring weight for your specific load (refer to your owner's manual or Atlas service).</li>
+      <li>Inspect the recoil spring guide rod and plug while the spring is out.</li>
+      <li>After install, run a function check and live-fire a small batch to confirm cycling.</li>
+      <li>This app marks the firearm's "rounds since recoil spring" counter back to zero on save.</li>
+    </ul>`,
+    mag_springs: `<ul>
+      <li>Atlas-style 2011 magazines benefit from spring replacement every 6 months under regular use.</li>
+      <li>Disassemble each magazine: baseplate, follower, spring out.</li>
+      <li>Inspect old springs for kinks, set, or unequal coils. Discard if any sign of wear.</li>
+      <li>Install fresh springs; ensure the follower glides freely.</li>
+      <li>Cycle each magazine fully loaded and verify proper feed lip tension.</li>
+      <li>This app's 6-month timer resets on save; next reminder will fire 6 months out.</li>
+    </ul>`,
+    mag_maintenance: `<ul>
+      <li>Atlas recommends regular magazine cleaning to prevent feeding issues.</li>
+      <li>Disassemble: remove baseplate, follower, and spring.</li>
+      <li>Wipe inside the tube clean. Magazines should run dry or with very light film.</li>
+      <li>Inspect feed lips for damage or peening.</li>
+      <li>Inspect spring for kinks. Replace at first sign of weakness (or run on the 6-month schedule).</li>
+      <li>Reassemble and load to capacity to test for tension.</li>
+    </ul>`,
+    other: `<div class="text-dim">Add notes describing what was done.</div>`
+  };
+  return r[type] || '';
+}
+function saveMaintenance(id) {
+  const data = {
+    date: document.getElementById('ma-date').value,
+    firearmId: document.getElementById('ma-firearm').value,
+    type: document.getElementById('ma-type').value,
+    performedBy: document.getElementById('ma-by').value.trim(),
+    partsReplaced: document.getElementById('ma-parts').value.trim(),
+    notes: document.getElementById('ma-notes').value.trim()
+  };
+  if (!data.date) { alert('Date required'); return; }
+  if (id) {
+    const idx = DB.maintenance.findIndex(x => x.id === id);
+    DB.maintenance[idx] = { ...DB.maintenance[idx], ...data };
+  } else {
+    DB.maintenance.push({ id: uid('ma'), ...data });
+  }
+  saveDB(); closeModal(); renderMaintenance();
+}
+function deleteMaintenance(id) {
+  if (!confirm('Delete this maintenance record?')) return;
+  DB.maintenance = DB.maintenance.filter(x => x.id !== id);
+  saveDB(); renderMaintenance();
+}
+
+/* ============================================================
+   ATLAS REFERENCE
+   ============================================================ */
+function renderReference() {
+  const v = document.getElementById('view-reference');
+  v.innerHTML = `
+    <div class="view-header">
+      <div><h2>Atlas Gunworks Reference</h2><div class="sub">Maintenance guidance compiled from public Atlas material</div></div>
+    </div>
+
+    <div class="alert info">&#9432; This reference summarizes publicly available Atlas Gunworks guidance. Always verify against the current Atlas Gunworks Pistol Manual and your owner's manual.</div>
+
+    <div class="card">
+      <h3>Atlas Core Recommendations</h3>
+      <ul style="line-height:1.8;padding-left:20px">
+        <li><strong>Use oil, not grease.</strong> Atlas explicitly advises against greasing 1911s/2011s.</li>
+        <li><strong>Magazine maintenance</strong> is critical for reliable feeding. Clean and "mop" magazines after use.</li>
+        <li><strong>Check the extractor</strong> regularly &mdash; Atlas has a quick procedure to verify tension.</li>
+        <li><strong>Cleaning takes &lt;10 minutes</strong> per Atlas's quick-clean videos.</li>
+        <li><strong>Compensator cleaning</strong> has its own procedure; treat it as a routine part of cleaning if comped.</li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h3>This App's Maintenance Schedule</h3>
+      <table>
+        <thead><tr><th>Action</th><th>Trigger</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Field Strip & Clean</strong></td><td>After every range session</td><td>Removes carbon and unburned powder. Reapply oil.</td></tr>
+          <tr><td><strong>Magazine Cleaning</strong></td><td>After every range session</td><td>Prevents feeding malfunctions; per Atlas guidance.</td></tr>
+          <tr><td><strong>Extractor Check</strong></td><td>Monthly or when malfunctions appear</td><td>Verifies tension; addresses extractor stoppages early.</td></tr>
+          <tr><td><strong>Comp Cleaning</strong></td><td>Every 1–2K rounds (if comped)</td><td>Removes carbon buildup from compensator ports.</td></tr>
+          <tr><td><strong>Deep Clean</strong></td><td>Every 10,000 cumulative rounds</td><td>Detail strip, internal channels, spring inspection.</td></tr>
+          <tr><td><strong>Annual Inspection</strong></td><td>Once per calendar year</td><td>Catch wear before it causes failures.</td></tr>
+          <tr><td><strong>Atlas Pistol Service</strong></td><td>As needed</td><td>Factory-level service if anything seems off.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3>Quick Field Strip Checklist (2011 platform)</h3>
+      <ol style="line-height:1.8;padding-left:20px">
+        <li>Remove magazine. Lock slide back. Confirm chamber empty (visually and physically).</li>
+        <li>Release slide. Press slide stop pin out from right side; remove slide stop.</li>
+        <li>Slide assembly forward off frame.</li>
+        <li>Remove recoil spring assembly and barrel.</li>
+        <li>Clean bore (chamber to muzzle), breech face, slide rails, frame rails.</li>
+        <li>Inspect extractor and firing pin channel.</li>
+        <li>Apply oil to slide rails, barrel hood/lugs, disconnector. Sparingly.</li>
+        <li>Reassemble in reverse order. Function check.</li>
+      </ol>
+    </div>
+
+    <div class="card">
+      <h3>Atlas References</h3>
+      <ul style="line-height:1.8;padding-left:20px">
+        <li>Atlas GW: Oiling your gun, Atlas Gunworks Pistol Manual</li>
+        <li>Atlas GW: Basic Magazine Maintenance and Cleaning</li>
+        <li>Atlas GW: Cleaning Your Comp with David Wampler</li>
+        <li>Atlas GW: Deep Cleaning your Atlas Gunworks Pistol with Tyler Weatherwax (YouTube)</li>
+        <li>Atlas GW: Handgun Quick Clean: Atlas Athena 2011 (YouTube)</li>
+        <li>Atlas GW FAQ &middot; Atlas Gunworks Pistol Service</li>
+      </ul>
+    </div>
+  `;
+}
+
+/* ============================================================
+   SETTINGS
+   ============================================================ */
+function renderSettings() {
+  const v = document.getElementById('view-settings');
+  v.innerHTML = `
+    <div class="view-header"><div><h2>Settings</h2><div class="sub">Data export, import, drill library</div></div></div>
+
+    <div class="card">
+      <h3>Data Export & Import</h3>
+      <p class="text-dim" style="font-size:13px">Your data lives in this browser's local storage. Back it up regularly.</p>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" onclick="exportJSON()">Download JSON Backup</button>
+        <button class="btn secondary" onclick="exportCSV('sessions')">Export Sessions CSV</button>
+        <button class="btn secondary" onclick="exportCSV('maintenance')">Export Maintenance CSV</button>
+        <label class="btn secondary" style="cursor:pointer">
+          Import JSON Backup
+          <input type="file" accept=".json" style="display:none" onchange="importJSON(event)">
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Magazine Spring Schedule</h3>
+      <p class="text-dim" style="font-size:13px">Time-based reminder for replacing magazine springs across all firearms.</p>
+      <div class="form-grid-2" style="margin-top:12px">
+        <div class="form-row"><label>Schedule Start Date</label>
+          <input id="ms-start" type="date" value="${(DB.settings.magazineSpringSchedule||{}).startDate || '2026-06-01'}">
+        </div>
+        <div class="form-row"><label>Interval (months)</label>
+          <input id="ms-interval" type="number" min="1" value="${(DB.settings.magazineSpringSchedule||{}).intervalMonths || 6}">
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="saveMagSpringSchedule()">Save Schedule</button>
+        <button class="btn secondary" onclick="quickMagSpringLog()">Log Replacement Now</button>
+      </div>
+      <div class="help-text" style="margin-top:8px">${(() => {
+        const ms = magazineSpringStatus();
+        return `Next replacement due: <strong>${formatDate(ms.nextDue)}</strong> (${ms.overdue ? 'overdue by ' + Math.abs(ms.daysUntil) + ' days' : 'in ' + ms.daysUntil + ' days'})`;
+      })()}</div>
+    </div>
+
+    <div class="card">
+      <h3>Drill Library</h3>
+      <p class="text-dim" style="font-size:13px">Edit drills available when logging a session.</p>
+      <div id="drill-list" style="margin-top:12px">
+        ${DB.drillLibrary.map((d, i) => `
+          <div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+            <strong style="min-width:180px">${escapeHtml(d.name)}</strong>
+            <span class="text-dim" style="font-size:12px;flex:1">${escapeHtml(d.description||'')}</span>
+            <span class="badge neutral">${escapeHtml(d.scoring||'time')}</span>
+            <button class="btn small danger" onclick="removeDrill(${i})">&times;</button>
+          </div>
+        `).join('')}
+      </div>
+      <div class="form-grid-4" style="margin-top:12px;align-items:end">
+        <div class="form-row" style="margin-bottom:0"><label>Drill name</label><input id="new-drill-name"></div>
+        <div class="form-row" style="margin-bottom:0"><label>Description</label><input id="new-drill-desc"></div>
+        <div class="form-row" style="margin-bottom:0"><label>Scoring</label>
+          <select id="new-drill-scoring">
+            <option value="time">Time</option><option value="score">Score</option>
+            <option value="time_score">Time + Score (HF)</option><option value="none">None</option>
+          </select>
+        </div>
+        <button class="btn" onclick="addDrill()">Add Drill</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="color:var(--danger)">Danger Zone</h3>
+      <p class="text-dim" style="font-size:13px">Reset all data. Cannot be undone.</p>
+      <button class="btn danger" style="margin-top:8px" onclick="resetAll()">Reset All Data</button>
+    </div>
+  `;
+}
+function saveMagSpringSchedule() {
+  if (!DB.settings.magazineSpringSchedule) DB.settings.magazineSpringSchedule = {};
+  DB.settings.magazineSpringSchedule.startDate = document.getElementById('ms-start').value || '2026-06-01';
+  DB.settings.magazineSpringSchedule.intervalMonths = parseInt(document.getElementById('ms-interval').value) || 6;
+  saveDB();
+  renderSettings();
+  alert('Magazine spring schedule saved.');
+}
+
+function addDrill() {
+  const name = document.getElementById('new-drill-name').value.trim();
+  const desc = document.getElementById('new-drill-desc').value.trim();
+  const scoring = document.getElementById('new-drill-scoring').value;
+  if (!name) return;
+  DB.drillLibrary.push({ name, description: desc, scoring });
+  saveDB(); renderSettings();
+}
+function removeDrill(i) {
+  DB.drillLibrary.splice(i, 1);
+  saveDB(); renderSettings();
+}
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(DB, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `pistol-tracker-backup-${todayISO()}.json`;
+  a.click(); URL.revokeObjectURL(url);
+}
+function exportCSV(kind) {
+  let rows = [], headers = [];
+  if (kind === 'sessions') {
+    headers = ['Date','Type','Firearm','Location','Distances','Total Rounds','Drills','Notes'];
+    rows = DB.sessions.map(s => [
+      s.date, s.type, (getFirearm(s.firearmId)||{}).name || '',
+      s.location||'', s.distances||'', s.totalRounds||0,
+      (s.drills||[]).map(d=>d.name).join('; '),
+      (s.notes||'').replace(/\n/g,' ')
+    ]);
+  } else if (kind === 'maintenance') {
+    headers = ['Date','Firearm','Type','Performed By','Parts Replaced','Notes'];
+    rows = DB.maintenance.map(m => [
+      m.date, (getFirearm(m.firearmId)||{}).name || '',
+      m.type, m.performedBy||'', m.partsReplaced||'',
+      (m.notes||'').replace(/\n/g,' ')
+    ]);
+  }
+  const csv = [headers, ...rows].map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `pistol-tracker-${kind}-${todayISO()}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+}
+function importJSON(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      if (!confirm('This will overwrite all current data. Continue?')) return;
+      DB = parsed;
+      saveDB();
+      renderSettings();
+      alert('Import complete.');
+    } catch (err) {
+      alert('Invalid backup file.');
+    }
+  };
+  reader.readAsText(file);
+}
+function resetAll() {
+  if (!confirm('Reset ALL data? This cannot be undone.')) return;
+  if (!confirm('Last chance. Really reset everything?')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  DB = JSON.parse(JSON.stringify(SEED));
+  saveDB();
+  renderSettings();
+}
+document.getElementById('export-data').addEventListener('click', e => { e.preventDefault(); exportJSON(); });
+
+/* ============================================================
+   CHARTS (inline SVG)
+   ============================================================ */
+function roundsChart() {
+  const now = new Date();
+  const months = [];
+  for (let i = 11; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    months.push({
+      key: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,
+      label: d.toLocaleString(undefined,{month:'short'}),
+      rounds: 0
+    });
+  }
+  for (const s of DB.sessions) {
+    const k = s.date.slice(0, 7);
+    const m = months.find(x => x.key === k);
+    if (m) m.rounds += s.totalRounds || 0;
+  }
+  const maxR = Math.max(...months.map(m=>m.rounds), 100);
+  const W = 600, H = 200, padL = 36, padB = 24, padT = 10, padR = 8;
+  const barW = (W - padL - padR) / months.length - 4;
+  let bars = '';
+  months.forEach((m, i) => {
+    const h = ((m.rounds / maxR) * (H - padT - padB));
+    const x = padL + i * (barW + 4);
+    const y = H - padB - h;
+    bars += `<rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="var(--accent)" rx="2"></rect>`;
+    bars += `<text x="${x + barW/2}" y="${H - 8}" text-anchor="middle" fill="var(--text-dim)" font-size="10">${m.label}</text>`;
+    if (m.rounds > 0) bars += `<text x="${x + barW/2}" y="${y - 4}" text-anchor="middle" fill="var(--text)" font-size="10">${m.rounds}</text>`;
+  });
+  let grid = '';
+  for (let i = 0; i <= 4; i++) {
+    const y = padT + i * ((H - padT - padB) / 4);
+    const val = Math.round(maxR - i * (maxR/4));
+    grid += `<line x1="${padL}" x2="${W-padR}" y1="${y}" y2="${y}" stroke="var(--border)" stroke-dasharray="2,3"></line>`;
+    grid += `<text x="${padL-6}" y="${y+3}" text-anchor="end" fill="var(--text-dim)" font-size="10">${val}</text>`;
+  }
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${grid}${bars}</svg>`;
+}
+
+function cumulativeRoundsChart() {
+  const sessions = [...DB.sessions].sort((a,b)=>a.date.localeCompare(b.date));
+  if (!sessions.length) return `<div class="empty">No session data yet.</div>`;
+  const W = 600, H = 220, padL = 50, padB = 30, padT = 10, padR = 10;
+  let cum = 0;
+  const points = sessions.map(s => { cum += s.totalRounds || 0; return { date: s.date, cum }; });
+  const maxC = Math.max(...points.map(p=>p.cum), 100);
+  const minD = new Date(points[0].date).getTime();
+  const maxD = new Date(points[points.length-1].date).getTime() || minD + 1;
+  const xFor = d => padL + ((new Date(d).getTime() - minD) / Math.max(1, maxD - minD)) * (W - padL - padR);
+  const yFor = c => H - padB - (c / maxC) * (H - padT - padB);
+  let path = points.map((p, i) => `${i?'L':'M'} ${xFor(p.date).toFixed(1)} ${yFor(p.cum).toFixed(1)}`).join(' ');
+  let dots = points.map(p => `<circle cx="${xFor(p.date)}" cy="${yFor(p.cum)}" r="3" fill="var(--accent)"></circle>`).join('');
+  let grid = '';
+  for (let i = 0; i <= 4; i++) {
+    const y = padT + i * ((H - padT - padB) / 4);
+    const val = Math.round(maxC - i * (maxC/4));
+    grid += `<line x1="${padL}" x2="${W-padR}" y1="${y}" y2="${y}" stroke="var(--border)" stroke-dasharray="2,3"></line>`;
+    grid += `<text x="${padL-6}" y="${y+3}" text-anchor="end" fill="var(--text-dim)" font-size="10">${val.toLocaleString()}</text>`;
+  }
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${grid}<path d="${path}" stroke="var(--accent)" stroke-width="2" fill="none"/>${dots}</svg>`;
+}
+
+function sessionRatingsChart(sessions) {
+  if (!sessions.length) return `<div class="empty">Log a few sessions with self-ratings to see the trend.</div>`;
+  const W = 600, H = 220, padL = 36, padB = 30, padT = 10, padR = 10;
+  const minD = new Date(sessions[0].date).getTime();
+  const maxD = new Date(sessions[sessions.length-1].date).getTime() || minD + 1;
+  const xFor = d => padL + ((new Date(d).getTime() - minD) / Math.max(1, maxD - minD)) * (W - padL - padR);
+  const yFor = v => H - padB - (v / 10) * (H - padT - padB);
+  const colors = { focus: 'var(--info)', fundamentals: 'var(--accent)', satisfaction: 'var(--success)' };
+  let lines = '';
+  for (const key of ['focus','fundamentals','satisfaction']) {
+    const path = sessions.map((s, i) => `${i?'L':'M'} ${xFor(s.date).toFixed(1)} ${yFor(s.selfRating[key]).toFixed(1)}`).join(' ');
+    lines += `<path d="${path}" stroke="${colors[key]}" stroke-width="2" fill="none"></path>`;
+  }
+  let grid = '';
+  for (let i = 0; i <= 5; i++) {
+    const y = padT + i * ((H - padT - padB) / 5);
+    grid += `<line x1="${padL}" x2="${W-padR}" y1="${y}" y2="${y}" stroke="var(--border)" stroke-dasharray="2,3"></line>`;
+    grid += `<text x="${padL-6}" y="${y+3}" text-anchor="end" fill="var(--text-dim)" font-size="10">${10 - i*2}</text>`;
+  }
+  let legend = '';
+  ['focus','fundamentals','satisfaction'].forEach((k, i) => {
+    legend += `<g transform="translate(${padL + i*120}, ${padT-2})"><rect width="10" height="10" fill="${colors[k]}"/><text x="14" y="9" fill="var(--text)" font-size="11">${k}</text></g>`;
+  });
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${grid}${lines}${legend}</svg>`;
+}
+
+function skillTrendChart() {
+  const assess = [...DB.skillAssessments].sort((a,b)=>a.date.localeCompare(b.date));
+  if (assess.length < 2) return `<div class="empty">Need at least 2 assessments to chart progression.</div>`;
+  const W = 700, H = 240, padL = 36, padB = 30, padT = 10, padR = 130;
+  const minD = new Date(assess[0].date).getTime();
+  const maxD = new Date(assess[assess.length-1].date).getTime() || minD + 1;
+  const xFor = d => padL + ((new Date(d).getTime() - minD) / Math.max(1, maxD - minD)) * (W - padL - padR);
+  const yFor = v => H - padB - (v / 10) * (H - padT - padB);
+  const palette = ['var(--accent)','var(--info)','var(--success)','var(--warn)','var(--danger)','#bb86fc','#03dac6','#ffb74d'];
+  let lines = '';
+  let legend = '';
+  SKILL_AREAS.forEach((sa, i) => {
+    const color = palette[i % palette.length];
+    const path = assess.map((a, j) => `${j?'L':'M'} ${xFor(a.date).toFixed(1)} ${yFor(a.ratings[sa.key]||0).toFixed(1)}`).join(' ');
+    lines += `<path d="${path}" stroke="${color}" stroke-width="2" fill="none"></path>`;
+    legend += `<g transform="translate(${W - padR + 5}, ${padT + i*22})"><rect width="10" height="10" fill="${color}"/><text x="14" y="9" fill="var(--text)" font-size="11">${sa.label}</text></g>`;
+  });
+  let grid = '';
+  for (let i = 0; i <= 5; i++) {
+    const y = padT + i * ((H - padT - padB) / 5);
+    grid += `<line x1="${padL}" x2="${W-padR}" y1="${y}" y2="${y}" stroke="var(--border)" stroke-dasharray="2,3"></line>`;
+    grid += `<text x="${padL-6}" y="${y+3}" text-anchor="end" fill="var(--text-dim)" font-size="10">${10 - i*2}</text>`;
+  }
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${grid}${lines}${legend}</svg>`;
+}
+
+function drillProgressionChart() {
+  const recs = allDrillRecords();
+  const counts = {};
+  for (const r of recs) counts[r.name] = (counts[r.name]||0) + 1;
+  const top = Object.entries(counts).sort((a,b)=>b[1]-a[1])[0];
+  if (!top) return `<div class="empty">No drill data yet.</div>`;
+  const drillName = top[0];
+  const def = getDrillDef(drillName);
+  const scoring = def?.scoring || 'time';
+  const list = recs
+    .filter(r => r.name === drillName && (scoring === 'time' ? r.time != null : r.score != null))
+    .sort((a,b)=>a.date.localeCompare(b.date));
+  if (list.length < 2) return `<div class="empty">Most-attempted drill: ${escapeHtml(drillName)}. Need 2+ scored attempts to chart.</div>`;
+  const W = 600, H = 220, padL = 50, padB = 30, padT = 24, padR = 10;
+  const vals = list.map(r => scoring === 'time' ? r.time : r.score);
+  const minV = Math.min(...vals), maxV = Math.max(...vals);
+  const minD = new Date(list[0].date).getTime();
+  const maxD = new Date(list[list.length-1].date).getTime() || minD + 1;
+  const xFor = d => padL + ((new Date(d).getTime() - minD) / Math.max(1, maxD - minD)) * (W - padL - padR);
+  const yFor = v => H - padB - ((v - minV) / Math.max(0.001, maxV - minV)) * (H - padT - padB);
+  // For "time", lower is better -> invert
+  const yForFinal = scoring === 'time' ? (v => padT + ((v - minV) / Math.max(0.001, maxV - minV)) * (H - padT - padB)) : yFor;
+  const path = list.map((r, i) => {
+    const v = scoring === 'time' ? r.time : r.score;
+    return `${i?'L':'M'} ${xFor(r.date).toFixed(1)} ${yForFinal(v).toFixed(1)}`;
+  }).join(' ');
+  const dots = list.map(r => {
+    const v = scoring === 'time' ? r.time : r.score;
+    return `<circle cx="${xFor(r.date)}" cy="${yForFinal(v)}" r="3" fill="var(--accent)"></circle>`;
+  }).join('');
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    <text x="${padL}" y="14" fill="var(--text)" font-size="12" font-weight="600">${escapeHtml(drillName)} (${scoring}, ${scoring==='time'?'lower is better':'higher is better'})</text>
+    <path d="${path}" stroke="var(--accent)" stroke-width="2" fill="none"/>${dots}
+  </svg>`;
+}
+
+function sessionTypeBreakdown() {
+  const counts = {};
+  for (const s of DB.sessions) counts[s.type||'practice'] = (counts[s.type||'practice']||0) + 1;
+  const total = Object.values(counts).reduce((a,b)=>a+b,0);
+  if (!total) return '<div class="empty">No sessions yet.</div>';
+  return `<div>${Object.entries(counts).map(([t, c]) => `
+    <div style="margin:8px 0">
+      <div style="display:flex;justify-content:space-between;font-size:13px"><strong>${escapeHtml(t)}</strong><span class="text-dim">${c} (${Math.round(c/total*100)}%)</span></div>
+      <div class="progress"><div class="progress-fill" style="width:${(c/total)*100}%"></div></div>
+    </div>
+  `).join('')}</div>`;
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+saveDB();
+renderView('dashboard');
+</script>
+</body>
+</html>
