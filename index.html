@@ -2,8 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pistol Practice & Maintenance Tracker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Pistol Practice &amp; Maintenance Tracker</title>
+
+<!-- PWA: installable on iPhone / iPad / Android home screen -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#ff6b35">
+
+<!-- iOS-specific PWA tags -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Pistol Tracker">
+<link rel="apple-touch-icon" href="icon-180.png">
 <style>
   :root {
     --bg: #0f1419;
@@ -19,6 +29,21 @@
     --danger: #f85149;
     --info: #58a6ff;
     --shadow: 0 4px 14px rgba(0,0,0,0.4);
+  }
+  [data-theme="light"] {
+    --bg: #f5f5f5;
+    --panel: #ffffff;
+    --panel-2: #f0f0f0;
+    --border: #d0d7de;
+    --text: #1f2328;
+    --text-dim: #656d76;
+    --accent: #e85d04;
+    --accent-dim: #c44a00;
+    --success: #1a7f37;
+    --warn: #9a6700;
+    --danger: #cf222e;
+    --info: #0969da;
+    --shadow: 0 4px 14px rgba(0,0,0,0.1);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -258,11 +283,152 @@
   .tabs .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
   .tab-pane { display: none; }
   .tab-pane.active { display: block; }
+
+  /* ============================================================
+     MOBILE HEADER (hidden on desktop, shown on mobile)
+     ============================================================ */
+  .mobile-header {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    /* Safe area for iPhone notch / Dynamic Island */
+    padding-top: max(12px, env(safe-area-inset-top));
+  }
+  .mobile-header .brand-title { font-size: 15px; font-weight: 600; }
+  .hamburger {
+    background: none; border: none; color: var(--text);
+    font-size: 22px; cursor: pointer; padding: 4px 8px;
+    border-radius: 4px; line-height: 1;
+  }
+  .hamburger:hover { background: var(--panel-2); }
+
+  /* Overlay that dims the screen when sidebar is open on mobile */
+  .sidebar-overlay { display: none; }
+
+  /* ============================================================
+     RESPONSIVE — 767px and below (iPhone, small tablets)
+     ============================================================ */
+  @media (max-width: 767px) {
+    body { overflow: hidden; }
+
+    .app { flex-direction: column; height: 100dvh; height: 100vh; }
+
+    .mobile-header { display: flex; }
+
+    /* Sidebar becomes a fixed slide-out drawer */
+    .sidebar {
+      position: fixed;
+      left: -300px;
+      top: 0; bottom: 0;
+      width: 280px;
+      z-index: 60;
+      transition: left 0.25s ease;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      /* Respect iPhone notch at top */
+      padding-top: max(20px, env(safe-area-inset-top));
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
+    }
+    .sidebar.open { left: 0; }
+
+    /* Dark overlay behind open sidebar */
+    .sidebar-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      z-index: 59;
+    }
+    .sidebar-overlay.show { display: block; }
+
+    main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: max(24px, env(safe-area-inset-bottom));
+    }
+
+    /* Single-column grids on small screens */
+    .grid-4, .grid-3 { grid-template-columns: repeat(2, 1fr); }
+    .grid-2 { grid-template-columns: 1fr; }
+    .form-grid-2, .form-grid-3, .form-grid-4 {
+      grid-template-columns: 1fr !important;
+    }
+
+    /* Tables: scroll horizontally instead of overflowing */
+    table {
+      display: block;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      white-space: nowrap;
+    }
+    th, td { white-space: nowrap; }
+
+    /* Modals: nearly full-width, scrollable */
+    .modal-backdrop { padding: 20px 10px; align-items: flex-start; }
+    .modal { max-width: 100%; }
+    .modal-body { max-height: 65vh !important; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+
+    /* View header wraps gracefully */
+    .view-header { flex-wrap: wrap; gap: 10px; }
+    .view-header h2 { font-size: 18px; }
+
+    /* Slightly smaller stat values */
+    .stat .value { font-size: 22px; }
+
+    /* Bigger tap targets */
+    .btn { min-height: 38px; }
+    nav a { padding: 14px 20px; }
+
+    /* Charts: make them full width */
+    svg.chart { width: 100%; }
+
+    /* Brand at top of slide-out sidebar */
+    .brand { padding: 0 20px 16px; }
+  }
+
+  /* ============================================================
+     TABLET — 768px to 1023px (iPad portrait)
+     Sidebar shows by default, but layout adjusts
+     ============================================================ */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    .sidebar { width: 200px; }
+    main { padding: 16px 20px; }
+    .grid-4 { grid-template-columns: repeat(2, 1fr); }
+    .form-grid-4 { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* Desktop: ensure mobile elements stay hidden */
+  @media (min-width: 768px) {
+    .mobile-header { display: none !important; }
+    .sidebar-overlay { display: none !important; }
+  }
 </style>
 </head>
 <body>
 
 <div class="app">
+
+  <!-- Mobile-only top bar (hamburger + title + quick-log button) -->
+  <div class="mobile-header" id="mobile-header">
+    <button class="hamburger" id="hamburger-btn" onclick="toggleSidebar()" aria-label="Open menu">&#9776;</button>
+    <span class="brand-title">Pistol Tracker</span>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button class="btn small secondary" onclick="exportSyncFile()" title="Export sync file to iCloud Drive" style="font-size:16px;padding:4px 9px">&#8679;</button>
+      <button class="btn small" onclick="openSessionModal()">+ Session</button>
+    </div>
+  </div>
+
+  <!-- Tap-to-close overlay shown behind the open sidebar on mobile -->
+  <div id="sidebar-overlay" class="sidebar-overlay" onclick="toggleSidebar(true)"></div>
+
   <aside class="sidebar">
     <div class="brand">
       <h1>Pistol Tracker</h1>
@@ -271,28 +437,37 @@
     <nav>
       <a data-view="dashboard" class="active"><span class="icon">&#9678;</span> Dashboard</a>
       <a data-view="firearms"><span class="icon">&#9670;</span> Firearms</a>
+      <a data-view="optics"><span class="icon">&#9678;</span> Optics</a>
       <a data-view="ammo"><span class="icon">&#9679;</span> Ammunition</a>
       <a data-view="sessions"><span class="icon">&#9650;</span> Sessions</a>
       <a data-view="progress"><span class="icon">&#9733;</span> Progress</a>
+      <a data-view="competition"><span class="icon">&#9819;</span> Competition</a>
+      <a data-view="costs"><span class="icon">&#9654;</span> Costs</a>
       <a data-view="malfunctions"><span class="icon">&#9888;</span> Malfunctions</a>
       <a data-view="maintenance"><span class="icon">&#9881;</span> Maintenance</a>
       <a data-view="reference"><span class="icon">&#9432;</span> Atlas Reference</a>
+      <a data-view="help"><span class="icon">&#9432;</span> Help</a>
       <a data-view="settings"><span class="icon">&#9776;</span> Settings</a>
     </nav>
     <div class="sidebar-footer">
-      v1.1 &middot; <a href="#" id="export-data" style="color:var(--accent)">Export Data</a>
+      v1.7 &middot; <a href="#" id="export-data" style="color:var(--accent)">Export Data</a>
+      &middot; <button onclick="toggleTheme()" id="theme-toggle-btn" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:11px;padding:0">&#9790; Light</button>
     </div>
   </aside>
 
   <main>
     <div id="view-dashboard" class="view active"></div>
     <div id="view-firearms" class="view"></div>
+    <div id="view-optics" class="view"></div>
     <div id="view-ammo" class="view"></div>
     <div id="view-sessions" class="view"></div>
     <div id="view-progress" class="view"></div>
+    <div id="view-competition" class="view"></div>
+    <div id="view-costs" class="view"></div>
     <div id="view-malfunctions" class="view"></div>
     <div id="view-maintenance" class="view"></div>
     <div id="view-reference" class="view"></div>
+    <div id="view-help" class="view"></div>
     <div id="view-settings" class="view"></div>
   </main>
 </div>
@@ -307,8 +482,58 @@
 
 <script>
 /* ============================================================
-   PISTOL PRACTICE & MAINTENANCE TRACKER  v1.0
+   PISTOL PRACTICE & MAINTENANCE TRACKER  v1.7
    Single-file app. All data persisted to localStorage.
+
+   DATA MODEL OVERVIEW
+   -------------------
+   DB.firearms[]       – Registered firearms. Each has: id, name, model, manufacturer,
+                         caliber, dateAcquired, startingRoundCount, recoilSpringInterval,
+                         recoilSpringWeight, notes.
+
+   DB.ammunition[]     – Ammo inventory. Each has: id, brand, caliber, grain, bulletType,
+                         quantity (current stock), costPerRound (optional), notes.
+
+   DB.sessions[]       – Range sessions. Each has: id, date, type, firearmId, location,
+                         distances, totalRounds, rangeFee (optional), ammoUsage[],
+                         drills[], malfunctions[], targetImages[], selfRating{}, notes.
+
+   DB.maintenance[]    – Maintenance log. Each has: id, date, firearmId, type
+                         (field_strip | deep_clean | annual_inspection | recoil_spring |
+                         mag_springs | mag_maintenance | comp_clean | repair | other),
+                         performedBy, partsReplaced, notes.
+
+   DB.malfunctions[]   – Standalone malfunction records (session malfunctions also live
+                         inside sessions[]). Each has: id, date, firearmId, type,
+                         roundCount, resolution, magazine, ammoId, notes.
+
+   DB.matches[]        – Competition matches. Each has: id, date, name, matchType,
+                         location, division, powerFactor, firearmId, classification,
+                         totalRounds (optional), matchPercentage, divisionPercentage,
+                         finishOverall, totalShooters, finishDivision,
+                         totalShootersDivision, cost, stages[], notes.
+
+   DB.classifiers[]    – USPSA classifiers. Each has: id, date, classifierCode,
+                         classifierName, division, powerFactor, firearmId, points,
+                         time, hitFactor, highHitFactor, classifierPercent,
+                         A/C/D/M/NS/procedurals (hit breakdown), notes.
+
+   DB.purchases[]      – Gear/equipment/expense log. Each has: id, date, category,
+                         item, vendor, cost, notes.
+
+   DB.goals[]          – Training goals. Each has: id, text, category, target,
+                         achieved, dateSet, dateAchieved.
+
+   DB.skillAssessments[] – Periodic skill snapshots. Each has: id, date,
+                           ratings{ draw, reload, splits, transitions, accuracy,
+                           movement, mental, recoil }, notes.
+
+   DB.drillLibrary[]   – Drill definitions. Each has: name, description, scoring
+                         (time|score|time_score|none), requiresHolster,
+                         liveCompatible, dryCompatible, category, maxScore.
+
+   DB.settings{}       – App-level settings: version, magazineSpringSchedule,
+                         defaultRecoilSpringInterval, competition defaults.
    ============================================================ */
 
 const STORAGE_KEY = 'pistolTrackerV1';
@@ -371,13 +596,137 @@ const SEED = {
   goals: [],
   skillAssessments: [],
   malfunctions: [],
+  matches: [],
+  classifiers: [],
+  purchases: [],
+  optics: [],
+  parts: [],
   settings: {
     firstUse: true,
-    version: '1.2',
+    version: '1.7',
+    theme: 'dark',
+    lastBackupDate: null,
+    backupSnoozedUntil: null,
+    lastSyncExportDate: null,
+    lastSyncImportDate: null,
     magazineSpringSchedule: { startDate: '2026-06-01', intervalMonths: 6 },
-    defaultRecoilSpringInterval: 5000
+    defaultRecoilSpringInterval: 5000,
+    competition: { defaultDivision: 'Carry Optics', defaultPowerFactor: 'Minor' }
   }
 };
+
+/* USPSA classification thresholds */
+const USPSA_CLASS_THRESHOLDS = [
+  { class: 'GM', min: 95.0 },
+  { class: 'M',  min: 85.0 },
+  { class: 'A',  min: 75.0 },
+  { class: 'B',  min: 60.0 },
+  { class: 'C',  min: 40.0 },
+  { class: 'D',  min: 0.0 }
+];
+const USPSA_DIVISIONS = ['Open', 'Limited', 'Limited Optics', 'Carry Optics', 'Production', 'Single Stack', 'Revolver', 'PCC', 'Limited 10'];
+
+/* USPSA classifier autocomplete database
+   Names included only where reasonably well-known. Edit/correct as needed.
+   Look up current HHFs on USPSA's classifier portal. */
+const CLASSIFIER_DATABASE = [
+  { code: '99-08', name: '' },
+  { code: '99-10', name: '' },
+  { code: '99-11', name: 'The Roundabout' },
+  { code: '99-12', name: 'The El Mar' },
+  { code: '99-13', name: '6/9 Drill' },
+  { code: '99-14', name: '' },
+  { code: '99-16', name: '' },
+  { code: '99-19', name: '' },
+  { code: '99-21', name: '' },
+  { code: '99-22', name: '' },
+  { code: '99-23', name: '' },
+  { code: '99-24', name: '' },
+  { code: '99-28', name: '' },
+  { code: '99-33', name: '' },
+  { code: '99-40', name: '' },
+  { code: '99-41', name: '' },
+  { code: '99-42', name: '' },
+  { code: '99-46', name: '' },
+  { code: '99-47', name: '' },
+  { code: '99-48', name: '' },
+  { code: '99-53', name: 'Take \'Em Down' },
+  { code: '99-55', name: '' },
+  { code: '99-56', name: '' },
+  { code: '99-57', name: 'Walk the Plank' },
+  { code: '99-59', name: 'Tilt Master' },
+  { code: '99-61', name: '' },
+  { code: '99-62', name: '' },
+  { code: '99-63', name: 'Eye of the Tiger' },
+  { code: '03-02', name: 'Down the Middle' },
+  { code: '03-03', name: '' },
+  { code: '03-04', name: '' },
+  { code: '03-05', name: '' },
+  { code: '03-08', name: '' },
+  { code: '03-09', name: '' },
+  { code: '03-11', name: '' },
+  { code: '03-12', name: 'Heavy Metal' },
+  { code: '03-14', name: '' },
+  { code: '03-18', name: '' },
+  { code: '06-01', name: '' },
+  { code: '06-02', name: '' },
+  { code: '06-03', name: 'Blue Wing' },
+  { code: '06-04', name: 'Birdie' },
+  { code: '06-05', name: 'Showdown' },
+  { code: '06-06', name: '' },
+  { code: '06-10', name: '' },
+  { code: '08-01', name: 'Steel Switch' },
+  { code: '08-02', name: '' },
+  { code: '08-03', name: '' },
+  { code: '09-01', name: '' },
+  { code: '09-02', name: '' },
+  { code: '09-03', name: '' },
+  { code: '09-04', name: 'Dot the I' },
+  { code: '09-07', name: '' },
+  { code: '09-08', name: 'Times of Eight' },
+  { code: '09-13', name: 'The Five-Sixteen' },
+  { code: '09-14', name: '' },
+  { code: '13-01', name: 'The Big Four' },
+  { code: '13-02', name: '' },
+  { code: '13-04', name: '' },
+  { code: '13-05', name: '' },
+  { code: '13-06', name: '' },
+  { code: '13-07', name: '' },
+  { code: '13-08', name: 'Five For Five' },
+  { code: '18-01', name: '' },
+  { code: '18-02', name: 'Three Step' },
+  { code: '18-03', name: '' },
+  { code: '18-04', name: '' },
+  { code: '18-05', name: '' },
+  { code: '18-06', name: 'Rooftops' },
+  { code: '18-07', name: '' },
+  { code: '18-08', name: '' },
+  { code: '19-01', name: '' },
+  { code: '19-02', name: '' },
+  { code: '19-03', name: '' },
+  { code: '19-04', name: '' },
+  { code: '20-01', name: '' },
+  { code: '20-02', name: '' },
+  { code: '20-03', name: '' },
+  { code: '21-01', name: '' },
+  { code: '22-01', name: '' },
+  { code: '22-02', name: '' },
+  { code: '22-03', name: '' },
+  { code: '22-04', name: '' },
+  { code: '23-01', name: '' },
+  { code: '23-02', name: '' },
+  { code: '23-03', name: '' },
+  { code: '23-04', name: '' },
+  { code: '24-01', name: '' },
+  { code: '24-02', name: '' },
+  { code: '25-01', name: '' },
+  { code: '25-02', name: '' }
+];
+function classifierDefByCode(code) {
+  if (!code) return null;
+  const norm = String(code).replace(/^CM-?/i, '').trim();
+  return CLASSIFIER_DATABASE.find(x => x.code === norm) || null;
+}
 
 let DB = loadDB();
 
@@ -386,9 +735,18 @@ function loadDB() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return JSON.parse(JSON.stringify(SEED));
     const parsed = JSON.parse(raw);
+    // Migrate: ensure every SEED key exists (safe for new keys like purchases)
     for (const key of Object.keys(SEED)) {
       if (parsed[key] === undefined) parsed[key] = JSON.parse(JSON.stringify(SEED[key]));
     }
+    // Deduplicate drill library by name (keep first/built-in occurrence).
+    // Removes any duplicate entries added manually through Settings.
+    const seenDrillNames = new Set();
+    parsed.drillLibrary = parsed.drillLibrary.filter(d => {
+      if (seenDrillNames.has(d.name)) return false;
+      seenDrillNames.add(d.name);
+      return true;
+    });
     return parsed;
   } catch (e) {
     console.error('Failed to load DB', e);
@@ -426,7 +784,16 @@ function firearmRoundCount(firearmId) {
   const fa = getFirearm(firearmId);
   if (!fa) return 0;
   let total = fa.startingRoundCount || 0;
-  for (const s of DB.sessions) if (s.firearmId === firearmId) total += (s.totalRounds || 0);
+  for (const s of DB.sessions) {
+    if (s.firearmSplits && s.firearmSplits.length) {
+      // Multi-firearm session: sum only this firearm's split
+      const split = s.firearmSplits.find(sp => sp.firearmId === firearmId);
+      if (split) total += (split.rounds || 0);
+    } else {
+      // Standard single-firearm session
+      if (s.firearmId === firearmId) total += (s.totalRounds || 0);
+    }
+  }
   return total;
 }
 function roundsSinceDeepClean(firearmId) {
@@ -436,7 +803,13 @@ function roundsSinceDeepClean(firearmId) {
   if (!lastDeep) return firearmRoundCount(firearmId);
   let total = 0;
   for (const s of DB.sessions) {
-    if (s.firearmId === firearmId && s.date > lastDeep.date) total += s.totalRounds || 0;
+    if (s.date <= lastDeep.date) continue;
+    if (s.firearmSplits && s.firearmSplits.length) {
+      const split = s.firearmSplits.find(sp => sp.firearmId === firearmId);
+      if (split) total += (split.rounds || 0);
+    } else {
+      if (s.firearmId === firearmId) total += s.totalRounds || 0;
+    }
   }
   return total;
 }
@@ -498,6 +871,52 @@ function recoilSpringStatus(firearmId) {
     warning: sinceReplace >= interval * 0.9 && sinceReplace < interval,
     neverReplaced: !lastReplace
   };
+}
+
+/* ============================================================
+   COMPETITION HELPERS
+   ============================================================ */
+function calcHitFactor(points, time) {
+  const p = parseFloat(points), t = parseFloat(time);
+  if (!t || t <= 0 || isNaN(p)) return null;
+  return p / t;
+}
+function calcClassifierPercent(hf, hhf) {
+  const h1 = parseFloat(hf), h2 = parseFloat(hhf);
+  if (!h2 || h2 <= 0 || isNaN(h1)) return null;
+  return (h1 / h2) * 100;
+}
+function classFromPercent(pct) {
+  if (pct == null || isNaN(pct)) return '—';
+  for (const t of USPSA_CLASS_THRESHOLDS) {
+    if (pct >= t.min) return t.class;
+  }
+  return 'D';
+}
+/* Calculate USPSA-style classification: best 4 of last 8 classifiers per division */
+function classificationForDivision(division) {
+  const list = (DB.classifiers || [])
+    .filter(c => c.division === division && c.classifierPercent != null)
+    .sort((a, b) => b.date.localeCompare(a.date));
+  if (!list.length) return null;
+  const lastEight = list.slice(0, 8);
+  const sortedDesc = [...lastEight].sort((a, b) => b.classifierPercent - a.classifierPercent);
+  const bestFour = sortedDesc.slice(0, Math.min(4, sortedDesc.length));
+  if (!bestFour.length) return null;
+  const avg = bestFour.reduce((s, c) => s + c.classifierPercent, 0) / bestFour.length;
+  return {
+    percent: avg,
+    class: classFromPercent(avg),
+    used: bestFour,
+    poolSize: lastEight.length,
+    totalLogged: list.length,
+    needMore: bestFour.length < 4 ? (4 - bestFour.length) : 0
+  };
+}
+function divisionsWithClassifiers() {
+  const set = new Set();
+  for (const c of (DB.classifiers || [])) if (c.division) set.add(c.division);
+  return Array.from(set);
 }
 
 /* Magazine spring schedule: time-based, every N months from a start date */
@@ -617,9 +1036,10 @@ function setView(name) {
 }
 function renderView(name) {
   const fns = {
-    dashboard: renderDashboard, firearms: renderFirearms, ammo: renderAmmo,
-    sessions: renderSessions, progress: renderProgress, malfunctions: renderMalfunctions,
-    maintenance: renderMaintenance, reference: renderReference, settings: renderSettings
+    dashboard: renderDashboard, firearms: renderFirearms, optics: renderOptics, ammo: renderAmmo,
+    sessions: renderSessions, progress: renderProgress, competition: renderCompetition,
+    costs: renderCosts, malfunctions: renderMalfunctions, maintenance: renderMaintenance,
+    reference: renderReference, help: renderHelp, settings: renderSettings
   };
   if (fns[name]) fns[name]();
 }
@@ -671,6 +1091,44 @@ function renderDashboard() {
     if ((a.quantity || 0) <= 50 && (a.quantity || 0) > 0) alerts.push({ level: 'warn', text: `Low ammo: ${a.brand} ${a.grain}gr ${a.bulletType} (${a.caliber}) — ${a.quantity} rounds left.` });
   }
 
+  // Trend alert: training frequency gap
+  if (DB.sessions.length > 0) {
+    const lastSess = [...DB.sessions].sort((a, b) => b.date.localeCompare(a.date))[0];
+    const daysSince = Math.floor((new Date() - new Date(lastSess.date)) / (1000 * 60 * 60 * 24));
+    if (daysSince >= 14) alerts.push({ level: 'info', text: `Training gap: ${daysSince} days since your last session (${formatDate(lastSess.date)}). Time to get to the range!` });
+  }
+  // Trend alert: self-rating dip over last 3 sessions
+  const ratedSessions = [...DB.sessions]
+    .filter(s => s.selfRating && s.selfRating.fundamentals != null)
+    .sort((a, b) => b.date.localeCompare(a.date));
+  if (ratedSessions.length >= 4) {
+    const last3 = ratedSessions.slice(0, 3).map(s => s.selfRating.fundamentals);
+    const prev = ratedSessions.slice(3, 6).map(s => s.selfRating.fundamentals);
+    const last3Avg = last3.reduce((a, b) => a + b, 0) / last3.length;
+    const prevAvg = prev.reduce((a, b) => a + b, 0) / prev.length;
+    const declining = last3[0] <= last3[1] && last3[1] <= last3[2];
+    if (declining && last3Avg < prevAvg - 0.5) {
+      alerts.push({ level: 'warn', text: `Trend alert: your Fundamentals self-rating has dipped the last 3 sessions (avg ${last3Avg.toFixed(1)} vs ${prevAvg.toFixed(1)} previously). Consider a focused practice session.` });
+    }
+  }
+
+  // Backup nudge: show if never backed up, or > 30 days since last backup, and not snoozed
+  const lastBackup = DB.settings.lastBackupDate;
+  const snoozedUntil = DB.settings.backupSnoozedUntil;
+  const today = todayISO();
+  const backupDaysAgo = lastBackup ? Math.floor((new Date() - new Date(lastBackup)) / (1000*60*60*24)) : null;
+  const showBackupNudge = (!snoozedUntil || snoozedUntil < today)
+    && (backupDaysAgo === null || backupDaysAgo > 30);
+  const backupAlertHtml = showBackupNudge
+    ? `<div class="alert warn" id="backup-nudge" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <span>&#128190; ${backupDaysAgo === null ? "You haven't backed up your data yet." : `No backup in ${backupDaysAgo} days.`} Export a JSON backup regularly to protect your training log.</span>
+        <div style="display:flex;gap:8px;flex-shrink:0">
+          <button class="btn small" onclick="exportJSON()">Backup Now</button>
+          <button class="btn small secondary" onclick="snoozeBackupNudge()">Remind Me Later</button>
+        </div>
+      </div>`
+    : '';
+
   v.innerHTML = `
     <div class="view-header">
       <div>
@@ -680,14 +1138,29 @@ function renderDashboard() {
       <button class="btn" onclick="openSessionModal()">+ Log Session</button>
     </div>
 
+    ${backupAlertHtml}
     ${alerts.length ? alerts.map(a => `<div class="alert ${a.level}">&#9888; ${escapeHtml(a.text)}</div>`).join('') : ''}
 
     <div class="grid grid-4">
       <div class="stat"><div class="label">Total Rounds Fired</div><div class="value accent">${totalRounds.toLocaleString()}</div></div>
       <div class="stat"><div class="label">Range Sessions</div><div class="value">${totalSessions}</div></div>
       <div class="stat"><div class="label">Ammo Inventory</div><div class="value">${totalAmmo.toLocaleString()}</div></div>
-      <div class="stat"><div class="label">Open Goals</div><div class="value">${openGoals}</div></div>
-    </div>
+      ${(() => {
+        const divs = divisionsWithClassifiers();
+        if (!divs.length) return `<div class="stat"><div class="label">Open Goals</div><div class="value">${openGoals}</div></div>`;
+        // Show top division by classifier %
+        const top = divs.map(d => ({ d, c: classificationForDivision(d) })).filter(x => x.c).sort((a,b) => b.c.percent - a.c.percent)[0];
+        if (!top) return `<div class="stat"><div class="label">Open Goals</div><div class="value">${openGoals}</div></div>`;
+        return `<div class="stat"><div class="label">${escapeHtml(top.d)} class</div><div class="value accent">${top.c.class}<span style="font-size:14px;color:var(--text-dim);margin-left:6px">${top.c.percent.toFixed(1)}%</span></div></div>`;
+      })()}
+    </div>${(() => {
+      const divs = divisionsWithClassifiers();
+      if (divs.length <= 1) return '';
+      // If multi-division, show all of them in a compact row
+      const cards = divs.map(d => ({ d, c: classificationForDivision(d) })).filter(x => x.c);
+      if (cards.length <= 1) return '';
+      return `<div class="grid grid-4" style="margin-top:8px">${cards.map(x => `<div class="stat"><div class="label">${escapeHtml(x.d)}</div><div class="value">${x.c.class} <span style="font-size:14px;color:var(--text-dim)">${x.c.percent.toFixed(1)}%</span></div></div>`).join('')}</div>`;
+    })()}
 
     <div class="grid grid-2" style="margin-top:16px">
       <div class="card">
@@ -815,6 +1288,14 @@ function firearmCard(f) {
           <div class="progress"><div class="progress-fill ${rsFill}" style="width:${rs.progress}%"></div></div>
         </div>`;
       })()}
+      ${f.barrelName ? (() => {
+        const barrelRounds = total - (f.barrelStartRounds || 0);
+        return `<div style="margin-top:10px;font-size:12px;color:var(--text-dim)">
+          Barrel: <strong style="color:var(--text)">${escapeHtml(f.barrelName)}</strong>
+          &middot; <span style="color:var(--accent)">${Math.max(0,barrelRounds).toLocaleString()} rds since install</span>
+          ${f.barrelInstallDate ? ' &middot; installed ' + formatDate(f.barrelInstallDate) : ''}
+        </div>`;
+      })() : ''}
       <hr>
       <div style="font-size:12px;color:var(--text-dim);line-height:1.8">
         Last field strip: <strong style="color:var(--text)">${st.lastFieldStrip ? formatDate(st.lastFieldStrip.date) : 'Never'}</strong><br>
@@ -832,7 +1313,7 @@ function firearmCard(f) {
   `;
 }
 function openFirearmModal(id) {
-  const f = id ? getFirearm(id) : { name:'', model:'', manufacturer:'', caliber:'9mm', dateAcquired:'', startingRoundCount:0, recoilSpringInterval:5000, recoilSpringWeight:'', notes:'' };
+  const f = id ? getFirearm(id) : { name:'', model:'', manufacturer:'', caliber:'9mm', dateAcquired:'', startingRoundCount:0, recoilSpringInterval:5000, recoilSpringWeight:'', barrelName:'', barrelInstallDate:'', barrelStartRounds:0, notes:'' };
   openModal(`
     <div class="modal-header"><h3>${id?'Edit':'Add'} Firearm</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
     <div class="modal-body">
@@ -859,6 +1340,14 @@ function openFirearmModal(id) {
           <div class="help-text">Current installed weight (lb).</div>
         </div>
       </div>
+      <hr>
+      <strong style="font-size:13px">Barrel Tracking <span class="badge neutral" style="margin-left:6px;font-size:10px">optional</span></strong>
+      <div class="help-text" style="margin-bottom:8px">Record the current barrel so round counts can be tracked per barrel when you swap.</div>
+      <div class="form-grid-3">
+        <div class="form-row"><label>Current Barrel Name</label><input id="fa-barrel-name" value="${escapeHtml(f.barrelName||'')}" placeholder="e.g. Factory, KKM Match"></div>
+        <div class="form-row"><label>Installed Date</label><input id="fa-barrel-date" type="date" value="${f.barrelInstallDate||''}"></div>
+        <div class="form-row"><label>Rounds on Barrel at Install</label><input id="fa-barrel-start" type="number" min="0" value="${f.barrelStartRounds||0}"><div class="help-text">Set if barrel had prior round count.</div></div>
+      </div>
       <div class="form-row"><label>Notes</label><textarea id="fa-notes">${escapeHtml(f.notes)}</textarea></div>
     </div>
     <div class="modal-footer">
@@ -877,6 +1366,9 @@ function saveFirearm(id) {
     startingRoundCount: parseInt(document.getElementById('fa-start').value) || 0,
     recoilSpringInterval: parseInt(document.getElementById('fa-recoil').value) || 5000,
     recoilSpringWeight: document.getElementById('fa-recoil-weight').value.trim(),
+    barrelName: document.getElementById('fa-barrel-name').value.trim(),
+    barrelInstallDate: document.getElementById('fa-barrel-date').value,
+    barrelStartRounds: parseInt(document.getElementById('fa-barrel-start').value) || 0,
     notes: document.getElementById('fa-notes').value.trim()
   };
   if (!data.name) { alert('Name required'); return; }
@@ -888,6 +1380,239 @@ function deleteFirearm(id) {
   if (!confirm('Delete this firearm? Sessions linked to it will keep historical record but lose firearm reference.')) return;
   DB.firearms = DB.firearms.filter(f => f.id !== id);
   saveDB(); renderFirearms();
+}
+
+/* ============================================================
+   OPTICS
+   ============================================================ */
+function renderOptics() {
+  const v = document.getElementById('view-optics');
+  const optics = DB.optics || [];
+  const parts = DB.parts || [];
+  v.innerHTML = `
+    <div class="view-header">
+      <div><h2>Optics &amp; Gear</h2><div class="sub">Sights, settings, batteries, and spare parts</div></div>
+      <button class="btn" onclick="openOpticModal()">+ Add Optic</button>
+    </div>
+
+    ${optics.length === 0 ? `
+      <div class="card" style="text-align:center;padding:40px;color:var(--text-dim)">
+        <div style="font-size:32px;margin-bottom:12px">&#9678;</div>
+        <div style="font-size:16px;margin-bottom:6px">No optics logged yet</div>
+        <div style="font-size:13px">Track your red dots and sights, log battery changes, and save your zero and settings.</div>
+      </div>
+    ` : `<div class="grid grid-2">${optics.map(op => opticCard(op)).join('')}</div>`}
+
+    <div class="view-header" style="margin-top:28px">
+      <div><h3 style="margin:0">Spare Parts Inventory</h3><div class="sub">Springs, pins, and consumables on hand</div></div>
+      <button class="btn secondary" onclick="openPartModal()">+ Add Part</button>
+    </div>
+    ${parts.length === 0 ? `
+      <div class="card" style="padding:20px;color:var(--text-dim);font-size:13px">
+        No spare parts logged. Add springs, pins, and other consumables you keep on hand.
+      </div>
+    ` : `
+      <div class="card" style="padding:0">
+        <table>
+          <thead><tr><th>Part</th><th>Firearm</th><th>Qty</th><th>Part #</th><th>Purchased</th><th>Notes</th><th></th></tr></thead>
+          <tbody>${parts.map(p => {
+            const fw = DB.firearms.find(f => f.id === p.firearmId);
+            return `<tr>
+              <td><strong>${escapeHtml(p.name)}</strong></td>
+              <td>${fw ? escapeHtml(fw.name) : '<span class="text-dim">Any</span>'}</td>
+              <td><span style="font-size:16px;font-weight:600;color:var(--accent)">${p.quantity || 0}</span></td>
+              <td>${p.partNumber ? escapeHtml(p.partNumber) : '<span class="text-dim">—</span>'}</td>
+              <td>${p.datePurchased ? formatDate(p.datePurchased) : '<span class="text-dim">—</span>'}</td>
+              <td>${p.notes ? escapeHtml(p.notes) : '<span class="text-dim">—</span>'}</td>
+              <td>
+                <button class="btn small secondary" onclick="openPartModal('${p.id}')">Edit</button>
+                <button class="btn small danger" onclick="deletePart('${p.id}')">Delete</button>
+              </td>
+            </tr>`;
+          }).join('')}</tbody>
+        </table>
+      </div>
+    `}
+  `;
+}
+
+function opticCard(op) {
+  const fw = DB.firearms.find(f => f.id === op.firearmId);
+  const batteries = op.batteryLog || [];
+  const lastBattery = batteries.length ? [...batteries].sort((a,b)=>b.date.localeCompare(a.date))[0] : null;
+  const daysSinceBattery = lastBattery ? Math.floor((new Date()-new Date(lastBattery.date))/(1000*60*60*24)) : null;
+  const batteryWarn = daysSinceBattery !== null && daysSinceBattery > 330; // warn after ~11 months
+  return `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:17px;font-weight:600">${escapeHtml(op.make)} ${escapeHtml(op.model)}</div>
+          <div class="text-dim" style="font-size:12px">${fw ? escapeHtml(fw.name) : 'Unassigned'}${op.installDate ? ' &middot; installed ' + formatDate(op.installDate) : ''}</div>
+        </div>
+        ${batteryWarn ? '<span class="badge warn">Battery due</span>' : '<span class="badge success">Active</span>'}
+      </div>
+      <hr>
+      <div class="grid grid-2" style="font-size:12px;gap:8px">
+        ${op.zeroDist ? `<div><span class="text-dim">Zero:</span> <strong>${escapeHtml(op.zeroDist)}</strong></div>` : ''}
+        ${op.mountHeight ? `<div><span class="text-dim">Mount:</span> <strong>${escapeHtml(op.mountHeight)}</strong></div>` : ''}
+        ${op.torqueSpec ? `<div><span class="text-dim">Torque:</span> <strong>${escapeHtml(op.torqueSpec)}</strong></div>` : ''}
+        ${op.dotSize ? `<div><span class="text-dim">Dot size:</span> <strong>${escapeHtml(op.dotSize)}</strong></div>` : ''}
+      </div>
+      ${op.settingsSnapshot ? `<div style="margin-top:8px;font-size:12px;background:var(--bg);border-radius:6px;padding:8px;color:var(--text-dim)"><span style="color:var(--text);font-weight:600">Settings snapshot:</span><br>${escapeHtml(op.settingsSnapshot)}</div>` : ''}
+      <div style="margin-top:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-size:12px;font-weight:600">Battery Log</span>
+          <button class="btn small secondary" onclick="logBattery('${op.id}')">+ Log Change</button>
+        </div>
+        ${batteries.length === 0 ? `<div style="font-size:12px;color:var(--text-dim)">No battery changes logged.</div>` : `
+          <div style="font-size:12px">
+            ${[...batteries].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,3).map(b =>
+              `<div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding:4px 0">
+                <span>${formatDate(b.date)}</span>
+                <span class="text-dim">${b.notes ? escapeHtml(b.notes) : 'Replaced'}</span>
+              </div>`
+            ).join('')}
+            ${batteries.length > 3 ? `<div style="color:var(--text-dim);font-size:11px;margin-top:4px">${batteries.length - 3} older entries hidden</div>` : ''}
+          </div>
+          <div style="font-size:11px;margin-top:6px;color:${batteryWarn?'var(--warn)':'var(--text-dim)'}">
+            Last changed: ${formatDate(lastBattery.date)} &middot; ${daysSinceBattery} days ago
+          </div>
+        `}
+      </div>
+      ${op.notes ? `<div style="margin-top:10px;font-size:12px;color:var(--text-dim)">${escapeHtml(op.notes)}</div>` : ''}
+      <div class="row-actions" style="margin-top:14px">
+        <button class="btn small secondary" onclick="openOpticModal('${op.id}')">Edit</button>
+        <button class="btn small danger" onclick="deleteOptic('${op.id}')">Delete</button>
+      </div>
+    </div>
+  `;
+}
+
+function openOpticModal(id) {
+  const op = id ? (DB.optics || []).find(o => o.id === id) : null;
+  const o = op || { firearmId: DB.firearms[0]?.id || '', make: '', model: '', installDate: '', zeroDist: '', mountHeight: '', torqueSpec: '', dotSize: '', settingsSnapshot: '', notes: '' };
+  const fwOpts = DB.firearms.map(f => `<option value="${f.id}" ${o.firearmId===f.id?'selected':''}>${escapeHtml(f.name)}</option>`).join('');
+  openModal(`
+    <div class="modal-header"><h3>${id?'Edit':'Add'} Optic</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-row"><label>Firearm</label><select id="op-firearm">${fwOpts}</select></div>
+      <div class="form-grid-2">
+        <div class="form-row"><label>Make</label><input id="op-make" value="${escapeHtml(o.make)}" placeholder="e.g. Leupold, Trijicon"></div>
+        <div class="form-row"><label>Model</label><input id="op-model" value="${escapeHtml(o.model)}" placeholder="e.g. DeltaPoint Pro"></div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row"><label>Install Date</label><input id="op-date" type="date" value="${o.installDate||''}"></div>
+        <div class="form-row"><label>Dot / Reticle Size</label><input id="op-dot" value="${escapeHtml(o.dotSize||'')}" placeholder="e.g. 2.5 MOA"></div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row"><label>Zero Distance</label><input id="op-zero" value="${escapeHtml(o.zeroDist||'')}" placeholder="e.g. 25 yds, 15 yds"></div>
+        <div class="form-row"><label>Mount / Co-Witness Height</label><input id="op-mount" value="${escapeHtml(o.mountHeight||'')}" placeholder="e.g. 1/3 co-witness"></div>
+      </div>
+      <div class="form-row"><label>Torque Spec (mount)</label><input id="op-torque" value="${escapeHtml(o.torqueSpec||'')}" placeholder="e.g. 15 in-lbs"></div>
+      <div class="form-row"><label>Settings Snapshot</label><textarea id="op-settings" rows="3" placeholder="Brightness level, mode, any custom notes about your sight settings...">${escapeHtml(o.settingsSnapshot||'')}</textarea></div>
+      <div class="form-row"><label>Notes</label><textarea id="op-notes" rows="2" placeholder="Any additional notes...">${escapeHtml(o.notes||'')}</textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="saveOptic('${id||''}')">Save</button></div>
+  `);
+}
+
+function saveOptic(id) {
+  if (!DB.optics) DB.optics = [];
+  const data = {
+    firearmId: document.getElementById('op-firearm').value,
+    make: document.getElementById('op-make').value.trim(),
+    model: document.getElementById('op-model').value.trim(),
+    installDate: document.getElementById('op-date').value,
+    dotSize: document.getElementById('op-dot').value.trim(),
+    zeroDist: document.getElementById('op-zero').value.trim(),
+    mountHeight: document.getElementById('op-mount').value.trim(),
+    torqueSpec: document.getElementById('op-torque').value.trim(),
+    settingsSnapshot: document.getElementById('op-settings').value.trim(),
+    notes: document.getElementById('op-notes').value.trim()
+  };
+  if (!data.make && !data.model) { alert('Make or Model required'); return; }
+  if (id) {
+    const existing = DB.optics.find(o => o.id === id);
+    if (existing) Object.assign(existing, data);
+  } else {
+    DB.optics.push({ id: uid('op'), batteryLog: [], ...data });
+  }
+  saveDB(); closeModal(); renderOptics();
+}
+
+function deleteOptic(id) {
+  if (!confirm('Delete this optic?')) return;
+  DB.optics = (DB.optics || []).filter(o => o.id !== id);
+  saveDB(); renderOptics();
+}
+
+function logBattery(opticId) {
+  const op = (DB.optics || []).find(o => o.id === opticId);
+  if (!op) return;
+  openModal(`
+    <div class="modal-header"><h3>Log Battery Change</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body">
+      <div style="margin-bottom:12px;color:var(--text-dim);font-size:13px">${escapeHtml(op.make)} ${escapeHtml(op.model)}</div>
+      <div class="form-row"><label>Date</label><input id="bt-date" type="date" value="${todayISO()}"></div>
+      <div class="form-row"><label>Notes (optional)</label><input id="bt-notes" placeholder="e.g. Annual replacement, battery died mid-match"></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="saveBattery('${opticId}')">Save</button></div>
+  `);
+}
+
+function saveBattery(opticId) {
+  const op = (DB.optics || []).find(o => o.id === opticId);
+  if (!op) return;
+  if (!op.batteryLog) op.batteryLog = [];
+  op.batteryLog.push({ date: document.getElementById('bt-date').value, notes: document.getElementById('bt-notes').value.trim() });
+  saveDB(); closeModal(); renderOptics();
+}
+
+/* --- SPARE PARTS --- */
+function openPartModal(id) {
+  const pt = id ? (DB.parts || []).find(p => p.id === id) : null;
+  const p = pt || { firearmId: '', name: '', quantity: 1, partNumber: '', datePurchased: '', notes: '' };
+  const fwOpts = `<option value="">Any / Universal</option>` + DB.firearms.map(f => `<option value="${f.id}" ${p.firearmId===f.id?'selected':''}>${escapeHtml(f.name)}</option>`).join('');
+  openModal(`
+    <div class="modal-header"><h3>${id?'Edit':'Add'} Spare Part</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-row"><label>Part Name</label><input id="pt-name" value="${escapeHtml(p.name)}" placeholder="e.g. Recoil Spring, Firing Pin, Extractor"></div>
+      <div class="form-row"><label>Firearm (optional)</label><select id="pt-firearm">${fwOpts}</select></div>
+      <div class="form-grid-2">
+        <div class="form-row"><label>Quantity on Hand</label><input id="pt-qty" type="number" min="0" value="${p.quantity||1}"></div>
+        <div class="form-row"><label>Part Number (optional)</label><input id="pt-partno" value="${escapeHtml(p.partNumber||'')}" placeholder="Mfr part #"></div>
+      </div>
+      <div class="form-row"><label>Date Purchased (optional)</label><input id="pt-date" type="date" value="${p.datePurchased||''}"></div>
+      <div class="form-row"><label>Notes</label><textarea id="pt-notes" rows="2" placeholder="Source, condition, any other info...">${escapeHtml(p.notes||'')}</textarea></div>
+    </div>
+    <div class="modal-footer"><button class="btn" onclick="savePart('${id||''}')">Save</button></div>
+  `);
+}
+
+function savePart(id) {
+  if (!DB.parts) DB.parts = [];
+  const data = {
+    firearmId: document.getElementById('pt-firearm').value,
+    name: document.getElementById('pt-name').value.trim(),
+    quantity: parseInt(document.getElementById('pt-qty').value) || 0,
+    partNumber: document.getElementById('pt-partno').value.trim(),
+    datePurchased: document.getElementById('pt-date').value,
+    notes: document.getElementById('pt-notes').value.trim()
+  };
+  if (!data.name) { alert('Part name required'); return; }
+  if (id) {
+    const existing = DB.parts.find(p => p.id === id);
+    if (existing) Object.assign(existing, data);
+  } else {
+    DB.parts.push({ id: uid('pt'), ...data });
+  }
+  saveDB(); closeModal(); renderOptics();
+}
+
+function deletePart(id) {
+  if (!confirm('Delete this part?')) return;
+  DB.parts = (DB.parts || []).filter(p => p.id !== id);
+  saveDB(); renderOptics();
 }
 
 /* ============================================================
@@ -982,20 +1707,58 @@ function deleteAmmo(id) {
 /* ============================================================
    SESSIONS
    ============================================================ */
+
+// Persists filter state across re-renders within a session
+if (!window._sessionFilter) {
+  window._sessionFilter = { dateFrom: '', dateTo: '', firearmId: '', type: '', keyword: '' };
+}
+function applySessionFilter(sessions) {
+  const f = window._sessionFilter;
+  return sessions.filter(s => {
+    if (f.dateFrom && s.date < f.dateFrom) return false;
+    if (f.dateTo && s.date > f.dateTo) return false;
+    if (f.firearmId && s.firearmId !== f.firearmId) return false;
+    if (f.type && (s.type || 'practice') !== f.type) return false;
+    if (f.keyword) {
+      const kw = f.keyword.toLowerCase();
+      const haystack = [
+        s.location || '',
+        s.notes || '',
+        s.distances || '',
+        ...(s.drills || []).map(d => d.name || ''),
+        (getFirearm(s.firearmId) || {}).name || ''
+      ].join(' ').toLowerCase();
+      if (!haystack.includes(kw)) return false;
+    }
+    return true;
+  });
+}
+function updateSessionFilter(key, val) {
+  window._sessionFilter[key] = val;
+  renderSessions();
+}
+function clearSessionFilter() {
+  window._sessionFilter = { dateFrom: '', dateTo: '', firearmId: '', type: '', keyword: '' };
+  renderSessions();
+}
+
 function renderSessions() {
   const v = document.getElementById('view-sessions');
-  const sessions = [...DB.sessions].sort((a, b) => b.date.localeCompare(a.date));
+  const allSessions = [...DB.sessions].sort((a, b) => b.date.localeCompare(a.date));
+  const f = window._sessionFilter;
+  const filtered = applySessionFilter(allSessions);
+  const hasFilter = f.dateFrom || f.dateTo || f.firearmId || f.type || f.keyword;
 
   // Build field-strip-needed list: each firearm with one or more sessions after their last field strip
   const fsNeeded = [];
-  for (const f of DB.firearms) {
-    const st = maintenanceStatus(f.id);
+  for (const fw of DB.firearms) {
+    const st = maintenanceStatus(fw.id);
     if (st.fieldStripDue && st.sessionsSinceFieldStrip > 0) {
-      fsNeeded.push({ firearm: f, count: st.sessionsSinceFieldStrip, lastFS: st.lastFieldStrip });
+      fsNeeded.push({ firearm: fw, count: st.sessionsSinceFieldStrip, lastFS: st.lastFieldStrip });
     }
   }
   // Identify the firearm of the most recent session for the prominent button
-  const latestSession = sessions[0];
+  const latestSession = allSessions[0];
   const latestFirearmId = latestSession ? latestSession.firearmId : (DB.firearms[0] && DB.firearms[0].id);
   const latestFirearm = latestFirearmId ? getFirearm(latestFirearmId) : null;
 
@@ -1007,13 +1770,53 @@ function renderSessions() {
         <button class="btn" onclick="openSessionModal()">+ Log Session</button>
       </div>
     </div>
+
+    <!-- Filter bar -->
+    <div class="card" style="margin-bottom:16px;padding:14px 16px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end">
+        <div>
+          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">From</label>
+          <input type="date" value="${f.dateFrom}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateSessionFilter('dateFrom',this.value)">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">To</label>
+          <input type="date" value="${f.dateTo}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateSessionFilter('dateTo',this.value)">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">Firearm</label>
+          <select style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateSessionFilter('firearmId',this.value)">
+            <option value="">All firearms</option>
+            ${DB.firearms.map(fw => `<option value="${fw.id}" ${f.firearmId===fw.id?'selected':''}>${escapeHtml(fw.name)}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">Type</label>
+          <select style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateSessionFilter('type',this.value)">
+            <option value="">All types</option>
+            <option value="practice" ${f.type==='practice'?'selected':''}>Practice</option>
+            <option value="competition" ${f.type==='competition'?'selected':''}>Competition</option>
+            <option value="class" ${f.type==='class'?'selected':''}>Class / Training</option>
+            <option value="dry_fire" ${f.type==='dry_fire'?'selected':''}>Dry Fire</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">Search</label>
+          <input type="search" placeholder="Location, drill, notes…" value="${escapeHtml(f.keyword)}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateSessionFilter('keyword',this.value)">
+        </div>
+        <div style="display:flex;align-items:flex-end">
+          ${hasFilter ? `<button class="btn small secondary" onclick="clearSessionFilter()" style="width:100%">&#10005; Clear</button>` : '<div></div>'}
+        </div>
+      </div>
+      ${hasFilter ? `<div style="margin-top:8px;font-size:12px;color:var(--text-dim)">Showing ${filtered.length} of ${allSessions.length} session${allSessions.length!==1?'s':''}</div>` : ''}
+    </div>
+
     ${fsNeeded.length ? `<div class="alert warn" style="flex-direction:column;align-items:stretch">
       <div style="display:flex;align-items:center;gap:10px"><strong style="font-size:13px">&#9888; Field strip pending</strong><span style="color:var(--text-dim);font-size:12px">Atlas guidance: clean after every session.</span></div>
       <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
         ${fsNeeded.map(n => `<button class="btn small secondary" onclick="quickFieldStrip('${n.firearm.id}')">Log field strip: ${escapeHtml(n.firearm.name)} (${n.count} session${n.count!==1?'s':''} pending)</button>`).join('')}
       </div>
     </div>` : ''}
-    ${sessions.length ? sessions.map(s => sessionCard(s)).join('') : `<div class="empty"><div class="icon">&#9650;</div>No sessions yet.<br><br><button class="btn" onclick="openSessionModal()">Log first session</button></div>`}
+    ${filtered.length ? filtered.map(s => sessionCard(s)).join('') : `<div class="empty"><div class="icon">&#9650;</div>${hasFilter ? 'No sessions match the current filters.' : 'No sessions yet.'}<br><br>${hasFilter ? `<button class="btn secondary" onclick="clearSessionFilter()">Clear Filters</button>` : `<button class="btn" onclick="openSessionModal()">Log first session</button>`}</div>`}
   `;
 }
 
@@ -1044,6 +1847,13 @@ function quickMagSpringLog() {
 }
 function sessionCard(s) {
   const f = getFirearm(s.firearmId);
+  // Build firearm display: show splits if multi-gun session
+  const firearmDisplay = (s.firearmSplits && s.firearmSplits.length)
+    ? s.firearmSplits.map(sp => {
+        const fw = getFirearm(sp.firearmId);
+        return `<span class="chip" style="font-size:11px">${escapeHtml(fw ? fw.name : '?')} &middot; ${sp.rounds.toLocaleString()} rds</span>`;
+      }).join(' ')
+    : escapeHtml(f ? f.name : '—');
   const ammoLines = (s.ammoUsage || []).map(u => {
     const a = getAmmo(u.ammoId);
     return a ? `${u.rounds} &times; ${escapeHtml(a.brand)} ${escapeHtml(a.grain)}gr ${escapeHtml(a.bulletType)}` : `${u.rounds} rounds (ammo deleted)`;
@@ -1059,7 +1869,7 @@ function sessionCard(s) {
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
           <div style="font-size:16px;font-weight:600">${formatDate(s.date)} <span class="badge ${s.type==='competition'?'info':'neutral'}">${escapeHtml(s.type||'practice')}</span></div>
-          <div class="text-dim" style="font-size:12px;margin-top:2px">${escapeHtml(f ? f.name : '—')} &middot; ${escapeHtml(s.location || 'Location not set')}</div>
+          <div class="text-dim" style="font-size:12px;margin-top:2px">${(s.firearmSplits && s.firearmSplits.length) ? firearmDisplay + ' &middot; ' : escapeHtml(f ? f.name : '—') + ' &middot; '}${escapeHtml(s.location || 'Location not set')}</div>
         </div>
         <div style="text-align:right">
           <div style="font-size:24px;font-weight:600;color:var(--accent)">${(s.totalRounds||0).toLocaleString()}</div>
@@ -1070,7 +1880,16 @@ function sessionCard(s) {
       ${drillsHtml ? `<div style="margin-top:10px"><strong style="color:var(--text-dim);font-size:12px;text-transform:uppercase">Drills</strong><div class="chip-list">${drillsHtml}</div></div>` : ''}
       ${s.distances ? `<div style="margin-top:10px;font-size:13px"><strong style="color:var(--text-dim)">Distances:</strong> ${escapeHtml(s.distances)}</div>` : ''}
       ${(s.malfunctions && s.malfunctions.length) ? `<div style="margin-top:10px"><strong style="color:var(--danger);font-size:12px;text-transform:uppercase">Malfunctions (${s.malfunctions.length})</strong><div class="chip-list">${s.malfunctions.map(m => `<span class="chip" style="border-color:var(--danger);color:var(--danger)">${escapeHtml(m.type)}${m.roundCount ? ' @ ' + m.roundCount : ''}</span>`).join('')}</div></div>` : ''}
-      ${s.notes ? `<div style="margin-top:10px;font-size:13px;color:var(--text-dim);white-space:pre-wrap">${escapeHtml(s.notes)}</div>` : ''}
+      <div id="notes-display-${s.id}" onclick="inlineEditNotes('${s.id}')" style="margin-top:10px;font-size:13px;cursor:text;border-radius:4px;padding:4px;transition:background 0.15s" onmouseenter="this.style.background='var(--panel-2)'" onmouseleave="this.style.background=''" title="Click to edit notes">
+        ${s.notes ? `<span style="color:var(--text-dim);white-space:pre-wrap">${escapeHtml(s.notes)}</span>` : `<span style="color:var(--border);font-style:italic;font-size:12px">Click to add notes...</span>`}
+      </div>
+      <div id="notes-editor-${s.id}" style="display:none;margin-top:10px">
+        <textarea id="notes-ta-${s.id}" style="width:100%;min-height:60px;font-size:13px" placeholder="Session notes...">${escapeHtml(s.notes||'')}</textarea>
+        <div style="display:flex;gap:6px;margin-top:4px">
+          <button class="btn small" onclick="saveInlineNote('${s.id}')">Save</button>
+          <button class="btn small secondary" onclick="cancelInlineNote('${s.id}')">Cancel</button>
+        </div>
+      </div>
       ${(s.targetImages && s.targetImages.length) ? `<div class="image-gallery">${s.targetImages.map((img) => `<div class="image-thumb" style="background-image:url('${img}')" onclick="showLightbox('${img}')"></div>`).join('')}</div>` : ''}
       <div class="row-actions" style="margin-top:14px">
         <button class="btn small secondary" onclick="openSessionModal('${s.id}')">Edit</button>
@@ -1082,7 +1901,7 @@ function sessionCard(s) {
 function openSessionModal(id) {
   const s = id ? DB.sessions.find(x => x.id === id) : {
     date: todayISO(), type: 'practice', firearmId: DB.firearms[0]?.id || '',
-    location:'', distances:'', notes:'', totalRounds:0,
+    location:'', distances:'', notes:'', totalRounds:0, rangeFee: null,
     ammoUsage:[], drills:[], targetImages:[],
     selfRating: { focus: 5, fundamentals: 5, satisfaction: 5 }
   };
@@ -1106,7 +1925,17 @@ function openSessionModal(id) {
           <select id="se-firearm">${DB.firearms.map(f => `<option value="${f.id}" ${s.firearmId===f.id?'selected':''}>${escapeHtml(f.name)}</option>`).join('')}</select>
         </div>
       </div>
-      <div class="form-row"><label>Location</label><input id="se-location" value="${escapeHtml(s.location)}" placeholder="e.g. Local Range, USPSA Match"></div>
+      <div class="form-row" style="margin-top:-4px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+          <input type="checkbox" id="se-multi-fw" ${(s.firearmSplits && s.firearmSplits.length)?'checked':''} onchange="toggleMultiFirearm(this.checked)">
+          <span style="font-size:13px">Multiple firearms used this session</span>
+        </label>
+      </div>
+      <div id="se-fw-splits" style="display:${(s.firearmSplits && s.firearmSplits.length)?'block':'none'}"></div>
+      <div class="form-grid-2">
+        <div class="form-row"><label>Location</label><input id="se-location" value="${escapeHtml(s.location)}" placeholder="e.g. Local Range, USPSA Match"></div>
+        <div class="form-row"><label>Range Fee ($)</label><input id="se-rangefee" type="number" min="0" step="0.01" value="${s.rangeFee || ''}" placeholder="0.00"><div class="help-text">Optional: lane fee or range entry cost for this session.</div></div>
+      </div>
       <div class="form-row"><label>Distances Practiced</label><input id="se-dist" value="${escapeHtml(s.distances)}" placeholder="e.g. 7yd, 15yd, 25yd"></div>
 
       <hr>
@@ -1165,7 +1994,14 @@ function openSessionModal(id) {
     if (!window._tempSession.drills.length) window._tempSession.drills.push({ name:'', distance:'', time:null, score:null, maxScore:null, notes:'' });
     if (!window._tempSession.malfunctions) window._tempSession.malfunctions = [];
     if (window._tempSession.noHolsterOnly === undefined) window._tempSession.noHolsterOnly = false;
+    if (!window._tempSession.firearmSplits) window._tempSession.firearmSplits = [];
     document.getElementById('se-no-holster').checked = !!window._tempSession.noHolsterOnly;
+    // If editing a multi-firearm session, hide the single firearm selector
+    if (window._tempSession.firearmSplits.length) {
+      const singleRow = document.getElementById('se-firearm').closest('.form-row');
+      if (singleRow) singleRow.style.display = 'none';
+      renderFirearmSplits();
+    }
     renderAmmoRows();
     renderDrillRows();
     renderMalfunctionRows();
@@ -1182,6 +2018,56 @@ function openSessionModal(id) {
 function toggleNoHolster(val) {
   window._tempSession.noHolsterOnly = val;
   renderDrillRows();
+}
+function toggleMultiFirearm(val) {
+  window._tempSession.multiFirearm = val;
+  const singleRow = document.getElementById('se-firearm').closest('.form-row');
+  if (singleRow) singleRow.style.display = val ? 'none' : '';
+  const splitsDiv = document.getElementById('se-fw-splits');
+  if (splitsDiv) splitsDiv.style.display = val ? 'block' : 'none';
+  if (val && (!window._tempSession.firearmSplits || !window._tempSession.firearmSplits.length)) {
+    // Seed splits from existing firearms, put current primary first
+    window._tempSession.firearmSplits = DB.firearms.map(f => ({
+      firearmId: f.id,
+      rounds: f.id === window._tempSession.firearmId ? (window._tempSession.totalRounds || 0) : 0
+    }));
+  }
+  renderFirearmSplits();
+}
+function renderFirearmSplits() {
+  const c = document.getElementById('se-fw-splits');
+  if (!c) return;
+  const splits = window._tempSession.firearmSplits || [];
+  c.innerHTML = `
+    <div style="background:var(--panel-2);border-radius:8px;padding:12px;margin-bottom:8px">
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Enter rounds fired with each firearm (leave 0 to omit):</div>
+      ${DB.firearms.map(f => {
+        const sp = splits.find(s => s.firearmId === f.id) || { rounds: 0 };
+        return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+          <span style="flex:1;font-size:13px">${escapeHtml(f.name)}</span>
+          <input type="number" min="0" value="${sp.rounds || 0}"
+            style="width:90px"
+            onchange="updateSplit('${f.id}', parseInt(this.value)||0)">
+          <span style="font-size:12px;color:var(--text-dim)">rounds</span>
+        </div>`;
+      }).join('')}
+      <div style="font-size:12px;margin-top:6px;color:var(--text-dim)">
+        Total: <strong style="color:var(--accent)" id="split-total">${splits.reduce((s,sp)=>s+(sp.rounds||0),0)}</strong> rounds
+      </div>
+    </div>
+  `;
+}
+function updateSplit(firearmId, rounds) {
+  if (!window._tempSession.firearmSplits) window._tempSession.firearmSplits = [];
+  const existing = window._tempSession.firearmSplits.find(s => s.firearmId === firearmId);
+  if (existing) existing.rounds = rounds;
+  else window._tempSession.firearmSplits.push({ firearmId, rounds });
+  const total = window._tempSession.firearmSplits.reduce((s, sp) => s + (sp.rounds || 0), 0);
+  const el = document.getElementById('split-total');
+  if (el) el.textContent = total;
+  // Also update the ammo total display for consistency
+  const ammoTotal = window._tempSession.ammoUsage.reduce((s, u) => s + (u.rounds || 0), 0);
+  document.getElementById('se-total').value = Math.max(total, ammoTotal);
 }
 function renderMalfunctionRows() {
   const c = document.getElementById('se-malf-rows');
@@ -1365,6 +2251,7 @@ function saveSession(id) {
   t.location = document.getElementById('se-location').value.trim();
   t.distances = document.getElementById('se-dist').value.trim();
   t.notes = document.getElementById('se-notes').value.trim();
+  t.rangeFee = parseFloat(document.getElementById('se-rangefee').value) || null;
   t.selfRating = {
     focus: parseInt(document.getElementById('se-focus').value),
     fundamentals: parseInt(document.getElementById('se-fund').value),
@@ -1373,7 +2260,21 @@ function saveSession(id) {
   t.ammoUsage = t.ammoUsage.filter(u => u.ammoId && u.rounds > 0);
   t.drills = t.drills.filter(d => d.name);
   t.malfunctions = (t.malfunctions || []).filter(m => m.type);
-  t.totalRounds = t.ammoUsage.reduce((s, u) => s + u.rounds, 0);
+
+  // Multi-firearm: filter splits to non-zero, set primary firearm to first active split
+  if (t.multiFirearm && t.firearmSplits && t.firearmSplits.length) {
+    t.firearmSplits = t.firearmSplits.filter(sp => sp.rounds > 0);
+    if (t.firearmSplits.length) {
+      t.firearmId = t.firearmSplits[0].firearmId; // primary for backward compat
+      t.totalRounds = t.firearmSplits.reduce((s, sp) => s + (sp.rounds || 0), 0);
+    } else {
+      t.firearmSplits = [];
+      t.totalRounds = t.ammoUsage.reduce((s, u) => s + u.rounds, 0);
+    }
+  } else {
+    t.firearmSplits = [];
+    t.totalRounds = t.ammoUsage.reduce((s, u) => s + u.rounds, 0);
+  }
 
   if (!t.date) { alert('Date required'); return; }
   if (!t.firearmId) { alert('Firearm required'); return; }
@@ -1415,6 +2316,31 @@ function saveSession(id) {
     }
   }
 }
+function inlineEditNotes(id) {
+  document.getElementById('notes-display-' + id).style.display = 'none';
+  document.getElementById('notes-editor-' + id).style.display = 'block';
+  const ta = document.getElementById('notes-ta-' + id);
+  if (ta) { ta.focus(); ta.selectionStart = ta.value.length; }
+}
+function cancelInlineNote(id) {
+  document.getElementById('notes-display-' + id).style.display = '';
+  document.getElementById('notes-editor-' + id).style.display = 'none';
+}
+function saveInlineNote(id) {
+  const s = DB.sessions.find(x => x.id === id);
+  if (!s) return;
+  const ta = document.getElementById('notes-ta-' + id);
+  if (!ta) return;
+  s.notes = ta.value.trim();
+  saveDB();
+  // Update the display without full re-render
+  const disp = document.getElementById('notes-display-' + id);
+  disp.innerHTML = s.notes
+    ? `<span style="color:var(--text-dim);white-space:pre-wrap">${escapeHtml(s.notes)}</span>`
+    : `<span style="color:var(--border);font-style:italic;font-size:12px">Click to add notes...</span>`;
+  disp.style.display = '';
+  document.getElementById('notes-editor-' + id).style.display = 'none';
+}
 function deleteSession(id) {
   if (!confirm('Delete this session? Ammo will be returned to inventory.')) return;
   const s = DB.sessions.find(x => x.id === id);
@@ -1443,12 +2369,14 @@ function renderProgress() {
       <div class="tab" data-pane="goals">Goals</div>
       <div class="tab" data-pane="skills">Skill Assessment</div>
       <div class="tab" data-pane="trends">Trends</div>
+      <div class="tab" data-pane="calendar">Calendar</div>
     </div>
 
     <div id="pane-prs" class="tab-pane active">${renderPRsPane()}</div>
     <div id="pane-goals" class="tab-pane">${renderGoalsPane()}</div>
     <div id="pane-skills" class="tab-pane">${renderSkillsPane()}</div>
     <div id="pane-trends" class="tab-pane">${renderTrendsPane()}</div>
+    <div id="pane-calendar" class="tab-pane">${renderHeatmapPane()}</div>
   `;
   document.querySelectorAll('#prog-tabs .tab').forEach(t => {
     t.addEventListener('click', () => {
@@ -1720,6 +2648,1224 @@ function renderTrendsPane() {
         <h3>Sessions by Type</h3>
         ${sessionTypeBreakdown()}
       </div>
+    </div>
+  `;
+}
+
+/* ============================================================
+   HEATMAP CALENDAR
+   ============================================================ */
+function renderHeatmapPane() {
+  const now = new Date();
+
+  // Go back to the Sunday of the week 52 weeks ago
+  const startDay = new Date(now);
+  startDay.setDate(startDay.getDate() - startDay.getDay()); // this Sunday
+  startDay.setDate(startDay.getDate() - 52 * 7);           // 52 weeks back
+
+  // Map ISO date -> session count
+  const dateMap = {};
+  for (const s of DB.sessions) {
+    if (s.date) dateMap[s.date] = (dateMap[s.date] || 0) + 1;
+  }
+
+  // Build weeks array: each entry = 7-day array
+  const weeks = [];
+  const d = new Date(startDay);
+  for (let w = 0; w < 53; w++) {
+    const week = [];
+    for (let day = 0; day < 7; day++) {
+      const iso = d.toISOString().slice(0, 10);
+      week.push({ iso, count: dateMap[iso] || 0, future: d > now });
+      d.setDate(d.getDate() + 1);
+    }
+    weeks.push(week);
+  }
+
+  // Cell color based on session count
+  function cellColor(count, future) {
+    if (future) return 'var(--bg)';
+    if (count === 0) return 'var(--panel-2)';
+    if (count === 1) return 'rgba(255,107,53,0.3)';
+    if (count === 2) return 'rgba(255,107,53,0.6)';
+    return 'var(--accent)'; // 3+
+  }
+
+  const cs = 13, gap = 2; // cell size, gap
+  const padL = 22, padT = 22, padB = 6;
+  const W = padL + weeks.length * (cs + gap);
+  const H = padT + 7 * (cs + gap) + padB;
+
+  // Month labels
+  let monthLabels = '';
+  let lastMonth = -1;
+  weeks.forEach((week, wi) => {
+    const firstReal = week.find(c => !c.future);
+    if (!firstReal) return;
+    const m = new Date(firstReal.iso).getMonth();
+    if (m !== lastMonth) {
+      const x = padL + wi * (cs + gap);
+      const label = new Date(firstReal.iso).toLocaleString(undefined, { month: 'short' });
+      monthLabels += `<text x="${x}" y="12" fill="var(--text-dim)" font-size="10">${label}</text>`;
+      lastMonth = m;
+    }
+  });
+
+  // Day labels (Mon, Wed, Fri only for spacing)
+  const dayAbbr = ['Su','Mo','Tu','We','Th','Fr','Sa'];
+  let dayLabelSvg = [1, 3, 5].map(i =>
+    `<text x="${padL - 4}" y="${padT + i * (cs + gap) + cs - 2}" fill="var(--text-dim)" font-size="9" text-anchor="end">${dayAbbr[i]}</text>`
+  ).join('');
+
+  // Grid cells with tooltips
+  let cells = '';
+  weeks.forEach((week, wi) => {
+    week.forEach((cell, di) => {
+      const x = padL + wi * (cs + gap);
+      const y = padT + di * (cs + gap);
+      const label = cell.future ? '' : `${cell.iso}: ${cell.count} session${cell.count !== 1 ? 's' : ''}`;
+      const stroke = cell.count > 0 && !cell.future ? 'rgba(255,107,53,0.5)' : 'none';
+      cells += `<rect x="${x}" y="${y}" width="${cs}" height="${cs}" rx="2" fill="${cellColor(cell.count, cell.future)}" stroke="${stroke}" stroke-width="0.5"><title>${label}</title></rect>`;
+    });
+  });
+
+  // Streak calculation (consecutive days ending today or yesterday with sessions)
+  let streak = 0;
+  const streakCheck = new Date(now);
+  while (true) {
+    const iso = streakCheck.toISOString().slice(0, 10);
+    if (!dateMap[iso]) { if (streak === 0) { streakCheck.setDate(streakCheck.getDate() - 1); if (!dateMap[streakCheck.toISOString().slice(0,10)]) break; } else break; }
+    if (dateMap[iso]) streak++;
+    streakCheck.setDate(streakCheck.getDate() - 1);
+    if (!dateMap[streakCheck.toISOString().slice(0,10)] && streak > 0) break;
+  }
+
+  const activeDays = Object.keys(dateMap).length;
+  const totalSessions = DB.sessions.length;
+  const thisYear = now.getFullYear();
+  const sessionsThisYear = DB.sessions.filter(s => s.date && s.date.startsWith(String(thisYear))).length;
+
+  // Firearm breakdown for this period
+  const firearmsUsed = {};
+  for (const s of DB.sessions) {
+    if (s.firearmId) firearmsUsed[s.firearmId] = (firearmsUsed[s.firearmId] || 0) + 1;
+  }
+  const topFirearm = Object.entries(firearmsUsed).sort((a,b)=>b[1]-a[1])[0];
+
+  // Monthly breakdown (last 6 months)
+  const monthBuckets = [];
+  for (let i = 5; i >= 0; i--) {
+    const md = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${md.getFullYear()}-${String(md.getMonth()+1).padStart(2,'0')}`;
+    const label = md.toLocaleString(undefined, { month: 'short', year: '2-digit' });
+    const count = DB.sessions.filter(s => s.date && s.date.startsWith(key)).length;
+    monthBuckets.push({ label, count });
+  }
+  const maxMonthCount = Math.max(...monthBuckets.map(m => m.count), 1);
+
+  return `
+    <div class="card">
+      <h3>Training Frequency — Last 52 Weeks</h3>
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+        <svg viewBox="0 0 ${W} ${H}" style="min-width:${Math.min(W,500)}px;height:${H}px;width:100%" xmlns="http://www.w3.org/2000/svg">
+          ${monthLabels}${dayLabelSvg}${cells}
+        </svg>
+      </div>
+      <!-- Legend -->
+      <div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11px;color:var(--text-dim);flex-wrap:wrap">
+        <span>Less</span>
+        <svg width="62" height="13" style="display:inline-block;flex-shrink:0"><rect x="0" y="0" width="13" height="13" rx="2" fill="var(--panel-2)"/><rect x="17" y="0" width="13" height="13" rx="2" fill="rgba(255,107,53,0.3)"/><rect x="34" y="0" width="13" height="13" rx="2" fill="rgba(255,107,53,0.6)"/><rect x="51" y="0" width="13" height="13" rx="2" fill="var(--accent)"/></svg>
+        <span>More &nbsp;|&nbsp; 1 square = 1 day</span>
+      </div>
+    </div>
+
+    <!-- Stats row -->
+    <div class="grid grid-4" style="margin-top:0">
+      <div class="stat"><div class="label">Sessions This Year</div><div class="value accent">${sessionsThisYear}</div></div>
+      <div class="stat"><div class="label">Total Sessions</div><div class="value">${totalSessions}</div></div>
+      <div class="stat"><div class="label">Active Training Days</div><div class="value">${activeDays}</div></div>
+      <div class="stat"><div class="label">Most Used Firearm</div><div class="value" style="font-size:16px">${topFirearm ? escapeHtml((getFirearm(topFirearm[0])||{}).name||'—') : '—'}</div>${topFirearm?`<div class="delta">${topFirearm[1]} session${topFirearm[1]!==1?'s':''}</div>`:''}</div>
+    </div>
+
+    <!-- Monthly session bars -->
+    <div class="card">
+      <h3>Sessions by Month (last 6)</h3>
+      <div style="display:flex;gap:8px;align-items:flex-end;height:80px;padding-top:8px">
+        ${monthBuckets.map(mb => `
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">
+            <div style="flex:1;width:100%;display:flex;align-items:flex-end">
+              <div style="width:100%;background:${mb.count>0?'var(--accent)':'var(--panel-2)'};height:${mb.count>0?Math.max(6,Math.round((mb.count/maxMonthCount)*56)):4}px;border-radius:3px 3px 0 0;transition:height 0.2s"></div>
+            </div>
+            <div style="font-size:11px;color:${mb.count>0?'var(--text)':'var(--text-dim)'};font-weight:${mb.count>0?600:400}">${mb.count}</div>
+            <div style="font-size:10px;color:var(--text-dim);white-space:nowrap">${mb.label}</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+/* ============================================================
+   COMPETITION
+   ============================================================ */
+function renderCompetition() {
+  const v = document.getElementById('view-competition');
+  v.innerHTML = `
+    <div class="view-header">
+      <div><h2>Competition</h2><div class="sub">USPSA matches, classifiers, and classification progress</div></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn secondary" onclick="openClassifierModal()">+ Classifier</button>
+        <button class="btn" onclick="openMatchModal()">+ Match</button>
+      </div>
+    </div>
+
+    <div class="tabs" id="comp-tabs">
+      <div class="tab active" data-pane="matches">Matches (${(DB.matches||[]).length})</div>
+      <div class="tab" data-pane="classifiers">Classifiers (${(DB.classifiers||[]).length})</div>
+      <div class="tab" data-pane="classification">Classification</div>
+      <div class="tab" data-pane="stage-timeline">Stage Timeline</div>
+    </div>
+
+    <div id="pane-matches" class="tab-pane active">${renderMatchesPane()}</div>
+    <div id="pane-classifiers" class="tab-pane">${renderClassifiersPane()}</div>
+    <div id="pane-classification" class="tab-pane">${renderClassificationPane()}</div>
+    <div id="pane-stage-timeline" class="tab-pane">${renderStageTimelinePane()}</div>
+  `;
+  document.querySelectorAll('#comp-tabs .tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('#comp-tabs .tab').forEach(x => x.classList.remove('active'));
+      document.querySelectorAll('#view-competition .tab-pane').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      document.getElementById('pane-' + t.dataset.pane).classList.add('active');
+    });
+  });
+}
+
+function renderMatchesPane() {
+  const matches = [...(DB.matches || [])].sort((a, b) => b.date.localeCompare(a.date));
+  if (!matches.length) return `<div class="card"><div class="empty"><div class="icon">&#9819;</div>No matches logged yet.<br><br><button class="btn" onclick="openMatchModal()">Log first match</button></div></div>`;
+
+  // Cost rollup
+  const thisYear = new Date().getFullYear();
+  const ytdCost = matches.filter(m => new Date(m.date).getFullYear() === thisYear)
+                          .reduce((s, m) => s + (parseFloat(m.cost) || 0), 0);
+  const totalCost = matches.reduce((s, m) => s + (parseFloat(m.cost) || 0), 0);
+  const avgCost = (() => {
+    const withCost = matches.filter(m => m.cost != null && m.cost !== '');
+    return withCost.length ? totalCost / withCost.length : 0;
+  })();
+  const avgFinishPct = (() => {
+    const withPct = matches.filter(m => m.matchPercentage != null);
+    return withPct.length ? withPct.reduce((s,m)=>s+m.matchPercentage,0) / withPct.length : null;
+  })();
+
+  return `
+    <div class="grid grid-4" style="margin-bottom:16px">
+      <div class="stat"><div class="label">Matches Logged</div><div class="value">${matches.length}</div></div>
+      <div class="stat"><div class="label">Spent ${thisYear}</div><div class="value accent">$${ytdCost.toFixed(2)}</div></div>
+      <div class="stat"><div class="label">Total Spent</div><div class="value">$${totalCost.toFixed(2)}</div></div>
+      <div class="stat"><div class="label">Avg Match %</div><div class="value">${avgFinishPct != null ? avgFinishPct.toFixed(1) + '%' : '—'}</div></div>
+    </div>
+
+    ${(() => {
+      // Stage performance chart - render only if any match has stage % data
+      const haveStagePct = matches.some(m => (m.stages||[]).some(s => s.stagePercent != null && s.stagePercent !== ''));
+      if (!haveStagePct) return '';
+      return `<div class="card">
+        <h3>Stage Performance</h3>
+        <div class="text-dim" style="font-size:12px;margin-bottom:8px">Each row is a match. Each dot is a stage's % of stage winner. Vertical line marks the match's overall %. Stages left of the line dragged you down; stages right of the line pulled you up.</div>
+        <div class="chart-container">${stagePerformanceChart(matches)}</div>
+      </div>`;
+    })()}
+
+    ${matches.map(m => matchCard(m)).join('')}
+  `;
+}
+
+function stagePerformanceChart(matches) {
+  const withStages = matches.filter(m => (m.stages||[]).some(s => s.stagePercent != null && s.stagePercent !== ''));
+  if (!withStages.length) return '';
+  const rowH = 30;
+  const padL = 180, padR = 16, padT = 24, padB = 24;
+  const innerW = 600 - padL - padR;
+  const W = 600;
+  const H = padT + padB + withStages.length * rowH;
+  const xFor = pct => padL + (Math.min(120, Math.max(0, pct)) / 120) * innerW;
+
+  let grid = '';
+  // Vertical reference lines at 0, 25, 50, 75, 100
+  [0, 25, 50, 75, 100, 120].forEach(p => {
+    const x = xFor(p);
+    grid += `<line x1="${x}" x2="${x}" y1="${padT - 6}" y2="${H - padB + 4}" stroke="var(--border)" stroke-dasharray="2,3"/>`;
+    grid += `<text x="${x}" y="${padT - 10}" text-anchor="middle" fill="var(--text-dim)" font-size="10">${p}%</text>`;
+  });
+
+  let rows = '';
+  withStages.forEach((m, i) => {
+    const y = padT + i * rowH + rowH / 2;
+    // Match label (left)
+    const label = `${formatDate(m.date)} ${m.name ? '· ' + m.name : ''}`;
+    rows += `<text x="${padL - 8}" y="${y + 4}" text-anchor="end" fill="var(--text)" font-size="11">${escapeHtml(label.length > 30 ? label.slice(0,28) + '…' : label)}</text>`;
+    // Match overall % vertical bar (per row)
+    if (m.matchPercentage != null) {
+      const mx = xFor(m.matchPercentage);
+      rows += `<line x1="${mx}" x2="${mx}" y1="${y - 10}" y2="${y + 10}" stroke="var(--info)" stroke-width="2"/>`;
+    }
+    // Stage dots
+    (m.stages || []).forEach(s => {
+      if (s.stagePercent == null || s.stagePercent === '') return;
+      const sx = xFor(s.stagePercent);
+      const above = m.matchPercentage != null && s.stagePercent > m.matchPercentage;
+      const color = above ? 'var(--success)' : 'var(--danger)';
+      rows += `<circle cx="${sx}" cy="${y}" r="4" fill="${color}" opacity="0.85"><title>Stage ${s.number||''} ${escapeHtml(s.name||'')}: ${Number(s.stagePercent).toFixed(2)}%</title></circle>`;
+    });
+  });
+
+  // Legend
+  let legend = `<g transform="translate(${padL}, ${H - 6})">
+    <circle cx="6" cy="-4" r="4" fill="var(--success)"/><text x="14" y="0" font-size="10" fill="var(--text-dim)">above match %</text>
+    <circle cx="120" cy="-4" r="4" fill="var(--danger)"/><text x="128" y="0" font-size="10" fill="var(--text-dim)">below match %</text>
+    <line x1="240" x2="240" y1="-9" y2="0" stroke="var(--info)" stroke-width="2"/><text x="248" y="0" font-size="10" fill="var(--text-dim)">match overall %</text>
+  </g>`;
+
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:${H}px">${grid}${rows}${legend}</svg>`;
+}
+
+function matchCard(m) {
+  const f = getFirearm(m.firearmId);
+  const stages = m.stages || [];
+  const totalPoints = stages.reduce((s, st) => s + (parseFloat(st.points) || 0), 0);
+  const totalTime = stages.reduce((s, st) => s + (parseFloat(st.time) || 0), 0);
+  const overallHF = totalTime > 0 ? (totalPoints / totalTime).toFixed(3) : '—';
+  const finishLabel = m.finishDivision != null && m.totalShootersDivision
+    ? `${m.finishDivision} of ${m.totalShootersDivision} in ${escapeHtml(m.division || '')}`
+    : (m.finishOverall != null ? `Overall ${m.finishOverall}${m.totalShooters ? ' of ' + m.totalShooters : ''}` : '');
+  return `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div style="font-size:18px;font-weight:600">${escapeHtml(m.name || 'Match')}</div>
+          <div class="text-dim" style="font-size:12px;margin-top:2px">${formatDate(m.date)} &middot; ${escapeHtml(m.location || '—')} &middot; ${escapeHtml(m.matchType || 'USPSA')}</div>
+        </div>
+        <div style="text-align:right">
+          <span class="badge info">${escapeHtml(m.division || 'Division')}</span>
+          ${m.powerFactor ? `<span class="badge neutral" style="margin-left:4px">${escapeHtml(m.powerFactor)}</span>` : ''}
+          ${m.classification ? `<span class="badge pr" style="margin-left:4px">${escapeHtml(m.classification)}</span>` : ''}
+        </div>
+      </div>
+      <hr>
+      <div class="grid grid-4" style="margin-bottom:12px">
+        <div><div class="text-dim" style="font-size:11px;text-transform:uppercase">Firearm</div><div style="font-weight:500">${escapeHtml(f ? f.name : '—')}</div></div>
+        <div><div class="text-dim" style="font-size:11px;text-transform:uppercase">Stages</div><div style="font-weight:500">${stages.length}</div></div>
+        <div><div class="text-dim" style="font-size:11px;text-transform:uppercase">Overall HF</div><div style="font-weight:500;color:var(--accent)">${overallHF}</div></div>
+        <div><div class="text-dim" style="font-size:11px;text-transform:uppercase">Match %</div><div style="font-weight:500">${m.matchPercentage != null ? m.matchPercentage.toFixed(2) + '%' : '—'}</div></div>
+      </div>
+      ${m.cost != null && m.cost !== '' ? `<div style="font-size:13px;color:var(--text-dim);margin-bottom:8px"><strong style="color:var(--text)">Cost:</strong> $${Number(m.cost).toFixed(2)}</div>` : ''}
+      ${finishLabel ? `<div style="font-size:13px;color:var(--text-dim);margin-bottom:8px"><strong style="color:var(--text)">Finish:</strong> ${finishLabel}</div>` : ''}
+      ${stages.length ? `<details><summary class="text-accent">Stage breakdown (${stages.length})</summary><div style="padding-top:8px"><table><thead><tr><th>#</th><th>Name</th><th>Points</th><th>Time</th><th>HF</th><th>Stage %</th></tr></thead><tbody>${stages.map(st => `<tr><td>${st.number||''}</td><td>${escapeHtml(st.name||'')}</td><td>${st.points||'—'}</td><td>${st.time||'—'}</td><td>${(st.hitFactor!=null && !isNaN(st.hitFactor)) ? Number(st.hitFactor).toFixed(3) : (calcHitFactor(st.points,st.time)||0).toFixed(3)}</td><td>${st.stagePercent!=null ? Number(st.stagePercent).toFixed(2)+'%' : '—'}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
+      ${m.notes ? `<div style="margin-top:10px;font-size:13px;color:var(--text-dim);white-space:pre-wrap">${escapeHtml(m.notes)}</div>` : ''}
+      <div class="row-actions" style="margin-top:14px">
+        <button class="btn small secondary" onclick="openMatchModal('${m.id}')">Edit</button>
+        ${m.practiScoreUrl ? `<a class="btn small secondary" href="${escapeHtml(m.practiScoreUrl)}" target="_blank" rel="noopener">&#9654; PractiScore Results</a>` : ''}
+        <button class="btn small danger" onclick="deleteMatch('${m.id}')">Delete</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderClassifiersPane() {
+  const list = [...(DB.classifiers || [])].sort((a, b) => b.date.localeCompare(a.date));
+  if (!list.length) return `<div class="card"><div class="empty"><div class="icon">&#9658;</div>No classifiers logged yet.<br><br><button class="btn" onclick="openClassifierModal()">Log first classifier</button></div></div>`;
+  return `<div class="card"><table>
+    <thead><tr><th>Date</th><th>Code</th><th>Name</th><th>Division</th><th>PF</th><th>Points</th><th>Time</th><th>HF</th><th>HHF</th><th>%</th><th>Class</th><th></th></tr></thead>
+    <tbody>${list.map(c => {
+      const cls = classFromPercent(c.classifierPercent);
+      const clsBadge = c.classifierPercent >= 95 ? 'pr' : c.classifierPercent >= 75 ? 'success' : c.classifierPercent >= 60 ? 'info' : 'neutral';
+      return `<tr>
+        <td>${formatDate(c.date)}</td>
+        <td><strong>${escapeHtml(c.classifierCode || '')}</strong></td>
+        <td>${escapeHtml(c.classifierName || '')}</td>
+        <td>${escapeHtml(c.division || '')}</td>
+        <td>${escapeHtml(c.powerFactor || '')}</td>
+        <td>${c.points != null ? c.points : '—'}</td>
+        <td>${c.time != null ? Number(c.time).toFixed(2) : '—'}</td>
+        <td>${c.hitFactor != null ? Number(c.hitFactor).toFixed(3) : '—'}</td>
+        <td>${c.highHitFactor || '—'}</td>
+        <td><strong>${c.classifierPercent != null ? Number(c.classifierPercent).toFixed(2) + '%' : '—'}</strong></td>
+        <td><span class="badge ${clsBadge}">${cls}</span></td>
+        <td class="row-actions"><button class="btn small secondary" onclick="openClassifierModal('${c.id}')">Edit</button><button class="btn small danger" onclick="deleteClassifier('${c.id}')">&times;</button></td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+
+function renderClassificationPane() {
+  const divs = divisionsWithClassifiers();
+  if (!divs.length) return `<div class="card"><div class="empty"><div class="icon">&#9733;</div>No classifiers logged yet. Add a classifier to see your classification.</div></div>`;
+  return `
+    <div class="alert info" style="margin-bottom:16px">&#9432; Classification estimates use the standard "best 4 of last 8 classifiers" rule per division. Official USPSA classification numbers come from your USPSA member portal.</div>
+    <div class="grid grid-2">
+      ${divs.map(d => {
+        const c = classificationForDivision(d);
+        if (!c) return '';
+        const need = c.needMore > 0 ? ` <span class="text-dim" style="font-size:11px">(need ${c.needMore} more for full calc)</span>` : '';
+        const tier = c.percent >= 95 ? 'pr' : c.percent >= 75 ? 'success' : c.percent >= 60 ? 'info' : 'warn';
+        return `<div class="card">
+          <h3>${escapeHtml(d)}</h3>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-size:36px;font-weight:600;color:var(--accent)">${c.percent.toFixed(2)}%</div><div class="text-dim" style="font-size:12px">Best ${c.used.length} of last ${c.poolSize} ${need}</div></div>
+            <div style="font-size:42px;font-weight:600"><span class="badge ${tier}" style="font-size:24px;padding:6px 14px">${c.class}</span></div>
+          </div>
+          <hr>
+          <div style="font-size:12px;color:var(--text-dim);line-height:1.8">
+            <strong style="color:var(--text)">Class thresholds:</strong> GM ≥ 95% &middot; M ≥ 85% &middot; A ≥ 75% &middot; B ≥ 60% &middot; C ≥ 40% &middot; D < 40%
+          </div>
+          <div style="margin-top:12px"><strong style="font-size:12px;color:var(--text-dim);text-transform:uppercase">Scores used</strong><div style="margin-top:6px">${c.used.map(x => `<div style="font-size:13px;padding:4px 0;border-bottom:1px dotted var(--border)"><span class="text-dim">${formatDate(x.date)}</span> &middot; ${escapeHtml(x.classifierCode||'')} &middot; <strong style="color:var(--accent)">${x.classifierPercent.toFixed(2)}%</strong></div>`).join('')}</div></div>
+        </div>`;
+      }).join('')}
+    </div>
+    <div class="card" style="margin-top:16px">
+      <h3>Progression Over Time</h3>
+      <div class="chart-container">${classifierProgressChart()}</div>
+    </div>
+
+    <div class="card">
+      <h3>Best Score per Classifier</h3>
+      <div class="text-dim" style="font-size:12px;margin-bottom:8px">Your peak performance for each unique classifier code, with attempt count and improvement vs. first attempt.</div>
+      ${bestPerClassifierTable()}
+    </div>
+  `;
+}
+
+function bestPerClassifierTable() {
+  const all = (DB.classifiers || []).filter(c => c.classifierPercent != null);
+  if (!all.length) return `<div class="empty">No classifier data yet.</div>`;
+  // Group by code + division (same code in different divisions has different HHFs)
+  const groups = {};
+  for (const c of all) {
+    const code = (c.classifierCode || '').trim() || 'unknown';
+    const div = c.division || 'Unspecified';
+    const key = `${code}__${div}`;
+    if (!groups[key]) groups[key] = { code, division: div, name: c.classifierName || '', attempts: [] };
+    groups[key].attempts.push(c);
+  }
+  const rows = Object.values(groups).map(g => {
+    const sortedByDate = [...g.attempts].sort((a,b) => a.date.localeCompare(b.date));
+    const sortedByPct = [...g.attempts].sort((a,b) => b.classifierPercent - a.classifierPercent);
+    const best = sortedByPct[0];
+    const first = sortedByDate[0];
+    const last = sortedByDate[sortedByDate.length - 1];
+    const improvement = first === best ? null : (best.classifierPercent - first.classifierPercent);
+    return {
+      code: g.code,
+      division: g.division,
+      name: g.name || (classifierDefByCode(g.code)?.name || ''),
+      attempts: g.attempts.length,
+      best,
+      first,
+      last,
+      improvement
+    };
+  });
+  rows.sort((a, b) => b.best.classifierPercent - a.best.classifierPercent);
+  return `<table>
+    <thead><tr><th>Code</th><th>Name</th><th>Division</th><th>Attempts</th><th>Best %</th><th>Best Class</th><th>Date of Best</th><th>Improvement</th></tr></thead>
+    <tbody>${rows.map(r => {
+      const cls = classFromPercent(r.best.classifierPercent);
+      const clsBadge = r.best.classifierPercent >= 95 ? 'pr' : r.best.classifierPercent >= 75 ? 'success' : r.best.classifierPercent >= 60 ? 'info' : 'neutral';
+      const impLabel = r.improvement == null ? '<span class="text-dim">—</span>' : (r.improvement > 0 ? `<span class="text-success">+${r.improvement.toFixed(2)}%</span>` : `<span class="text-dim">${r.improvement.toFixed(2)}%</span>`);
+      return `<tr>
+        <td><strong>${escapeHtml(r.code)}</strong></td>
+        <td>${escapeHtml(r.name)}</td>
+        <td>${escapeHtml(r.division)}</td>
+        <td>${r.attempts}</td>
+        <td><strong>${r.best.classifierPercent.toFixed(2)}%</strong></td>
+        <td><span class="badge ${clsBadge}">${cls}</span></td>
+        <td>${formatDate(r.best.date)}</td>
+        <td>${impLabel}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>`;
+}
+
+function classifierProgressChart() {
+  const all = [...(DB.classifiers || [])].filter(c => c.classifierPercent != null).sort((a, b) => a.date.localeCompare(b.date));
+  if (all.length < 2) return `<div class="empty">Need at least 2 classifiers to chart progression.</div>`;
+  const W = 700, H = 240, padL = 50, padB = 30, padT = 16, padR = 130;
+  const minD = new Date(all[0].date).getTime();
+  const maxD = new Date(all[all.length-1].date).getTime() || minD + 1;
+  const xFor = d => padL + ((new Date(d).getTime() - minD) / Math.max(1, maxD - minD)) * (W - padL - padR);
+  const yFor = v => H - padB - (Math.min(120, v) / 120) * (H - padT - padB);
+  const palette = ['var(--accent)','var(--info)','var(--success)','var(--warn)','#bb86fc','#03dac6'];
+  const divs = divisionsWithClassifiers();
+  let lines = '';
+  let legend = '';
+  divs.forEach((d, i) => {
+    const color = palette[i % palette.length];
+    const list = all.filter(c => c.division === d);
+    if (list.length < 2) return;
+    const path = list.map((x, j) => `${j?'L':'M'} ${xFor(x.date).toFixed(1)} ${yFor(x.classifierPercent).toFixed(1)}`).join(' ');
+    lines += `<path d="${path}" stroke="${color}" stroke-width="2" fill="none"></path>`;
+    list.forEach(x => { lines += `<circle cx="${xFor(x.date)}" cy="${yFor(x.classifierPercent)}" r="3" fill="${color}"></circle>`; });
+    legend += `<g transform="translate(${W - padR + 5}, ${padT + i*22})"><rect width="10" height="10" fill="${color}"/><text x="14" y="9" fill="var(--text)" font-size="11">${escapeHtml(d)}</text></g>`;
+  });
+  // Class threshold lines
+  let thresholds = '';
+  [{v:95,l:'GM'},{v:85,l:'M'},{v:75,l:'A'},{v:60,l:'B'},{v:40,l:'C'}].forEach(t => {
+    const y = yFor(t.v);
+    thresholds += `<line x1="${padL}" x2="${W-padR}" y1="${y}" y2="${y}" stroke="var(--border)" stroke-dasharray="3,3"/>`;
+    thresholds += `<text x="${padL-6}" y="${y+3}" text-anchor="end" fill="var(--text-dim)" font-size="10">${t.l} ${t.v}</text>`;
+  });
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="height:240px">${thresholds}${lines}${legend}</svg>`;
+}
+
+/* ----- Match modal ----- */
+function openMatchModal(id) {
+  const m = id ? (DB.matches || []).find(x => x.id === id) : {
+    date: todayISO(), name: '', matchType: 'USPSA Level 1', location: '',
+    division: (DB.settings.competition || {}).defaultDivision || 'Carry Optics',
+    powerFactor: (DB.settings.competition || {}).defaultPowerFactor || 'Minor',
+    firearmId: DB.firearms[0]?.id || '', classification: '',
+    finishOverall: '', totalShooters: '', finishDivision: '', totalShootersDivision: '',
+    matchPercentage: '', divisionPercentage: '', cost: '', totalRounds: '',
+    practiScoreUrl: '',
+    notes: '', stages: [{ number: 1, name: '', points: '', time: '', hitFactor: '', stagePercent: '', notes: '' }]
+  };
+  if (!DB.firearms.length) { alert('Add a firearm first.'); return; }
+  openModal(`
+    <div class="modal-header"><h3>${id?'Edit':'Log'} Match</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body" style="max-height:70vh;overflow-y:auto">
+      <div class="form-grid-2">
+        <div class="form-row"><label>Date</label><input id="mt-date" type="date" value="${m.date}"></div>
+        <div class="form-row"><label>Match Name</label><input id="mt-name" value="${escapeHtml(m.name)}" placeholder="e.g. Florida State USPSA"></div>
+      </div>
+      <div class="form-grid-3">
+        <div class="form-row"><label>Match Type</label>
+          <select id="mt-type">${['USPSA Level 1','USPSA Level 2','USPSA Level 3','Section','State','Area','Nationals','IDPA','Steel Challenge','Local Match','Other'].map(t => `<option ${m.matchType===t?'selected':''}>${t}</option>`).join('')}</select>
+        </div>
+        <div class="form-row"><label>Division</label>
+          <select id="mt-div">${USPSA_DIVISIONS.map(d => `<option ${m.division===d?'selected':''}>${d}</option>`).join('')}</select>
+        </div>
+        <div class="form-row"><label>Power Factor</label>
+          <select id="mt-pf"><option ${m.powerFactor==='Minor'?'selected':''}>Minor</option><option ${m.powerFactor==='Major'?'selected':''}>Major</option></select>
+        </div>
+      </div>
+      <div class="form-grid-3">
+        <div class="form-row"><label>Location</label><input id="mt-loc" value="${escapeHtml(m.location)}" placeholder="e.g. Universal Shooting Academy"></div>
+        <div class="form-row"><label>Firearm</label>
+          <select id="mt-firearm">${DB.firearms.map(f => `<option value="${f.id}" ${m.firearmId===f.id?'selected':''}>${escapeHtml(f.name)}</option>`).join('')}</select>
+        </div>
+        <div class="form-row"><label>Match Cost ($)</label>
+          <input id="mt-cost" type="number" min="0" step="0.01" value="${m.cost}" placeholder="entry fee + travel">
+          <div class="help-text">All-in cost (entry, travel, lodging).</div>
+        </div>
+        <div class="form-row"><label>Rounds Fired</label>
+          <input id="mt-rounds" type="number" min="0" value="${m.totalRounds || ''}" placeholder="e.g. 120">
+          <div class="help-text">Total rounds at this match (for cost-per-round). Don't also log as a session to avoid double-counting.</div>
+        </div>
+      </div>
+      <div class="form-row"><label>Classification at time of match (optional)</label>
+        <select id="mt-class"><option value="">—</option>${['GM','M','A','B','C','D','U'].map(c => `<option ${m.classification===c?'selected':''}>${c}</option>`).join('')}</select>
+      </div>
+      <hr>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <strong>Stages</strong>
+        <button class="btn small secondary" onclick="addStageRow()">+ Add Stage</button>
+      </div>
+      <div id="mt-stages"></div>
+      <hr>
+      <strong>Final Results (fill in after match posts)</strong>
+      <div class="form-grid-2" style="margin-top:8px">
+        <div class="form-row"><label>Match Percentage</label><input id="mt-matchpct" type="number" step="0.01" value="${m.matchPercentage}" placeholder="e.g. 78.45"></div>
+        <div class="form-row"><label>Division Percentage</label><input id="mt-divpct" type="number" step="0.01" value="${m.divisionPercentage}" placeholder="e.g. 82.30"></div>
+      </div>
+      <div class="form-grid-4">
+        <div class="form-row"><label>Overall Finish</label><input id="mt-finOver" type="number" min="1" value="${m.finishOverall}"></div>
+        <div class="form-row"><label>Total Shooters</label><input id="mt-totOver" type="number" min="1" value="${m.totalShooters}"></div>
+        <div class="form-row"><label>Division Finish</label><input id="mt-finDiv" type="number" min="1" value="${m.finishDivision}"></div>
+        <div class="form-row"><label>Division Shooters</label><input id="mt-totDiv" type="number" min="1" value="${m.totalShootersDivision}"></div>
+      </div>
+      <div class="form-row"><label>PractiScore URL (optional)</label>
+        <input id="mt-practiscore" type="url" value="${escapeHtml(m.practiScoreUrl || '')}" placeholder="https://practiscore.com/results/...">
+        <div class="help-text">Paste the link to your official match results on PractiScore.</div>
+      </div>
+      <div class="form-row"><label>Notes</label><textarea id="mt-notes">${escapeHtml(m.notes)}</textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="saveMatch('${id || ''}')">Save</button>
+    </div>
+  `, () => {
+    window._tempMatch = JSON.parse(JSON.stringify(m));
+    renderStageRows();
+  });
+}
+function renderStageRows() {
+  const c = document.getElementById('mt-stages');
+  c.innerHTML = (window._tempMatch.stages || []).map((s, i) => {
+    const hf = (s.hitFactor != null && s.hitFactor !== '') ? s.hitFactor : (calcHitFactor(s.points, s.time) || '');
+    return `<div style="background:var(--panel-2);padding:10px;border-radius:6px;margin-bottom:8px">
+      <div class="form-grid-3">
+        <div class="form-row"><label>Stage #</label><input type="number" value="${s.number||''}" onchange="updateStage(${i},'number',this.value)"></div>
+        <div class="form-row"><label>Name</label><input value="${escapeHtml(s.name||'')}" onchange="updateStage(${i},'name',this.value)" placeholder="e.g. Stand and Deliver"></div>
+        <div class="form-row"><label>Stage %</label><input type="number" step="0.01" value="${s.stagePercent||''}" onchange="updateStage(${i},'stagePercent',this.value)" placeholder="of stage winner"></div>
+      </div>
+      <div class="form-grid-3">
+        <div class="form-row"><label>Points</label><input type="number" step="0.1" value="${s.points||''}" onchange="updateStage(${i},'points',this.value);recalcStageHF(${i})"></div>
+        <div class="form-row"><label>Time (sec)</label><input type="number" step="0.01" value="${s.time||''}" onchange="updateStage(${i},'time',this.value);recalcStageHF(${i})"></div>
+        <div class="form-row"><label>Hit Factor (auto)</label><input id="stage-hf-${i}" type="text" readonly value="${hf!=null && hf!=='' ? Number(hf).toFixed(3) : ''}" style="background:var(--bg)"></div>
+      </div>
+      <div style="text-align:right"><button class="btn small danger" onclick="removeStage(${i})">Remove stage</button></div>
+    </div>`;
+  }).join('');
+}
+function addStageRow() {
+  const next = (window._tempMatch.stages || []).length + 1;
+  window._tempMatch.stages.push({ number: next, name:'', points:'', time:'', hitFactor:'', stagePercent:'', notes:'' });
+  renderStageRows();
+}
+function removeStage(i) { window._tempMatch.stages.splice(i, 1); renderStageRows(); }
+function updateStage(i, key, val) { window._tempMatch.stages[i][key] = val; }
+function recalcStageHF(i) {
+  const s = window._tempMatch.stages[i];
+  const hf = calcHitFactor(s.points, s.time);
+  s.hitFactor = hf;
+  const el = document.getElementById('stage-hf-' + i);
+  if (el) el.value = hf != null ? Number(hf).toFixed(3) : '';
+}
+function saveMatch(id) {
+  const t = window._tempMatch;
+  t.date = document.getElementById('mt-date').value;
+  t.name = document.getElementById('mt-name').value.trim();
+  t.matchType = document.getElementById('mt-type').value;
+  t.division = document.getElementById('mt-div').value;
+  t.powerFactor = document.getElementById('mt-pf').value;
+  t.location = document.getElementById('mt-loc').value.trim();
+  t.firearmId = document.getElementById('mt-firearm').value;
+  t.classification = document.getElementById('mt-class').value;
+  t.matchPercentage = parseFloat(document.getElementById('mt-matchpct').value) || null;
+  t.divisionPercentage = parseFloat(document.getElementById('mt-divpct').value) || null;
+  t.finishOverall = parseInt(document.getElementById('mt-finOver').value) || null;
+  t.totalShooters = parseInt(document.getElementById('mt-totOver').value) || null;
+  t.finishDivision = parseInt(document.getElementById('mt-finDiv').value) || null;
+  t.totalShootersDivision = parseInt(document.getElementById('mt-totDiv').value) || null;
+  t.cost = parseFloat(document.getElementById('mt-cost').value) || null;
+  t.totalRounds = parseInt(document.getElementById('mt-rounds').value) || null;
+  t.practiScoreUrl = document.getElementById('mt-practiscore').value.trim();
+  t.notes = document.getElementById('mt-notes').value.trim();
+  // Recompute HFs for stages
+  t.stages = (t.stages || []).filter(s => s.points || s.time || s.name).map(s => ({
+    ...s,
+    points: parseFloat(s.points) || null,
+    time: parseFloat(s.time) || null,
+    hitFactor: calcHitFactor(s.points, s.time),
+    stagePercent: parseFloat(s.stagePercent) || null,
+    number: parseInt(s.number) || null
+  }));
+  if (!t.date) { alert('Date required'); return; }
+  if (!DB.matches) DB.matches = [];
+  if (id) {
+    const idx = DB.matches.findIndex(x => x.id === id);
+    DB.matches[idx] = { ...DB.matches[idx], ...t };
+  } else {
+    DB.matches.push({ id: uid('mt'), ...t });
+  }
+  // Persist last-used division and PF
+  if (!DB.settings.competition) DB.settings.competition = {};
+  DB.settings.competition.defaultDivision = t.division;
+  DB.settings.competition.defaultPowerFactor = t.powerFactor;
+  saveDB(); closeModal(); renderCompetition();
+}
+function deleteMatch(id) {
+  if (!confirm('Delete this match record?')) return;
+  DB.matches = (DB.matches || []).filter(x => x.id !== id);
+  saveDB(); renderCompetition();
+}
+
+/* ----- Stage Timeline ----- */
+function renderStageTimelinePane() {
+  // Collect all stages with stagePercent across all matches, sorted by date
+  const points = [];
+  for (const m of (DB.matches || [])) {
+    for (const st of (m.stages || [])) {
+      if (st.stagePercent != null && !isNaN(parseFloat(st.stagePercent))) {
+        points.push({
+          date: m.date,
+          matchName: m.name || 'Match',
+          stageName: st.name || ('Stage ' + (st.number || '')),
+          pct: parseFloat(st.stagePercent),
+          matchAvg: m.stages.filter(s => s.stagePercent != null).reduce((a, s, _, arr) => a + parseFloat(s.stagePercent) / arr.length, 0)
+        });
+      }
+    }
+  }
+  points.sort((a, b) => a.date.localeCompare(b.date));
+
+  if (points.length < 2) {
+    return `<div class="card"><div class="empty"><div class="icon">&#9819;</div>Need at least 2 stages with percentages logged across your matches to display the timeline.<br><br>Enter Stage % values when logging match results.</div></div>`;
+  }
+
+  const W = 700, H = 240, padL = 44, padB = 36, padT = 20, padR = 16;
+  const minD = new Date(points[0].date).getTime();
+  const maxD = new Date(points[points.length - 1].date).getTime() || minD + 1;
+  const xFor = d => padL + ((new Date(d).getTime() - minD) / Math.max(1, maxD - minD)) * (W - padL - padR);
+  const yFor = v => H - padB - ((v - 0) / 100) * (H - padT - padB);
+
+  // Grid lines at 25, 50, 75, 100
+  let grid = '';
+  [25, 50, 75, 100].forEach(v => {
+    const y = yFor(v);
+    grid += `<line x1="${padL}" x2="${W - padR}" y1="${y}" y2="${y}" stroke="var(--border)" stroke-dasharray="3,4"/>`;
+    grid += `<text x="${padL - 6}" y="${y + 4}" text-anchor="end" fill="var(--text-dim)" font-size="10">${v}%</text>`;
+  });
+
+  // Reference line at 50%
+  const y50 = yFor(50);
+  grid += `<line x1="${padL}" x2="${W - padR}" y1="${y50}" y2="${y50}" stroke="var(--accent)" stroke-width="1" stroke-dasharray="5,5" opacity="0.4"/>`;
+
+  // Dots coloured green (above match avg) or red (below)
+  const dots = points.map(p => {
+    const cx = xFor(p.date), cy = yFor(p.pct);
+    const color = p.pct >= p.matchAvg ? 'var(--success)' : 'var(--danger)';
+    return `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="4" fill="${color}" opacity="0.85"><title>${p.matchName} — ${p.stageName}: ${p.pct.toFixed(1)}% (match avg ${p.matchAvg.toFixed(1)}%)</title></circle>`;
+  }).join('');
+
+  // Trend line (simple linear regression)
+  const n = points.length;
+  const xs = points.map((_, i) => i);
+  const ys = points.map(p => p.pct);
+  const xMean = xs.reduce((a, b) => a + b, 0) / n;
+  const yMean = ys.reduce((a, b) => a + b, 0) / n;
+  const slope = xs.reduce((a, x, i) => a + (x - xMean) * (ys[i] - yMean), 0) / xs.reduce((a, x) => a + (x - xMean) ** 2, 0.0001);
+  const intercept = yMean - slope * xMean;
+  const trendY1 = intercept;
+  const trendY2 = intercept + slope * (n - 1);
+  const tx1 = xFor(points[0].date), ty1 = yFor(Math.max(0, Math.min(100, trendY1)));
+  const tx2 = xFor(points[n - 1].date), ty2 = yFor(Math.max(0, Math.min(100, trendY2)));
+  const trendLine = `<line x1="${tx1.toFixed(1)}" y1="${ty1.toFixed(1)}" x2="${tx2.toFixed(1)}" y2="${ty2.toFixed(1)}" stroke="var(--accent)" stroke-width="1.5" opacity="0.6"/>`;
+
+  // Month labels along x-axis
+  let xLabels = '';
+  let lastLabelMonth = -1;
+  points.forEach(p => {
+    const dt = new Date(p.date);
+    if (dt.getMonth() !== lastLabelMonth) {
+      const x = xFor(p.date);
+      xLabels += `<text x="${x.toFixed(1)}" y="${H - padB + 14}" text-anchor="middle" fill="var(--text-dim)" font-size="10">${dt.toLocaleString(undefined, { month: 'short', year: '2-digit' })}</text>`;
+      lastLabelMonth = dt.getMonth();
+    }
+  });
+
+  const avg = (ys.reduce((a, b) => a + b, 0) / n).toFixed(1);
+  const trend = slope > 0.2 ? '&#8593; Improving' : slope < -0.2 ? '&#8595; Declining' : '&#8594; Stable';
+  const trendColor = slope > 0.2 ? 'var(--success)' : slope < -0.2 ? 'var(--danger)' : 'var(--text-dim)';
+
+  return `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+        <h3 style="margin-bottom:0">Stage % Over Time</h3>
+        <div style="font-size:12px;color:var(--text-dim);display:flex;gap:16px">
+          <span>Average: <strong style="color:var(--text)">${avg}%</strong></span>
+          <span>Trend: <strong style="color:${trendColor}">${trend}</strong></span>
+          <span>Stages: <strong style="color:var(--text)">${n}</strong></span>
+        </div>
+      </div>
+      <div style="overflow-x:auto">
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:400px;height:${H}px" xmlns="http://www.w3.org/2000/svg">
+          ${grid}${trendLine}${dots}${xLabels}
+        </svg>
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:6px;display:flex;gap:16px;flex-wrap:wrap">
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--success);margin-right:4px"></span>Above match average</span>
+        <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--danger);margin-right:4px"></span>Below match average</span>
+        <span><span style="display:inline-block;width:20px;height:2px;background:var(--accent);margin-right:4px;vertical-align:middle;opacity:0.6"></span>Trend line</span>
+        <span>Hover dots for details</span>
+      </div>
+    </div>
+  `;
+}
+
+/* ----- Classifier modal ----- */
+function openClassifierModal(id) {
+  const c = id ? (DB.classifiers || []).find(x => x.id === id) : {
+    date: todayISO(), classifierCode: '', classifierName: '',
+    division: (DB.settings.competition || {}).defaultDivision || 'Carry Optics',
+    powerFactor: (DB.settings.competition || {}).defaultPowerFactor || 'Minor',
+    firearmId: DB.firearms[0]?.id || '',
+    points: '', time: '', hitFactor: '', highHitFactor: '', classifierPercent: '',
+    A: '', C: '', D: '', M: '', NS: '', procedurals: '',
+    matchId: '', notes: ''
+  };
+  if (!DB.firearms.length) { alert('Add a firearm first.'); return; }
+  openModal(`
+    <div class="modal-header"><h3>${id?'Edit':'Log'} Classifier</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body" style="max-height:70vh;overflow-y:auto">
+      <div class="form-grid-3">
+        <div class="form-row"><label>Date</label><input id="cl-date" type="date" value="${c.date}"></div>
+        <div class="form-row"><label>Classifier Code</label>
+          <input id="cl-code" list="cl-code-list" value="${escapeHtml(c.classifierCode)}" placeholder="e.g. 99-12" oninput="onClassifierCodePicked()">
+          <datalist id="cl-code-list">${CLASSIFIER_DATABASE.map(d => `<option value="${d.code}">${d.name ? '— ' + d.name : ''}</option>`).join('')}</datalist>
+          <div class="help-text">Type or pick from the list. "CM-" prefix is optional.</div>
+        </div>
+        <div class="form-row"><label>Classifier Name (optional)</label><input id="cl-name" value="${escapeHtml(c.classifierName)}" placeholder="e.g. The El Mar"></div>
+      </div>
+      <div class="form-grid-3">
+        <div class="form-row"><label>Division</label>
+          <select id="cl-div">${USPSA_DIVISIONS.map(d => `<option ${c.division===d?'selected':''}>${d}</option>`).join('')}</select>
+        </div>
+        <div class="form-row"><label>Power Factor</label>
+          <select id="cl-pf"><option ${c.powerFactor==='Minor'?'selected':''}>Minor</option><option ${c.powerFactor==='Major'?'selected':''}>Major</option></select>
+        </div>
+        <div class="form-row"><label>Firearm</label>
+          <select id="cl-firearm">${DB.firearms.map(f => `<option value="${f.id}" ${c.firearmId===f.id?'selected':''}>${escapeHtml(f.name)}</option>`).join('')}</select>
+        </div>
+      </div>
+      <hr>
+      <div class="form-grid-4">
+        <div class="form-row"><label>Points</label><input id="cl-points" type="number" step="0.1" value="${c.points}" oninput="recalcClassifier()"></div>
+        <div class="form-row"><label>Time (sec)</label><input id="cl-time" type="number" step="0.01" value="${c.time}" oninput="recalcClassifier()"></div>
+        <div class="form-row"><label>Your HF (auto)</label><input id="cl-hf" readonly value="${c.hitFactor != null && c.hitFactor !== '' ? Number(c.hitFactor).toFixed(4) : ''}" style="background:var(--panel-2)"></div>
+        <div class="form-row"><label>High HF (HHF)</label>
+          <input id="cl-hhf" type="number" step="0.0001" value="${c.highHitFactor}" oninput="recalcClassifier()" placeholder="from USPSA">
+          <div class="help-text">HHF varies by division and changes over time. <a id="cl-hhf-link" href="https://uspsa.org/classifiers" target="_blank" rel="noopener" style="color:var(--accent)">Look up on USPSA &#8599;</a></div>
+        </div>
+      </div>
+      <div class="form-row"><label>Your Percentage (auto)</label>
+        <input id="cl-pct" readonly value="${c.classifierPercent != null && c.classifierPercent !== '' ? Number(c.classifierPercent).toFixed(2) + '%' : ''}" style="background:var(--panel-2);font-size:16px;font-weight:600;color:var(--accent)">
+      </div>
+      <hr>
+      <strong>Hit Breakdown (optional)</strong>
+      <div class="form-grid-3" style="margin-top:8px">
+        <div class="form-row"><label>A</label><input id="cl-A" type="number" min="0" value="${c.A}"></div>
+        <div class="form-row"><label>C</label><input id="cl-C" type="number" min="0" value="${c.C}"></div>
+        <div class="form-row"><label>D</label><input id="cl-D" type="number" min="0" value="${c.D}"></div>
+      </div>
+      <div class="form-grid-3">
+        <div class="form-row"><label>M (miss)</label><input id="cl-M" type="number" min="0" value="${c.M}"></div>
+        <div class="form-row"><label>NS</label><input id="cl-NS" type="number" min="0" value="${c.NS}"></div>
+        <div class="form-row"><label>Procedurals</label><input id="cl-proc" type="number" min="0" value="${c.procedurals}"></div>
+      </div>
+      <div class="form-row"><label>Notes</label><textarea id="cl-notes">${escapeHtml(c.notes)}</textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="saveClassifier('${id || ''}')">Save</button>
+    </div>
+  `);
+}
+function onClassifierCodePicked() {
+  const codeEl = document.getElementById('cl-code');
+  const nameEl = document.getElementById('cl-name');
+  const linkEl = document.getElementById('cl-hhf-link');
+  if (!codeEl || !nameEl) return;
+  const def = classifierDefByCode(codeEl.value);
+  if (def && def.name && !nameEl.value.trim()) {
+    nameEl.value = def.name;
+  }
+  // Update USPSA lookup link with the entered code
+  if (linkEl && codeEl.value.trim()) {
+    const code = codeEl.value.trim().replace(/^CM-?/i, '');
+    linkEl.href = `https://uspsa.org/classifiers/CM-${code}`;
+    linkEl.textContent = `Look up CM-${code} on USPSA ↗`;
+  } else if (linkEl) {
+    linkEl.href = 'https://uspsa.org/classifiers';
+    linkEl.textContent = 'Look up on USPSA ↗';
+  }
+}
+
+function recalcClassifier() {
+  const points = parseFloat(document.getElementById('cl-points').value);
+  const time = parseFloat(document.getElementById('cl-time').value);
+  const hhf = parseFloat(document.getElementById('cl-hhf').value);
+  const hf = calcHitFactor(points, time);
+  document.getElementById('cl-hf').value = hf != null ? hf.toFixed(4) : '';
+  const pct = calcClassifierPercent(hf, hhf);
+  document.getElementById('cl-pct').value = pct != null ? pct.toFixed(2) + '%' + ' (' + classFromPercent(pct) + ')' : '';
+}
+function saveClassifier(id) {
+  const points = parseFloat(document.getElementById('cl-points').value);
+  const time = parseFloat(document.getElementById('cl-time').value);
+  const hhf = parseFloat(document.getElementById('cl-hhf').value);
+  const hf = calcHitFactor(points, time);
+  const pct = calcClassifierPercent(hf, hhf);
+  const data = {
+    date: document.getElementById('cl-date').value,
+    classifierCode: document.getElementById('cl-code').value.trim(),
+    classifierName: document.getElementById('cl-name').value.trim(),
+    division: document.getElementById('cl-div').value,
+    powerFactor: document.getElementById('cl-pf').value,
+    firearmId: document.getElementById('cl-firearm').value,
+    points: isNaN(points) ? null : points,
+    time: isNaN(time) ? null : time,
+    hitFactor: hf,
+    highHitFactor: isNaN(hhf) ? null : hhf,
+    classifierPercent: pct,
+    A: parseInt(document.getElementById('cl-A').value) || null,
+    C: parseInt(document.getElementById('cl-C').value) || null,
+    D: parseInt(document.getElementById('cl-D').value) || null,
+    M: parseInt(document.getElementById('cl-M').value) || null,
+    NS: parseInt(document.getElementById('cl-NS').value) || null,
+    procedurals: parseInt(document.getElementById('cl-proc').value) || null,
+    notes: document.getElementById('cl-notes').value.trim()
+  };
+  if (!data.date) { alert('Date required'); return; }
+  if (!DB.classifiers) DB.classifiers = [];
+  if (id) {
+    const idx = DB.classifiers.findIndex(x => x.id === id);
+    DB.classifiers[idx] = { ...DB.classifiers[idx], ...data };
+  } else {
+    DB.classifiers.push({ id: uid('cl'), ...data });
+  }
+  if (!DB.settings.competition) DB.settings.competition = {};
+  DB.settings.competition.defaultDivision = data.division;
+  DB.settings.competition.defaultPowerFactor = data.powerFactor;
+  saveDB(); closeModal(); renderCompetition();
+}
+function deleteClassifier(id) {
+  if (!confirm('Delete this classifier record?')) return;
+  DB.classifiers = (DB.classifiers || []).filter(x => x.id !== id);
+  saveDB(); renderCompetition();
+}
+
+/* ============================================================
+   COSTS
+   Aggregates ammo costs (sessions × cost/round), range fees
+   (session.rangeFee), match fees (match.cost), and a freeform
+   purchases log (DB.purchases) for gear and other expenses.
+   ============================================================ */
+
+/**
+ * Calculate the ammo cost for a single session.
+ * Returns 0 if no ammo records have a costPerRound set.
+ */
+function sessionAmmoCost(s) {
+  return (s.ammoUsage || []).reduce((sum, u) => {
+    const a = getAmmo(u.ammoId);
+    return sum + (a && a.costPerRound ? u.rounds * parseFloat(a.costPerRound) : 0);
+  }, 0);
+}
+
+function renderCosts() {
+  const v = document.getElementById('view-costs');
+
+  // --- Aggregate totals ---
+  const ammoCost    = DB.sessions.reduce((s, x) => s + sessionAmmoCost(x), 0);
+  const rangeFees   = DB.sessions.reduce((s, x) => s + (parseFloat(x.rangeFee) || 0), 0);
+  const matchFees   = (DB.matches || []).reduce((s, m) => s + (parseFloat(m.cost) || 0), 0);
+  const gearTotal   = (DB.purchases || []).reduce((s, p) => s + (parseFloat(p.cost) || 0), 0);
+  const grandTotal  = ammoCost + rangeFees + matchFees + gearTotal;
+
+  const thisYear = new Date().getFullYear();
+  const ytdAmmo   = DB.sessions.filter(s => new Date(s.date).getFullYear() === thisYear).reduce((s, x) => s + sessionAmmoCost(x), 0);
+  const ytdRange  = DB.sessions.filter(s => new Date(s.date).getFullYear() === thisYear).reduce((s, x) => s + (parseFloat(x.rangeFee) || 0), 0);
+  const ytdMatch  = (DB.matches || []).filter(m => new Date(m.date).getFullYear() === thisYear).reduce((s, m) => s + (parseFloat(m.cost) || 0), 0);
+  const ytdGear   = (DB.purchases || []).filter(p => new Date(p.date).getFullYear() === thisYear).reduce((s, p) => s + (parseFloat(p.cost) || 0), 0);
+  const ytdTotal  = ytdAmmo + ytdRange + ytdMatch + ytdGear;
+
+  // Cost-per-round uses session rounds + match rounds (if entered)
+  const sessionRounds = DB.sessions.reduce((s, x) => s + (x.totalRounds || 0), 0);
+  const matchRounds   = (DB.matches || []).reduce((s, m) => s + (m.totalRounds || 0), 0);
+  const totalRoundsForCost = sessionRounds + matchRounds;
+  const costPerRound = totalRoundsForCost > 0 && grandTotal > 0 ? grandTotal / totalRoundsForCost : null;
+
+  const categories = [
+    { label: 'Ammo (sessions)',  value: ammoCost,  note: 'rounds × cost/round on ammo record' },
+    { label: 'Match Fees',       value: matchFees,  note: 'entry, travel, lodging' },
+    { label: 'Range Fees',       value: rangeFees,  note: 'lane / entry per session' },
+    { label: 'Gear & Purchases', value: gearTotal,  note: 'equipment, service, training' }
+  ];
+
+  v.innerHTML = `
+    <div class="view-header">
+      <div><h2>Costs</h2><div class="sub">Ammo, match fees, range fees, and gear expenses</div></div>
+      <button class="btn" onclick="openPurchaseModal()">+ Add Purchase</button>
+    </div>
+
+    <div class="grid grid-4" style="margin-bottom:16px">
+      <div class="stat"><div class="label">Total Spent</div><div class="value accent">$${grandTotal.toFixed(2)}</div></div>
+      <div class="stat"><div class="label">Spent ${thisYear}</div><div class="value">$${ytdTotal.toFixed(2)}</div></div>
+      <div class="stat"><div class="label">Rounds (sessions + matches)</div><div class="value">${totalRoundsForCost.toLocaleString()}</div></div>
+      <div class="stat"><div class="label">All-In Cost / Round</div><div class="value">${costPerRound != null ? '$' + costPerRound.toFixed(3) : '—'}</div></div>
+    </div>
+
+    <div class="grid grid-2" style="margin-bottom:16px">
+      <div class="card">
+        <h3>Spend by Category</h3>
+        ${categories.map(c => {
+          const pct = grandTotal > 0 ? (c.value / grandTotal) * 100 : 0;
+          return `<div style="margin:10px 0">
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+              <span><strong>${escapeHtml(c.label)}</strong> <span class="text-dim" style="font-size:11px">${escapeHtml(c.note)}</span></span>
+              <span><strong style="color:var(--accent)">$${c.value.toFixed(2)}</strong> <span class="text-dim">(${pct.toFixed(1)}%)</span></span>
+            </div>
+            <div class="progress"><div class="progress-fill" style="width:${pct}%"></div></div>
+          </div>`;
+        }).join('')}
+      </div>
+      <div class="card">
+        <h3>Year-to-Date (${thisYear})</h3>
+        ${[
+          { label: 'Ammo',            value: ytdAmmo },
+          { label: 'Match Fees',      value: ytdMatch },
+          { label: 'Range Fees',      value: ytdRange },
+          { label: 'Gear & Purchases',value: ytdGear }
+        ].map(c => `
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
+            <span>${escapeHtml(c.label)}</span><strong>$${c.value.toFixed(2)}</strong>
+          </div>
+        `).join('')}
+        <div style="display:flex;justify-content:space-between;padding:10px 0;font-size:14px">
+          <strong>YTD Total</strong>
+          <strong style="color:var(--accent)">$${ytdTotal.toFixed(2)}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <h3>Ammo Cost by Session</h3>
+      <div class="text-dim" style="font-size:12px;margin-bottom:10px">Auto-calculated from rounds fired × cost/round set on each ammo record. Set a cost/round in Ammunition to populate this table.</div>
+      ${(() => {
+        const rows = [...DB.sessions]
+          .sort((a, b) => b.date.localeCompare(a.date))
+          .map(s => ({ s, cost: sessionAmmoCost(s) }))
+          .filter(x => x.cost > 0 || (parseFloat(x.s.rangeFee) || 0) > 0);
+        if (!rows.length) return `<div class="empty">No session cost data yet. Add a cost/round to your ammo records, then it will appear here.</div>`;
+        return `<table>
+          <thead><tr><th>Date</th><th>Firearm</th><th>Location</th><th>Rounds</th><th>Ammo Cost</th><th>Range Fee</th><th>Session Total</th></tr></thead>
+          <tbody>${rows.map(({ s, cost }) => {
+            const f = getFirearm(s.firearmId);
+            const rf = parseFloat(s.rangeFee) || 0;
+            return `<tr>
+              <td>${formatDate(s.date)}</td>
+              <td>${escapeHtml(f ? f.name : '—')}</td>
+              <td>${escapeHtml(s.location || '—')}</td>
+              <td>${(s.totalRounds || 0).toLocaleString()}</td>
+              <td>${cost > 0 ? '$' + cost.toFixed(2) : '<span class="text-dim">—</span>'}</td>
+              <td>${rf > 0 ? '$' + rf.toFixed(2) : '<span class="text-dim">—</span>'}</td>
+              <td><strong>$${(cost + rf).toFixed(2)}</strong></td>
+            </tr>`;
+          }).join('')}</tbody>
+        </table>`;
+      })()}
+    </div>
+
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h3 style="margin-bottom:0">Purchases & Gear Log</h3>
+        <button class="btn small" onclick="openPurchaseModal()">+ Add Purchase</button>
+      </div>
+      ${(DB.purchases || []).length ? `
+        <table>
+          <thead><tr><th>Date</th><th>Category</th><th>Item</th><th>Vendor</th><th>Cost</th><th>Notes</th><th></th></tr></thead>
+          <tbody>${[...(DB.purchases || [])].sort((a, b) => b.date.localeCompare(a.date)).map(p => `
+            <tr>
+              <td>${formatDate(p.date)}</td>
+              <td><span class="badge neutral">${escapeHtml(p.category)}</span></td>
+              <td><strong>${escapeHtml(p.item)}</strong></td>
+              <td>${escapeHtml(p.vendor || '—')}</td>
+              <td><strong>$${Number(p.cost).toFixed(2)}</strong></td>
+              <td style="max-width:260px">${escapeHtml(p.notes || '')}</td>
+              <td class="row-actions">
+                <button class="btn small secondary" onclick="openPurchaseModal('${p.id}')">Edit</button>
+                <button class="btn small danger" onclick="deletePurchase('${p.id}')">&times;</button>
+              </td>
+            </tr>
+          `).join('')}</tbody>
+        </table>
+      ` : `<div class="empty"><div class="icon">&#9654;</div>No purchases logged yet.<br><br><button class="btn" onclick="openPurchaseModal()">Add first purchase</button></div>`}
+    </div>
+  `;
+}
+
+/**
+ * Open the Add/Edit Purchase modal.
+ * @param {string} [id] - If provided, loads the existing purchase for editing.
+ */
+function openPurchaseModal(id) {
+  const p = id ? (DB.purchases || []).find(x => x.id === id) : {
+    date: todayISO(), category: 'Gear / Equipment', item: '', vendor: '', cost: '', notes: ''
+  };
+  openModal(`
+    <div class="modal-header"><h3>${id ? 'Edit' : 'Add'} Purchase</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-grid-2">
+        <div class="form-row"><label>Date</label><input id="pu-date" type="date" value="${p.date}"></div>
+        <div class="form-row"><label>Category</label>
+          <select id="pu-cat">
+            ${['Gear / Equipment','Ammo Purchase','Service / Repair','Training / Class','Travel','Range Fee','Other'].map(c => `<option ${p.category === c ? 'selected' : ''}>${c}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row"><label>Item</label><input id="pu-item" value="${escapeHtml(p.item)}" placeholder="e.g. Safariland holster, Holosun 507C, match entry"></div>
+        <div class="form-row"><label>Vendor</label><input id="pu-vendor" value="${escapeHtml(p.vendor || '')}" placeholder="e.g. Atlas Gunworks, Primary Arms"></div>
+      </div>
+      <div class="form-row"><label>Cost ($)</label><input id="pu-cost" type="number" min="0" step="0.01" value="${p.cost || ''}" placeholder="0.00"></div>
+      <div class="form-row"><label>Notes</label><textarea id="pu-notes">${escapeHtml(p.notes || '')}</textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="savePurchase('${id || ''}')">Save</button>
+    </div>
+  `);
+}
+
+/** Save a new or edited purchase record. */
+function savePurchase(id) {
+  const data = {
+    date:     document.getElementById('pu-date').value,
+    category: document.getElementById('pu-cat').value,
+    item:     document.getElementById('pu-item').value.trim(),
+    vendor:   document.getElementById('pu-vendor').value.trim(),
+    cost:     parseFloat(document.getElementById('pu-cost').value) || 0,
+    notes:    document.getElementById('pu-notes').value.trim()
+  };
+  if (!data.item) { alert('Item name required'); return; }
+  if (!DB.purchases) DB.purchases = [];
+  if (id) {
+    const idx = DB.purchases.findIndex(x => x.id === id);
+    DB.purchases[idx] = { ...DB.purchases[idx], ...data };
+  } else {
+    DB.purchases.push({ id: uid('pu'), ...data });
+  }
+  saveDB(); closeModal(); renderCosts();
+}
+
+/** Delete a purchase record by id. */
+function deletePurchase(id) {
+  if (!confirm('Delete this purchase record?')) return;
+  DB.purchases = (DB.purchases || []).filter(x => x.id !== id);
+  saveDB(); renderCosts();
+}
+
+/* ============================================================
+   HELP
+   Inline reference guide covering every module in the app.
+   ============================================================ */
+function renderHelp() {
+  const v = document.getElementById('view-help');
+
+  /** Helper: render a collapsible section */
+  function helpSection(icon, title, content) {
+    return `<details style="margin-bottom:10px" open>
+      <summary style="font-size:15px;font-weight:600">${icon} ${escapeHtml(title)}</summary>
+      <div style="padding:12px 0 4px 16px;font-size:13px;color:var(--text-dim);line-height:1.8">${content}</div>
+    </details>`;
+  }
+
+  v.innerHTML = `
+    <div class="view-header">
+      <div><h2>Help &amp; Guide</h2><div class="sub">How to use every section of Pistol Tracker</div></div>
+      <button class="btn secondary" onclick="startTour()">&#9654; Take the Tour</button>
+    </div>
+
+    <div class="card">
+      ${helpSection('&#9678;', 'Getting Started', `
+        <strong style="color:var(--text)">First time?</strong> Your four firearms are already loaded. Here's the recommended setup order:
+        <ol style="padding-left:20px;margin-top:8px">
+          <li>Go to <strong>Firearms</strong> and fill in Date Acquired and starting round counts if you have rounds on the guns already.</li>
+          <li>Go to <strong>Ammunition</strong> and add the ammo you currently own. Set a <em>Cost per round</em> (e.g. 0.28) to enable automatic cost tracking.</li>
+          <li>Log your first <strong>Session</strong> — select the firearm, enter rounds, add drills with times/scores.</li>
+          <li>After your session, log a <strong>Field Strip</strong> from the Sessions page or Maintenance page.</li>
+        </ol>
+        <div style="margin-top:8px"><strong style="color:var(--text)">Your data</strong> lives only in this browser's localStorage. Use <strong>Settings → Download JSON Backup</strong> regularly to avoid data loss.</div>
+      `)}
+
+      ${helpSection('&#9679;', 'Ammunition', `
+        <strong style="color:var(--text)">Inventory</strong> is decremented automatically each time you save a session. If you delete a session, rounds are returned to inventory.<br><br>
+        <strong style="color:var(--text)">Cost per round</strong> — enter this (e.g. <code>0.285</code>) to unlock automatic ammo cost calculations in the Costs section.<br><br>
+        <strong style="color:var(--text)">Low ammo alert</strong> — a Dashboard warning appears when any ammo SKU drops to 50 rounds or below.
+      `)}
+
+      ${helpSection('&#9650;', 'Sessions', `
+        <strong style="color:var(--text)">Session types:</strong> Practice, Competition, Class / Training, Dry Fire. Dry Fire sessions only show dry-compatible drills.<br><br>
+        <strong style="color:var(--text)">Range Fee</strong> — the optional lane or entry fee for this session. This feeds the Costs summary.<br><br>
+        <strong style="color:var(--text)">Drills</strong> — select from the library, enter a distance, and optionally log a time and/or score. Scores create Personal Records automatically.<br><br>
+        <strong style="color:var(--text)">Self-Assessment sliders</strong> (Focus / Fundamentals / Satisfaction) are quick gut-checks that build your session trend chart in Progress → Trends.<br><br>
+        <strong style="color:var(--text)">Field Strip prompt</strong> — after saving a new session, the app will offer to log a field strip for the firearm you just used (Atlas guidance: clean after every session).<br><br>
+        <strong style="color:var(--text)">Search &amp; Filter bar</strong> — at the top of the Sessions list, use the date range, firearm, type, and keyword fields to narrow your sessions. Keyword searches location, drills, notes, and firearm name. All filters apply instantly. Click <em>Clear</em> to reset. Filters stay active while you're on the page.
+      `)}
+
+      ${helpSection('&#9733;', 'Progress', `
+        <strong style="color:var(--text)">Personal Records</strong> are auto-derived from your drill history. Time-based drills: lowest time wins. Score-based: highest score wins.<br><br>
+        <strong style="color:var(--text)">Goals</strong> — set a goal with a target metric (e.g. "Bill Drill under 2.0s"). Check it off when achieved.<br><br>
+        <strong style="color:var(--text)">Skill Assessment</strong> — rate yourself periodically (every 1–2 months) across 8 skill areas. Snapshots generate a trend chart once you have 2+ assessments.<br><br>
+        <strong style="color:var(--text)">Trends</strong> — cumulative round chart, session self-rating trend, drill progression for your most-practiced drills.<br><br>
+        <strong style="color:var(--text)">Calendar</strong> — a 52-week training frequency heatmap (GitHub-style grid). Each square is one day; the orange intensity shows how many sessions you logged. Hover over any square to see the date and session count. Below the grid: sessions this year, total sessions, active training days, most-used firearm, and a 6-month bar chart.
+      `)}
+
+      ${helpSection('&#9819;', 'Competition', `
+        <strong style="color:var(--text)">Matches tab</strong> — log each USPSA, IDPA, or steel match. Enter stage-level points, time, and stage % (% of stage winner). Hit Factor is calculated automatically.<br><br>
+        <strong style="color:var(--text)">Rounds Fired</strong> — optional field on matches. Enter this to include match rounds in your all-in cost-per-round calculation in the Costs section. <em>Do not also log these rounds as a session or they will be double-counted.</em><br><br>
+        <strong style="color:var(--text)">Classifiers tab</strong> — log each USPSA classifier. Enter your points, time, and the division's High Hit Factor (HHF) from the USPSA classifier portal. Your percentage and equivalent class are calculated automatically.<br><br>
+        <strong style="color:var(--text)">Classification tab</strong> — shows your estimated USPSA classification per division using the official "best 4 of last 8 classifiers" formula. This is an estimate — your official number comes from your USPSA member portal.<br><br>
+        <strong style="color:var(--text)">Stage Performance chart</strong> — appears once you have match data with stage percentages. Green dots = stages above your match average; red = below.
+      `)}
+
+      ${helpSection('&#9654;', 'Costs', `
+        <strong style="color:var(--text)">Four cost sources are tracked:</strong><br>
+        <ol style="padding-left:20px;margin-top:4px">
+          <li><strong>Ammo</strong> — auto-calculated from sessions (rounds fired × cost/round). Set cost/round on each ammo record in the Ammunition section.</li>
+          <li><strong>Range Fees</strong> — the optional Range Fee field on each session.</li>
+          <li><strong>Match Fees</strong> — the cost field on each match record (Competition section).</li>
+          <li><strong>Gear &amp; Purchases</strong> — free-form log for holsters, magazines, optics, service, training classes, travel, and anything else.</li>
+        </ol>
+        <br>The <strong>All-In Cost per Round</strong> divides your grand total by session rounds + any match rounds you've entered.
+      `)}
+
+      ${helpSection('&#9888;', 'Malfunctions', `
+        <strong style="color:var(--text)">Log malfunctions inside a session</strong> (via the Malfunctions section of the Log Session form) or as standalone entries from the Malfunctions page.<br><br>
+        The <strong>Per 1,000 Rounds</strong> rate is the primary reliability metric. Industry standard for a competition gun is under 1 malfunction per 1,000 rounds.<br><br>
+        Patterns by type and by firearm help you identify whether issues are ammo-related, gun-related, or magazine-related.
+      `)}
+
+      ${helpSection('&#9881;', 'Maintenance', `
+        <strong style="color:var(--text)">Field Strip &amp; Clean</strong> — Atlas recommends after every range session. The Sessions page shows a prompt and quick-log button after each session.<br><br>
+        <strong style="color:var(--text)">Deep Clean</strong> — every 10,000 cumulative rounds. Progress bar on each firearm card tracks this.<br><br>
+        <strong style="color:var(--text)">Annual Inspection</strong> — once per calendar year. A Dashboard alert appears if overdue.<br><br>
+        <strong style="color:var(--text)">Recoil Spring</strong> — interval is set per firearm (default 5,000 rounds). Edit in Firearms → Edit. Dashboard and Firearms cards show a warning at 90% and danger at 100%.<br><br>
+        <strong style="color:var(--text)">Magazine Springs</strong> — time-based, every 6 months by default. Schedule start date and interval are configurable in Settings.
+      `)}
+
+      ${helpSection('&#9432;', 'Atlas Reference', `
+        The <strong>Atlas Reference</strong> section contains an embedded maintenance schedule table, the 2011 field strip checklist, and links to Atlas Gunworks video guides for cleaning and maintenance.
+      `)}
+
+      ${helpSection('&#9776;', 'Settings &amp; Data', `
+        <strong style="color:var(--accent)">iCloud Sync</strong> — the fastest way to keep your iPhone and Mac in sync. Tap <strong>Export Sync File</strong> at the range (the &#8679; button in the top bar on iPhone), save it to <strong>iCloud Drive → Pistol Tracker</strong>. When you get home, tap <strong>Import Sync File</strong> on your Mac and select the same file. Always uses the fixed filename <code>pistol-tracker-sync.json</code> so it overwrites the same file every time.<br><br>
+        <strong style="color:var(--text)">Export JSON Backup</strong> — downloads a full timestamped backup. The app tracks the last backup date and shows a reminder on the Dashboard if 30 days have passed. Click <em>Backup Now</em> on that alert, or <em>Remind Me Later</em> to snooze for 7 days.<br><br>
+        <strong style="color:var(--text)">Import JSON Backup</strong> — restores from a previous backup. <em>This will overwrite all current data.</em><br><br>
+        <strong style="color:var(--text)">Export Sessions / Maintenance CSV</strong> — spreadsheet-friendly exports for external analysis.<br><br>
+        <strong style="color:var(--text)">Drill Library</strong> — add or remove drills that appear in the session drill picker. Built-in drills can be removed; they'll no longer appear in new sessions but historical data is preserved.<br><br>
+        <strong style="color:var(--text)">Magazine Spring Schedule</strong> — set a start date and interval here. The schedule drives the reminder shown on Dashboard and Maintenance.
+      `)}
+      ${helpSection('&#9678;', 'Optics &amp; Gear (v1.7)', `
+        Track your optics (red dots, iron sights, scopes) in the <strong>Optics</strong> section in the sidebar. Each optic stores:<br>
+        <ul style="padding-left:20px;margin-top:6px">
+          <li><strong>Make, Model, Dot/Reticle size</strong> — identification</li>
+          <li><strong>Zero Distance</strong> — e.g. 25 yds, 15 yds</li>
+          <li><strong>Mount Height</strong> — e.g. 1/3 co-witness, absolute co-witness</li>
+          <li><strong>Torque spec</strong> — for the mount screws</li>
+          <li><strong>Settings Snapshot</strong> — brightness level, mode, or any setup notes you want to preserve</li>
+          <li><strong>Battery Log</strong> — tap "+ Log Change" to record each battery replacement. The card will show a "Battery due" warning after ~11 months.</li>
+        </ul><br>
+        The <strong>Spare Parts Inventory</strong> table below the optics cards tracks springs, pins, and other consumables you keep on hand. Add a firearm association (or leave it as "Any") and a quantity. Edit to adjust counts when you use parts.
+      `)}
+      ${helpSection('&#9650;', 'Multi-Firearm Sessions (v1.7)', `
+        When you train with more than one gun in a single range trip, check <strong>"Multiple firearms used this session"</strong> in the Log Session form. Enter the round count for each firearm separately. The totals roll up correctly into each firearm's round count and maintenance schedule — no more splitting trips manually.
+      `)}
+      ${helpSection('&#9734;', 'UI Features (v1.7)', `
+        <strong style="color:var(--text)">Light / Dark mode</strong> — click the <em>&#9790; Light</em> button at the bottom of the sidebar to switch themes. Your choice is saved automatically.<br><br>
+        <strong style="color:var(--text)">Keyboard shortcuts</strong> — when no text field is focused:<br>
+        <ul style="padding-left:20px;margin-top:4px">
+          <li><kbd style="background:var(--panel-2);padding:1px 5px;border-radius:3px;border:1px solid var(--border)">S</kbd> — Log a new session</li>
+          <li><kbd style="background:var(--panel-2);padding:1px 5px;border-radius:3px;border:1px solid var(--border)">M</kbd> — Log maintenance</li>
+          <li><kbd style="background:var(--panel-2);padding:1px 5px;border-radius:3px;border:1px solid var(--border)">D</kbd> — Go to Dashboard</li>
+          <li><kbd style="background:var(--panel-2);padding:1px 5px;border-radius:3px;border:1px solid var(--border)">?</kbd> — Open Help</li>
+          <li><kbd style="background:var(--panel-2);padding:1px 5px;border-radius:3px;border:1px solid var(--border)">Esc</kbd> — Close any open dialog</li>
+        </ul><br>
+        <strong style="color:var(--text)">App Tour</strong> — click <strong>&#9654; Take the Tour</strong> at the top of this Help page any time to replay the guided walkthrough of all app features.
+      `)}
     </div>
   `;
 }
@@ -2170,14 +4316,64 @@ function renderReference() {
    ============================================================ */
 function renderSettings() {
   const v = document.getElementById('view-settings');
+  const lastExport = DB.settings.lastSyncExportDate;
+  const lastImport = DB.settings.lastSyncImportDate;
   v.innerHTML = `
-    <div class="view-header"><div><h2>Settings</h2><div class="sub">Data export, import, drill library</div></div></div>
+    <div class="view-header"><div><h2>Settings</h2><div class="sub">iCloud sync, data export, drill library</div></div></div>
+
+    <!-- iCloud Sync card -->
+    <div class="card" style="border-color:var(--accent)">
+      <h3 style="color:var(--accent)">&#9729; iCloud Sync</h3>
+      <p style="font-size:13px;color:var(--text-dim);margin-bottom:14px">
+        Keep your iPhone and Mac in sync. Export after a range session; import when you get home.
+        Always uses the same filename (<code>pistol-tracker-sync.json</code>) so it overwrites the previous version.
+      </p>
+
+      <!-- Instructions -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div style="background:var(--panel-2);border-radius:8px;padding:14px;font-size:13px;line-height:1.9">
+          <div style="font-weight:600;margin-bottom:4px">&#128241; At the range (iPhone)</div>
+          <ol style="padding-left:18px;color:var(--text-dim)">
+            <li>Tap <strong style="color:var(--text)">Export Sync File</strong></li>
+            <li>Share sheet appears — tap <strong style="color:var(--text)">Save to Files</strong></li>
+            <li>Navigate to <strong style="color:var(--text)">iCloud Drive → Pistol Tracker</strong></li>
+            <li>Tap <strong style="color:var(--text)">Save</strong></li>
+          </ol>
+        </div>
+        <div style="background:var(--panel-2);border-radius:8px;padding:14px;font-size:13px;line-height:1.9">
+          <div style="font-weight:600;margin-bottom:4px">&#128187; At home (Mac)</div>
+          <ol style="padding-left:18px;color:var(--text-dim)">
+            <li>Tap <strong style="color:var(--text)">Import Sync File</strong></li>
+            <li>Navigate to <strong style="color:var(--text)">iCloud Drive → Pistol Tracker</strong></li>
+            <li>Select <strong style="color:var(--text)">pistol-tracker-sync.json</strong></li>
+            <li>Confirm the import</li>
+          </ol>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn" onclick="exportSyncFile()">&#8593; Export Sync File</button>
+        <label class="btn secondary" style="cursor:pointer">
+          &#8595; Import Sync File
+          <input type="file" accept=".json" style="display:none" onchange="importSyncFile(event)">
+        </label>
+      </div>
+
+      <div style="margin-top:12px;font-size:12px;color:var(--text-dim)">
+        Last exported: <strong style="color:var(--text)">${lastExport ? formatDate(lastExport) : 'Never'}</strong>
+        &nbsp;&middot;&nbsp;
+        Last imported: <strong style="color:var(--text)">${lastImport ? formatDate(lastImport) : 'Never'}</strong>
+      </div>
+      <div class="help-text" style="margin-top:4px">
+        First time? Create a folder called <strong>Pistol Tracker</strong> inside iCloud Drive to keep your sync file organised.
+      </div>
+    </div>
 
     <div class="card">
       <h3>Data Export & Import</h3>
-      <p class="text-dim" style="font-size:13px">Your data lives in this browser's local storage. Back it up regularly.</p>
+      <p class="text-dim" style="font-size:13px">Full JSON backup and CSV exports. Use these for archiving — use iCloud Sync above for day-to-day device sync.</p>
       <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn" onclick="exportJSON()">Download JSON Backup</button>
+        <button class="btn secondary" onclick="exportJSON()">Download JSON Backup</button>
         <button class="btn secondary" onclick="exportCSV('sessions')">Export Sessions CSV</button>
         <button class="btn secondary" onclick="exportCSV('maintenance')">Export Maintenance CSV</button>
         <label class="btn secondary" style="cursor:pointer">
@@ -2263,12 +4459,68 @@ function removeDrill(i) {
   saveDB(); renderSettings();
 }
 function exportJSON() {
+  DB.settings.lastBackupDate = todayISO();
+  DB.settings.backupSnoozedUntil = null;
+  saveDB();
   const blob = new Blob([JSON.stringify(DB, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = `pistol-tracker-backup-${todayISO()}.json`;
   a.click(); URL.revokeObjectURL(url);
+  // Refresh dashboard if that's the active view
+  if (document.getElementById('view-dashboard').classList.contains('active')) renderDashboard();
 }
+function snoozeBackupNudge() {
+  const d = new Date();
+  d.setDate(d.getDate() + 7);
+  DB.settings.backupSnoozedUntil = d.toISOString().slice(0, 10);
+  saveDB();
+  renderDashboard();
+}
+/* ============================================================
+   iCLOUD SYNC  (fixed filename, overwrites same file each time)
+   ============================================================ */
+function exportSyncFile() {
+  DB.settings.lastSyncExportDate = todayISO();
+  saveDB();
+  const blob = new Blob([JSON.stringify(DB, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  // Fixed filename — always overwrites the same file in iCloud
+  a.download = 'pistol-tracker-sync.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  // Refresh whichever view is currently shown
+  const active = document.querySelector('.view.active');
+  if (active) renderView(active.id.replace('view-', ''));
+}
+function importSyncFile(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      if (!parsed.sessions || !parsed.firearms) {
+        alert('This doesn\'t look like a valid Pistol Tracker sync file. Please select pistol-tracker-sync.json.');
+        return;
+      }
+      if (!confirm('Import sync file? Your current data will be replaced with the imported data.')) return;
+      if (!parsed.settings) parsed.settings = {};
+      parsed.settings.lastSyncImportDate = todayISO();
+      DB = parsed;
+      saveDB();
+      renderSettings();
+      alert('Sync complete — your data is now up to date.');
+    } catch (err) {
+      alert('Could not read that file. Make sure you selected pistol-tracker-sync.json.');
+    }
+  };
+  reader.readAsText(file);
+  evt.target.value = '';
+}
+
 function exportCSV(kind) {
   let rows = [], headers = [];
   if (kind === 'sessions') {
@@ -2490,8 +4742,135 @@ function sessionTypeBreakdown() {
 /* ============================================================
    INIT
    ============================================================ */
+/* ============================================================
+   THEME (LIGHT / DARK MODE)
+   ============================================================ */
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  const btn = document.getElementById('theme-toggle-btn');
+  if (btn) btn.innerHTML = theme === 'light' ? '&#9790; Dark' : '&#9790; Light';
+}
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const next = current === 'dark' ? 'light' : 'dark';
+  DB.settings.theme = next;
+  saveDB();
+  applyTheme(next);
+}
+// Apply saved theme on load
+applyTheme(DB.settings.theme || 'dark');
+
+/* ============================================================
+   KEYBOARD SHORTCUTS
+   S = log session  M = log maintenance  D = dashboard
+   ? = help  Esc = close modal
+   ============================================================ */
+document.addEventListener('keydown', e => {
+  // Never fire shortcuts when typing in an input/textarea/select
+  const tag = document.activeElement ? document.activeElement.tagName : '';
+  if (['INPUT','TEXTAREA','SELECT'].includes(tag)) return;
+  // Never fire if modal is open
+  const modal = document.getElementById('modal-backdrop');
+  const modalOpen = modal && modal.style.display !== 'none' && modal.style.display !== '';
+  if (e.key === 'Escape') { if (modalOpen) closeModal(); return; }
+  if (modalOpen) return;
+  switch(e.key) {
+    case 's': case 'S': e.preventDefault(); openSessionModal(); break;
+    case 'm': case 'M': e.preventDefault(); openMaintenanceModal(); break;
+    case 'd': case 'D': e.preventDefault(); renderView('dashboard'); break;
+    case '?':           e.preventDefault(); renderView('help'); break;
+  }
+});
+
+/* ============================================================
+   TOUR
+   ============================================================ */
+const TOUR_STEPS = [
+  { title: 'Welcome to Pistol Tracker', body: 'This quick tour covers the main sections of the app. Use Next and Back to navigate, or press Skip to exit any time.' },
+  { title: 'Dashboard', body: 'The Dashboard gives you a live overview: round counts, maintenance alerts, recent sessions, and training streak. It\'s your home base.' },
+  { title: 'Firearms', body: 'Your four firearms are pre-loaded. Each card shows total rounds, deep-clean progress, recoil spring status, and maintenance history. Edit a firearm to add barrel or recoil spring details.' },
+  { title: 'Optics & Gear', body: 'Track your red dots and sights here — zero distance, mount height, torque specs, settings snapshots, and battery change history. Also manage your spare parts inventory.' },
+  { title: 'Ammunition', body: 'Add ammo SKUs to your inventory. When you log a session, rounds are automatically subtracted. You\'ll get a low-ammo alert on the Dashboard when any SKU drops below 200 rounds.' },
+  { title: 'Sessions', body: 'Log every range trip: drills practiced, ammo used, distances, self-ratings, and target photos. The filter bar at the top lets you search by date, firearm, session type, or keyword.' },
+  { title: 'Progress', body: 'Track personal records, training goals, skill assessments, and a heatmap calendar showing every training day over the past year.' },
+  { title: 'Competition', body: 'Log USPSA matches, classifiers, and track your estimated classification. The Stage Timeline chart shows your stage performance trend across matches.' },
+  { title: 'Maintenance', body: 'Log field strips, deep cleans, annual inspections, and spring replacements. Atlas Gunworks guidance is built in. You\'ll see alerts on the Dashboard when service is due.' },
+  { title: 'Keyboard Shortcuts', body: 'Quick keys work when no input is focused:\n\n  S — Log a new session\n  M — Log maintenance\n  D — Go to Dashboard\n  ? — Open Help\n  Esc — Close any dialog' },
+  { title: 'Sync & Backup', body: 'Use Settings → iCloud Sync to keep your data in sync between Mac and iPhone. Export a sync file on one device, open it with the Pistol Tracker app on another.' },
+  { title: 'You\'re all set!', body: 'Tap Done to start tracking. You can replay this tour any time from the Help section.' }
+];
+let _tourStep = 0;
+function startTour(step) {
+  _tourStep = step || 0;
+  showTourStep();
+}
+function showTourStep() {
+  const step = TOUR_STEPS[_tourStep];
+  const isLast = _tourStep === TOUR_STEPS.length - 1;
+  const isFirst = _tourStep === 0;
+  openModal(`
+    <div class="modal-header">
+      <h3>&#9654; Tour &mdash; ${_tourStep + 1} / ${TOUR_STEPS.length}</h3>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body" style="min-height:120px">
+      <h3 style="font-size:18px;margin-bottom:12px;color:var(--accent)">${step.title}</h3>
+      <p style="line-height:1.7;white-space:pre-wrap">${step.body}</p>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between">
+      <div style="display:flex;gap:8px">
+        ${!isFirst ? `<button class="btn secondary" onclick="tourNav(-1)">&#8592; Back</button>` : '<span></span>'}
+        ${!isLast ? `<button class="btn" onclick="tourNav(1)">Next &#8594;</button>` : `<button class="btn" onclick="closeModal()">Done &#10003;</button>`}
+      </div>
+      <button class="btn secondary" onclick="closeModal()" style="font-size:12px">Skip Tour</button>
+    </div>
+  `);
+}
+function tourNav(dir) { _tourStep = Math.max(0, Math.min(TOUR_STEPS.length - 1, _tourStep + dir)); showTourStep(); }
+
 saveDB();
 renderView('dashboard');
+
+/* ============================================================
+   MOBILE SIDEBAR TOGGLE
+   ============================================================ */
+
+/**
+ * Open or close the slide-out sidebar on mobile.
+ * @param {boolean} [forceClose] – pass true to always close.
+ */
+function toggleSidebar(forceClose) {
+  const sidebar = document.querySelector('.sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  const isOpen  = sidebar.classList.contains('open');
+  if (forceClose || isOpen) {
+    sidebar.classList.remove('open');
+    overlay.classList.remove('show');
+  } else {
+    sidebar.classList.add('open');
+    overlay.classList.add('show');
+  }
+}
+
+/* Close sidebar automatically when a nav link is tapped on mobile */
+document.querySelectorAll('nav a').forEach(a => {
+  a.addEventListener('click', () => {
+    if (window.innerWidth < 768) toggleSidebar(true);
+  });
+});
+
+/* ============================================================
+   SERVICE WORKER (PWA offline support)
+   Registers sw.js when the app is served over HTTPS or localhost.
+   No-ops silently when opened as a local file:// URL.
+   ============================================================ */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('Pistol Tracker SW registered:', reg.scope))
+      .catch(err => console.log('SW registration skipped (file:// or unsupported):', err));
+  });
+}
 </script>
 </body>
 </html>
