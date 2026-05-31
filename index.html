@@ -1676,8 +1676,8 @@ function firearmCard(f) {
     }
     return sum + (s.firearmId === f.id ? s.totalRounds || 0 : 0);
   }, 0);
-  const sessionsCount = DB.sessions.filter(s => s.firearmId === f.id && s.type !== 'dry_fire').length;
-  const drySessionsCount = DB.sessions.filter(s => s.firearmId === f.id && s.type === 'dry_fire').length;
+  const sessionsCount = DB.sessions.filter(s => s.type !== 'dry_fire' && (s.firearmId === f.id || (s.firearmSplits && s.firearmSplits.some(sp => sp.firearmId === f.id)))).length;
+  const drySessionsCount = DB.sessions.filter(s => s.type === 'dry_fire' && (s.firearmId === f.id || (s.firearmSplits && s.firearmSplits.some(sp => sp.firearmId === f.id)))).length;
   const fillClass = st.deepCleanDue ? 'danger' : st.deepCleanWarning ? 'warn' : 'success';
   const statusBadge = st.deepCleanDue
     ? '<span class="badge danger">Deep clean overdue</span>'
