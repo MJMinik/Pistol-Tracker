@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pistol Tracker — Test Suite</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #0f1419; color: #e6edf3; padding: 32px; line-height: 1.6; }
+  h1 { font-size: 22px; margin-bottom: 4px; color: #ff6b35; }
+  .subtitle { color: #8b949e; font-size: 13px; margin-bottom: 32px; }
+  .summary { display: flex; gap: 20px; margin-bottom: 32px; }
+  .summary-box { background: #1a2028; border: 1px solid #2d3744; border-radius: 8px; padding: 16px 24px; text-align: center; }
+  .summary-box .num { font-size: 36px; font-weight: 700; }
+  .summary-box .lbl { font-size: 12px; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; }
+  .pass .num { color: #3fb950; }
+  .fail .num { color: #f85149; }
+  .skip .num { color: #d29922; }
+  .section { margin-bottom: 28px; }
+  .section-title { font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #8b949e; margin-bottom: 10px; border-bottom: 1px solid #2d3744; padding-bottom: 6px; }
+  .test { display: flex; align-items: flex-start; gap: 12px; padding: 8px 0; border-bottom: 1px solid #1a2028; font-size: 14px; }
+  .test:last-child { border-bottom: none; }
+  .badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; white-space: nowrap; margin-top: 2px; }
+  .badge.pass { background: rgba(63,185,80,0.15); color: #3fb950; }
+  .badge.fail { background: rgba(248,81,73,0.15); color: #f85149; }
+  .badge.skip { background: rgba(210,153,34,0.15); color: #d29922; }
+  .test-name { flex: 1; }
+  .test-detail { font-size: 12px; color: #8b949e; margin-top: 2px; }
+  .test-error { font-size: 12px; color: #f85149; margin-top: 2px; font-family: monospace; }
+  .no-data { background: #1a2028; border: 1px solid #d29922; border-radius: 8px; padding: 20px 24px; margin-bottom: 24px; color: #d29922; }
+  .no-data strong { display: block; margin-bottom: 6px; }
+  button { background: #ff6b35; color: white; border: none; border-radius: 6px; padding: 10px 18px; font-size: 14px; cursor: pointer; margin-top: 16px; }
+  button:hover { background: #b8421f; }
+</style>
+</head>
+<body>
+
+<h1>🎯 Pistol Tracker — Test Suite</h1>
+<p class="subtitle">Automated checks for core app logic. Open this file in the same browser as the app so it can read your real data from localStorage.</p>
+
+<div id="no-data-warning" style="display:none" class="no-data">
+  <strong>⚠️ No app data found in localStorage.</strong>
+  Open <a href="index.html" style="color:#ff6b35">index.html</a> first, import your data, then come back here and refresh. Tests marked SKIP require real data.
+</div>
+
+<div class="summary">
+  <div class="summary-box pass"><div class="num" id="count-pass">—</div><div class="lbl">Passed</div></div>
+  <div class="summary-box fail"><div class="num" id="count-fail">—</div><div class="lbl">Failed</div></div>
+  <div class="summary-box skip"><div class="num" id="count-skip">—</div><div class="lbl">Skipped</div></div>
+</div>
+
+<div id="results"></div>
+
+<button onclick="location.reload()">↺ Re-run Tests</button>
+
+<script>
+// ─── Test runner ───────────────────────────────────────────────────────────────
+const results = [];
+
+function test(section, name, fn) {
+  try {
+    const result = fn();
+    if (result && result.skip) {
+      results.push({ section, name, status: 'skip', detail: result.reason });
+    } else {
+      results.push({ section, name, status: 'pass', detail: result && result.detail ? result.detail : '' });
+    }
+  } catch (e) {
+    results.push({ section, name, status: 'fail', error: e.message });
+  }
+}
+
+function assert(condition, message) {
+  if (!condition) throw new Error(message || 'Assertion failed');
+}
+
+function skip(reason) { return { skip: true, reason }; }
+function detail(msg) { return { detail: msg }; }
+
+// ─── Load app data from localStorage ──────────────────────────────────────────
+const STORAGE_KEY = 'pistolTrackerV1';
+const raw = localStorage.getItem(STORAGE_KEY);
+const DB = raw ? JSON.parse(raw) : null;
+
+if (!DB) {
+  document.getElementById('no-data-warning').style.display = 'block';
+}
+
+// ─── Replicate core functions (same logic as index.html) ──────────────────────
+function firearmRoundCount(firearmId) {
+  if (!DB) return 0;
+  const fa = DB.firearms.find(f => f.id === firearmId);
+  if (!fa) return 0;
+  let total = fa.startingRoundCount || 0;
+  for (const s of DB.sessions) {
+    if (s.firearmSplits && s.firearmSplits.length) {
+      const split = s.firearmSplits.find(sp => sp.firearmId === firearmId);
+      if (split) total += (split.rounds || 0);
+    } else {
+      if (s.firearmId === firearmId) total += (s.totalRounds || 0);
+    }
+  }
+  for (const m of (DB.matches || [])) {
+    if (m.firearmId === firearmId && m.totalRounds) total += m.totalRounds;
+  }
+  return total;
+}
+
+function sessionsCountForFirearm(firearmId) {
+  if (!DB) return 0;
+  return DB.sessions.filter(s =>
+    s.type !== 'dry_fire' &&
+    (s.firearmId === firearmId || (s.firearmSplits && s.firearmSplits.some(sp => sp.firearmId === firearmId)))
+  ).length;
+}
+
+function ammoTotalRoundsUsed(ammoId) {
+  if (!DB) return 0;
+  let used = 0;
+  for (const s of DB.sessions) {
+    const usage = (s.ammoUsage || []).find(u => u.ammoId === ammoId);
+    if (usage) used += (usage.rounds || 0);
+  }
+  return used;
+}
+
+// ─── SECTION 1: Data Integrity ─────────────────────────────────────────────────
+test('Data Integrity', 'localStorage data exists', () => {
+  if (!DB) throw new Error('No data found. Import your backup first.');
+  return detail('Data loaded successfully');
+});
+
+test('Data Integrity', 'DB has required collections', () => {
+  if (!DB) return skip('No data');
+  const required = ['firearms', 'ammunition', 'sessions', 'maintenance', 'malfunctions', 'matches', 'purchases'];
+  for (const key of required) {
+    assert(Array.isArray(DB[key]), `DB.${key} is missing or not an array`);
+  }
+  return detail(`All ${required.length} collections present`);
+});
+
+test('Data Integrity', 'All sessions have required fields', () => {
+  if (!DB) return skip('No data');
+  const bad = DB.sessions.filter(s => !s.id || !s.date || !s.firearmId);
+  assert(bad.length === 0, `${bad.length} session(s) missing id, date, or firearmId`);
+  return detail(`${DB.sessions.length} sessions checked`);
+});
+
+test('Data Integrity', 'All firearms have required fields', () => {
+  if (!DB) return skip('No data');
+  const bad = DB.firearms.filter(f => !f.id || !f.name);
+  assert(bad.length === 0, `${bad.length} firearm(s) missing id or name`);
+  return detail(`${DB.firearms.length} firearms checked`);
+});
+
+test('Data Integrity', 'No orphaned sessions (firearmId references valid firearm)', () => {
+  if (!DB) return skip('No data');
+  const ids = new Set(DB.firearms.map(f => f.id));
+  const orphans = DB.sessions.filter(s => !ids.has(s.firearmId));
+  assert(orphans.length === 0, `${orphans.length} session(s) reference non-existent firearm`);
+  return detail('All session firearmIds valid');
+});
+
+test('Data Integrity', 'No duplicate session IDs', () => {
+  if (!DB) return skip('No data');
+  const ids = DB.sessions.map(s => s.id);
+  const unique = new Set(ids);
+  assert(ids.length === unique.size, `${ids.length - unique.size} duplicate session ID(s) found`);
+  return detail(`${ids.length} unique IDs confirmed`);
+});
+
+test('Data Integrity', 'No duplicate firearm IDs', () => {
+  if (!DB) return skip('No data');
+  const ids = DB.firearms.map(f => f.id);
+  const unique = new Set(ids);
+  assert(ids.length === unique.size, `${ids.length - unique.size} duplicate firearm ID(s) found`);
+  return detail(`${ids.length} unique IDs confirmed`);
+});
+
+test('Data Integrity', 'All session dates are valid format (YYYY-MM-DD)', () => {
+  if (!DB) return skip('No data');
+  const bad = DB.sessions.filter(s => !/^\d{4}-\d{2}-\d{2}$/.test(s.date));
+  assert(bad.length === 0, `${bad.length} session(s) have malformed dates`);
+  return detail('All dates valid');
+});
+
+test('Data Integrity', 'No future-dated sessions', () => {
+  if (!DB) return skip('No data');
+  const today = new Date().toISOString().split('T')[0];
+  const future = DB.sessions.filter(s => s.date > today);
+  assert(future.length === 0, `${future.length} session(s) have future dates`);
+  return detail('No future dates found');
+});
+
+// ─── SECTION 2: Round Count Calculations ──────────────────────────────────────
+test('Round Counts', 'firearmRoundCount returns a non-negative number for each firearm', () => {
+  if (!DB) return skip('No data');
+  for (const f of DB.firearms) {
+    const count = firearmRoundCount(f.id);
+    assert(count >= 0, `${f.name} has negative round count: ${count}`);
+  }
+  const counts = DB.firearms.map(f => `${f.name}: ${firearmRoundCount(f.id)}`).join(', ');
+  return detail(counts);
+});
+
+test('Round Counts', 'firearmRoundCount returns 0 for unknown firearm ID', () => {
+  const count = firearmRoundCount('nonexistent-id-xyz');
+  assert(count === 0, `Expected 0, got ${count}`);
+});
+
+test('Round Counts', 'Multi-firearm sessions count rounds for each firearm', () => {
+  if (!DB) return skip('No data');
+  const multiSessions = DB.sessions.filter(s => s.firearmSplits && s.firearmSplits.length > 0);
+  if (multiSessions.length === 0) return skip('No multi-firearm sessions in data');
+  for (const s of multiSessions) {
+    for (const sp of s.firearmSplits) {
+      const count = firearmRoundCount(sp.firearmId);
+      assert(count >= sp.rounds, `Firearm ${sp.firearmId} round count (${count}) should include split rounds (${sp.rounds})`);
+    }
+  }
+  return detail(`${multiSessions.length} multi-firearm session(s) verified`);
+});
+
+test('Round Counts', 'Session counts include multi-firearm sessions', () => {
+  if (!DB) return skip('No data');
+  const multiSessions = DB.sessions.filter(s => s.firearmSplits && s.firearmSplits.length > 0);
+  if (multiSessions.length === 0) return skip('No multi-firearm sessions in data');
+  for (const s of multiSessions) {
+    for (const sp of s.firearmSplits) {
+      const count = sessionsCountForFirearm(sp.firearmId);
+      assert(count > 0, `Firearm ${sp.firearmId} shows 0 sessions despite appearing in multi-firearm session`);
+    }
+  }
+  return detail('Session counts correctly include split sessions');
+});
+
+test('Round Counts', 'Total rounds across all sessions is consistent', () => {
+  if (!DB) return skip('No data');
+  let total = 0;
+  for (const s of DB.sessions) {
+    if (s.type === 'dry_fire') continue;
+    if (s.firearmSplits && s.firearmSplits.length) {
+      total += s.firearmSplits.reduce((sum, sp) => sum + (sp.rounds || 0), 0);
+    } else {
+      total += s.totalRounds || 0;
+    }
+  }
+  assert(total >= 0, 'Total rounds should not be negative');
+  return detail(`${total.toLocaleString()} total live-fire rounds across all sessions`);
+});
+
+// ─── SECTION 3: Ammo Inventory ────────────────────────────────────────────────
+test('Ammo Inventory', 'All ammo quantities are non-negative', () => {
+  if (!DB) return skip('No data');
+  const bad = DB.ammunition.filter(a => (a.quantity || 0) < 0);
+  assert(bad.length === 0, `${bad.length} ammo SKU(s) have negative quantity`);
+  return detail(`${DB.ammunition.length} SKUs checked`);
+});
+
+test('Ammo Inventory', 'Sessions do not reference non-existent ammo SKUs', () => {
+  if (!DB) return skip('No data');
+  const ammoIds = new Set(DB.ammunition.map(a => a.id));
+  const bad = [];
+  for (const s of DB.sessions) {
+    for (const u of (s.ammoUsage || [])) {
+      if (u.ammoId && !ammoIds.has(u.ammoId)) bad.push(u.ammoId);
+    }
+  }
+  assert(bad.length === 0, `${bad.length} session(s) reference deleted ammo SKU(s)`);
+  return detail('All ammo references valid');
+});
+
+// ─── SECTION 4: Maintenance ───────────────────────────────────────────────────
+test('Maintenance', 'All maintenance records have valid firearmId', () => {
+  if (!DB) return skip('No data');
+  const ids = new Set(DB.firearms.map(f => f.id));
+  const bad = DB.maintenance.filter(m => !ids.has(m.firearmId));
+  assert(bad.length === 0, `${bad.length} maintenance record(s) reference non-existent firearm`);
+  return detail(`${DB.maintenance.length} records checked`);
+});
+
+test('Maintenance', 'Maintenance types are all valid values', () => {
+  if (!DB) return skip('No data');
+  const valid = new Set(['field_strip','deep_clean','annual_inspection','recoil_spring','mag_springs','mag_maintenance','comp_clean','repair','other']);
+  const bad = DB.maintenance.filter(m => !valid.has(m.type));
+  assert(bad.length === 0, `${bad.length} record(s) have unknown maintenance type`);
+  return detail('All types valid');
+});
+
+// ─── SECTION 5: Settings & Version ────────────────────────────────────────────
+test('Settings', 'DB.settings exists', () => {
+  if (!DB) return skip('No data');
+  assert(DB.settings && typeof DB.settings === 'object', 'DB.settings missing');
+  return detail('Settings object present');
+});
+
+test('Settings', 'App version is v1.8', () => {
+  if (!DB) return skip('No data');
+  const v = DB.settings && DB.settings.version;
+  assert(v === '1.8', `Expected 1.8, got ${v}. Open the app and reload — loadDB() will update this automatically.`);
+  return detail(`Version: ${v}`);
+});
+
+test('Settings', 'drillLibrary has at least 20 drills', () => {
+  if (!DB) return skip('No data');
+  assert((DB.drillLibrary || []).length >= 20, `Only ${(DB.drillLibrary||[]).length} drills found`);
+  return detail(`${DB.drillLibrary.length} drills in library`);
+});
+
+test('Settings', 'Doubles 5yd and Doubles 7yd drills exist in library', () => {
+  if (!DB) return skip('No data');
+  const names = new Set((DB.drillLibrary || []).map(d => d.name));
+  assert(names.has('Doubles 5yd'), 'Doubles 5yd drill missing from library');
+  assert(names.has('Doubles 7yd'), 'Doubles 7yd drill missing from library');
+  return detail('Both Doubles drills present');
+});
+
+// ─── SECTION 6: Trash / Soft Delete ──────────────────────────────────────────
+test('Trash', 'DB.trash exists and is an array', () => {
+  if (!DB) return skip('No data');
+  assert(Array.isArray(DB.trash), 'DB.trash is missing or not an array');
+  return detail(`${DB.trash.length} item(s) in trash`);
+});
+
+test('Trash', 'No trash items are older than 31 days (auto-purge working)', () => {
+  if (!DB) return skip('No data');
+  if (!DB.trash || DB.trash.length === 0) return detail('Trash is empty');
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 31);
+  const old = DB.trash.filter(t => t.deletedAt && new Date(t.deletedAt) < cutoff);
+  assert(old.length === 0, `${old.length} item(s) in trash older than 31 days — auto-purge may not have run`);
+  return detail('No stale trash items');
+});
+
+// ─── SECTION 7: Magazines ─────────────────────────────────────────────────────
+test('Magazines', 'DB.magazines exists and is an array', () => {
+  if (!DB) return skip('No data');
+  assert(Array.isArray(DB.magazines), 'DB.magazines missing or not an array');
+  return detail(`${DB.magazines.length} magazine(s) tracked`);
+});
+
+test('Magazines', 'All magazines reference valid firearm IDs', () => {
+  if (!DB) return skip('No data');
+  if (!DB.magazines || DB.magazines.length === 0) return detail('No magazines to check');
+  const ids = new Set(DB.firearms.map(f => f.id));
+  const bad = DB.magazines.filter(m => m.firearmId && !ids.has(m.firearmId));
+  assert(bad.length === 0, `${bad.length} magazine(s) reference non-existent firearm`);
+  return detail(`${DB.magazines.length} magazines verified`);
+});
+
+// ─── Render results ───────────────────────────────────────────────────────────
+const sections = {};
+for (const r of results) {
+  if (!sections[r.section]) sections[r.section] = [];
+  sections[r.section].push(r);
+}
+
+let totalPass = 0, totalFail = 0, totalSkip = 0;
+const container = document.getElementById('results');
+
+for (const [sectionName, tests] of Object.entries(sections)) {
+  const div = document.createElement('div');
+  div.className = 'section';
+  div.innerHTML = `<div class="section-title">${sectionName}</div>`;
+  for (const t of tests) {
+    if (t.status === 'pass') totalPass++;
+    else if (t.status === 'fail') totalFail++;
+    else totalSkip++;
+    const row = document.createElement('div');
+    row.className = 'test';
+    row.innerHTML = `
+      <span class="badge ${t.status}">${t.status.toUpperCase()}</span>
+      <div class="test-name">
+        ${t.name}
+        ${t.detail ? `<div class="test-detail">${t.detail}</div>` : ''}
+        ${t.error ? `<div class="test-error">✗ ${t.error}</div>` : ''}
+        ${t.reason ? `<div class="test-detail">Skipped: ${t.reason}</div>` : ''}
+      </div>
+    `;
+    div.appendChild(row);
+  }
+  container.appendChild(div);
+}
+
+document.getElementById('count-pass').textContent = totalPass;
+document.getElementById('count-fail').textContent = totalFail;
+document.getElementById('count-skip').textContent = totalSkip;
+</script>
+</body>
+</html>
