@@ -580,6 +580,8 @@ const SEED = {
     { name: 'Cadence Drill', description: 'Even-paced rhythm shots — splits work.', scoring: 'time', requiresHolster: false, liveCompatible: true, dryCompatible: true, category: 'speed' },
     { name: 'Walk Back Drill', description: 'Engage target, step back each successful round.', scoring: 'score', requiresHolster: false, liveCompatible: true, dryCompatible: false, category: 'accuracy' },
     { name: 'Press Out', description: 'Press out from compressed ready to first shot.', scoring: 'time', requiresHolster: false, liveCompatible: true, dryCompatible: true, category: 'fundamentals' },
+    { name: 'Doubles 5yd', description: 'Controlled pairs at 5 yards.', scoring: 'time', requiresHolster: false, liveCompatible: true, dryCompatible: true, category: 'fundamentals' },
+    { name: 'Doubles 7yd', description: 'Controlled pairs at 7 yards.', scoring: 'time', requiresHolster: false, liveCompatible: true, dryCompatible: true, category: 'fundamentals' },
     { name: 'One Reload One', description: '1 shot, reload, 1 shot — par time.', scoring: 'time', requiresHolster: false, liveCompatible: true, dryCompatible: true, category: 'manipulation' },
     { name: 'Reload Drill', description: 'Practice reloads under time.', scoring: 'time', requiresHolster: false, liveCompatible: true, dryCompatible: true, category: 'manipulation' },
     { name: 'Transition Drill', description: 'Transition between 2+ targets, par time scored.', scoring: 'time', requiresHolster: false, liveCompatible: true, dryCompatible: true, category: 'speed' },
@@ -601,9 +603,11 @@ const SEED = {
   purchases: [],
   optics: [],
   parts: [],
+  magazines: [],
+  trash: [],
   settings: {
     firstUse: true,
-    version: '1.7',
+    version: '1.8',
     theme: 'dark',
     lastBackupDate: null,
     backupSnoozedUntil: null,
@@ -739,6 +743,14 @@ function loadDB() {
     for (const key of Object.keys(SEED)) {
       if (parsed[key] === undefined) parsed[key] = JSON.parse(JSON.stringify(SEED[key]));
     }
+    // Top up the drill library with any built-in drills that don't already exist (idempotent).
+    // This is how SEED additions like new drills propagate to existing installs.
+    const existingNames = new Set((parsed.drillLibrary || []).map(d => d.name));
+    for (const seedDrill of SEED.drillLibrary) {
+      if (!existingNames.has(seedDrill.name)) {
+        parsed.drillLibrary.push(JSON.parse(JSON.stringify(seedDrill)));
+      }
+    }
     // Deduplicate drill library by name (keep first/built-in occurrence).
     // Removes any duplicate entries added manually through Settings.
     const seenDrillNames = new Set();
@@ -747,15 +759,215 @@ function loadDB() {
       seenDrillNames.add(d.name);
       return true;
     });
+
+    // One-time migrations. Each key is added to settings.migrationsRun so it never re-runs.
+    if (!parsed.settings) parsed.settings = {};
+    if (!Array.isArray(parsed.settings.migrationsRun)) parsed.settings.migrationsRun = [];
+    runOneTimeMigrations(parsed);
+    purgeOldTrash(parsed);
+
     return parsed;
   } catch (e) {
     console.error('Failed to load DB', e);
     return JSON.parse(JSON.stringify(SEED));
   }
 }
+
+/**
+ * One-time data migrations. Each migration checks settings.migrationsRun
+ * to make sure it only runs once per install, even across reloads.
+ *
+ * To add a new migration: pick a unique key, write the migration body,
+ * and push the key onto db.settings.migrationsRun on success.
+ */
+function runOneTimeMigrations(db) {
+  const ran = db.settings.migrationsRun;
+  const did = key => ran.includes(key);
+  const mark = key => { ran.push(key); };
+
+  // 2026-05: Rename Dot Torture and Press Out in existing sessions to Doubles 5yd.
+  // (User used those drill names in RangeReady-imported sessions but was actually
+  //  practicing doubles at 5 yards.) Drill *definitions* are kept in the library
+  //  so other users / new sessions can still pick them.
+  const KEY = 'rename-dot-torture-and-press-out-to-doubles-5yd-2026-05';
+  if (!did(KEY)) {
+    let renamed = 0;
+    for (const s of (db.sessions || [])) {
+      for (const d of (s.drills || [])) {
+        if (d.name === 'Dot Torture' || d.name === 'Press Out') {
+          d.name = 'Doubles 5yd';
+          renamed++;
+        }
+      }
+    }
+    if (renamed > 0) {
+      console.log(`Migration ${KEY}: renamed ${renamed} drill entries → Doubles 5yd`);
+    }
+    mark(KEY);
+  }
+}
+/* ============================================================
+   TRASH / SOFT-DELETE
+   ============================================================ */
+const TRASH_TTL_DAYS = 30;
+
+function purgeOldTrash(db) {
+  if (!Array.isArray(db.trash)) { db.trash = []; return; }
+  const cutoff = Date.now() - TRASH_TTL_DAYS * 86400 * 1000;
+  db.trash = db.trash.filter(t => new Date(t.deletedAt).getTime() > cutoff);
+}
+
+function softDelete(type, id) {
+  if (!DB.trash) DB.trash = [];
+  let item = null;
+  let extra = {};
+
+  if (type === 'session') {
+    item = DB.sessions.find(x => x.id === id);
+    if (!item) return;
+    // Return ammo to inventory
+    for (const u of (item.ammoUsage || [])) {
+      const a = getAmmo(u.ammoId);
+      if (a) a.quantity = (a.quantity || 0) + u.rounds;
+    }
+    // Reverse mag round attribution
+    if (item.magIds && item.magIds.length && item.totalRounds > 0) {
+      const perMag = Math.round(item.totalRounds / item.magIds.length);
+      for (const magId of item.magIds) {
+        const mg = (DB.magazines || []).find(x => x.id === magId);
+        if (mg) mg.totalRounds = Math.max(0, (mg.totalRounds || 0) - perMag);
+      }
+    }
+    DB.sessions = DB.sessions.filter(x => x.id !== id);
+  } else if (type === 'maintenance') {
+    item = DB.maintenance.find(x => x.id === id);
+    if (!item) return;
+    DB.maintenance = DB.maintenance.filter(x => x.id !== id);
+  } else if (type === 'malfunction') {
+    item = (DB.malfunctions || []).find(x => x.id === id);
+    if (!item) return;
+    DB.malfunctions = DB.malfunctions.filter(x => x.id !== id);
+  }
+
+  if (!item) return;
+  DB.trash.push({ id: uid('tr'), type, deletedAt: new Date().toISOString(), data: JSON.parse(JSON.stringify(item)) });
+  saveDB();
+  showToast(`${type === 'session' ? 'Session' : type === 'maintenance' ? 'Maintenance record' : 'Malfunction'} moved to Recently Deleted.`);
+}
+
+function restoreFromTrash(trashId) {
+  const entry = (DB.trash || []).find(x => x.id === trashId);
+  if (!entry) return;
+  const item = entry.data;
+
+  if (entry.type === 'session') {
+    if (!DB.sessions) DB.sessions = [];
+    DB.sessions.push(item);
+    // Re-decrement ammo
+    for (const u of (item.ammoUsage || [])) {
+      const a = getAmmo(u.ammoId);
+      if (a) a.quantity = Math.max(0, (a.quantity || 0) - u.rounds);
+    }
+    // Re-apply mag rounds
+    if (item.magIds && item.magIds.length && item.totalRounds > 0) {
+      const perMag = Math.round(item.totalRounds / item.magIds.length);
+      for (const magId of item.magIds) {
+        const mg = (DB.magazines || []).find(x => x.id === magId);
+        if (mg) mg.totalRounds = (mg.totalRounds || 0) + perMag;
+      }
+    }
+  } else if (entry.type === 'maintenance') {
+    if (!DB.maintenance) DB.maintenance = [];
+    DB.maintenance.push(item);
+  } else if (entry.type === 'malfunction') {
+    if (!DB.malfunctions) DB.malfunctions = [];
+    DB.malfunctions.push(item);
+  }
+
+  DB.trash = DB.trash.filter(x => x.id !== trashId);
+  saveDB();
+  showToast('Item restored successfully.');
+  if (entry.type === 'session') renderSessions();
+  else if (entry.type === 'maintenance') renderMaintenance();
+  else if (entry.type === 'malfunction') renderMalfunctions();
+}
+
+function permanentlyDelete(trashId) {
+  if (!confirm('Permanently delete this item? This cannot be undone.')) return;
+  DB.trash = (DB.trash || []).filter(x => x.id !== trashId);
+  saveDB();
+  // Re-render whichever view is currently showing
+  const activeView = document.querySelector('.view.active');
+  if (activeView) {
+    const id = activeView.id.replace('view-', '');
+    if (id === 'sessions') renderSessions();
+    else if (id === 'maintenance') renderMaintenance();
+    else if (id === 'malfunctions') renderMalfunctions();
+  }
+}
+
+function showToast(msg) {
+  let toast = document.getElementById('_toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = '_toast';
+    toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--card-bg);border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:8px;font-size:13px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.4);transition:opacity 0.3s;pointer-events:none';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => { toast.style.opacity = '0'; }, 3000);
+}
+
+function recentlyDeletedCard(type) {
+  const items = (DB.trash || []).filter(t => t.type === type)
+    .sort((a, b) => new Date(b.deletedAt) - new Date(a.deletedAt));
+  if (!items.length) return '';
+  const now = Date.now();
+  const rows = items.map(t => {
+    const item = t.data;
+    const daysLeft = TRASH_TTL_DAYS - Math.floor((now - new Date(t.deletedAt).getTime()) / 86400000);
+    let desc = '';
+    if (type === 'session') {
+      const f = getFirearm(item.firearmId);
+      desc = `${formatDate(item.date)} — ${f ? f.name : '?'} — ${item.totalRounds || 0} rds${item.location ? ' @ ' + item.location : ''}`;
+    } else if (type === 'maintenance') {
+      const f = getFirearm(item.firearmId);
+      const typeLabel = { field_strip:'Field Strip', deep_clean:'Deep Clean', annual_inspection:'Annual Inspection', recoil_spring:'Recoil Spring', mag_springs:'Mag Springs', other:'Other' }[item.type] || item.type;
+      desc = `${formatDate(item.date)} — ${f ? f.name : '?'} — ${typeLabel}`;
+    } else if (type === 'malfunction') {
+      const f = getFirearm(item.firearmId);
+      desc = `${formatDate(item.date)} — ${f ? f.name : '?'} — ${item.type}`;
+    }
+    return `<tr>
+      <td style="font-size:13px">${escapeHtml(desc)}</td>
+      <td style="font-size:11px;color:var(--text-dim);white-space:nowrap">${daysLeft}d left</td>
+      <td class="row-actions">
+        <button class="btn small secondary" onclick="restoreFromTrash('${t.id}')">Restore</button>
+        <button class="btn small danger" onclick="permanentlyDelete('${t.id}')">Delete Permanently</button>
+      </td>
+    </tr>`;
+  }).join('');
+  return `<details style="margin-top:16px">
+    <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-dim);padding:10px 16px;background:var(--card-bg);border:1px solid var(--border);border-radius:8px">
+      <span style="font-size:16px">🗑</span>
+      <span>Recently Deleted (${items.length}) — items auto-purge after ${TRASH_TTL_DAYS} days</span>
+    </summary>
+    <div class="card" style="margin-top:4px;border-top-left-radius:0;border-top-right-radius:0">
+      <table>
+        <thead><tr><th>Item</th><th>Expires</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  </details>`;
+}
+
 function saveDB() {
   try {
+    DB._lastModified = Date.now();
     localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
+    if (typeof queueAutoSync === 'function') queueAutoSync();
   } catch (e) {
     alert('Could not save data. localStorage may be full. Consider exporting and clearing target images.');
     console.error(e);
@@ -786,13 +998,35 @@ function firearmRoundCount(firearmId) {
   let total = fa.startingRoundCount || 0;
   for (const s of DB.sessions) {
     if (s.firearmSplits && s.firearmSplits.length) {
-      // Multi-firearm session: sum only this firearm's split
       const split = s.firearmSplits.find(sp => sp.firearmId === firearmId);
       if (split) total += (split.rounds || 0);
     } else {
-      // Standard single-firearm session
       if (s.firearmId === firearmId) total += (s.totalRounds || 0);
     }
+  }
+  // Include match rounds (matches log rounds separately to avoid double-counting)
+  for (const m of (DB.matches || [])) {
+    if (m.firearmId === firearmId && m.totalRounds) total += m.totalRounds;
+  }
+  return total;
+}
+// Live-fire only (excludes dry_fire sessions) — used for display stats and charts
+function liveFireRoundCount(firearmId) {
+  const fa = getFirearm(firearmId);
+  if (!fa) return 0;
+  let total = fa.startingRoundCount || 0;
+  for (const s of DB.sessions) {
+    if (s.type === 'dry_fire') continue;
+    if (s.firearmSplits && s.firearmSplits.length) {
+      const split = s.firearmSplits.find(sp => sp.firearmId === firearmId);
+      if (split) total += (split.rounds || 0);
+    } else {
+      if (s.firearmId === firearmId) total += (s.totalRounds || 0);
+    }
+  }
+  // Include match rounds
+  for (const m of (DB.matches || [])) {
+    if (m.firearmId === firearmId && m.totalRounds) total += m.totalRounds;
   }
   return total;
 }
@@ -823,7 +1057,13 @@ function maintenanceStatus(firearmId) {
   const annual = lastMaintenance(firearmId, 'annual_inspection');
   const lastFS = lastMaintenance(firearmId, 'field_strip');
   const lastFSDate = lastFS ? lastFS.date : '0000-00-00';
-  const sessionsAfter = DB.sessions.filter(s => s.firearmId === firearmId && s.date > lastFSDate).length;
+  // Field strips are only required after live-fire sessions (practice, competition, class).
+  // Dry-fire sessions do not generate carbon/fouling and are excluded from the count.
+  const sessionsAfter = DB.sessions.filter(s =>
+    s.firearmId === firearmId &&
+    s.date > lastFSDate &&
+    s.type !== 'dry_fire'
+  ).length;
   let annualOverdue = false;
   if (annual) {
     const months = (new Date() - new Date(annual.date)) / (1000 * 60 * 60 * 24 * 30);
@@ -1066,7 +1306,9 @@ document.getElementById('modal-backdrop').addEventListener('click', e => {
    ============================================================ */
 function renderDashboard() {
   const v = document.getElementById('view-dashboard');
-  const totalRounds = DB.firearms.reduce((s, f) => s + firearmRoundCount(f.id), 0);
+  const liveRounds = DB.firearms.reduce((s, f) => s + liveFireRoundCount(f.id), 0);
+  const dryFireSessions = DB.sessions.filter(s => s.type === 'dry_fire').length;
+  const liveSessions = DB.sessions.filter(s => s.type !== 'dry_fire').length;
   const totalSessions = DB.sessions.length;
   const totalAmmo = DB.ammunition.reduce((s, a) => s + (a.quantity || 0), 0);
   const lastSession = [...DB.sessions].sort((a, b) => b.date.localeCompare(a.date))[0];
@@ -1142,8 +1384,8 @@ function renderDashboard() {
     ${alerts.length ? alerts.map(a => `<div class="alert ${a.level}">&#9888; ${escapeHtml(a.text)}</div>`).join('') : ''}
 
     <div class="grid grid-4">
-      <div class="stat"><div class="label">Total Rounds Fired</div><div class="value accent">${totalRounds.toLocaleString()}</div></div>
-      <div class="stat"><div class="label">Range Sessions</div><div class="value">${totalSessions}</div></div>
+      <div class="stat"><div class="label">Live-Fire Rounds</div><div class="value accent">${liveRounds.toLocaleString()}</div></div>
+      <div class="stat"><div class="label">Sessions</div><div class="value">${liveSessions}<span style="font-size:13px;color:var(--text-dim);margin-left:6px">+${dryFireSessions} dry</span></div></div>
       <div class="stat"><div class="label">Ammo Inventory</div><div class="value">${totalAmmo.toLocaleString()}</div></div>
       ${(() => {
         const divs = divisionsWithClassifiers();
@@ -1188,13 +1430,22 @@ function renderDashboard() {
 
 function firearmStatusBlock(f) {
   const st = maintenanceStatus(f.id);
+  const live = liveFireRoundCount(f.id);
   const total = firearmRoundCount(f.id);
+  const dry = total - live + (f.startingRoundCount || 0) - (f.startingRoundCount || 0); // dry rounds only
+  const dryRounds = DB.sessions.filter(s => s.type === 'dry_fire').reduce((sum, s) => {
+    if (s.firearmSplits && s.firearmSplits.length) {
+      const sp = s.firearmSplits.find(x => x.firearmId === f.id);
+      return sum + (sp ? sp.rounds || 0 : 0);
+    }
+    return sum + (s.firearmId === f.id ? s.totalRounds || 0 : 0);
+  }, 0);
   const fillClass = st.deepCleanDue ? 'danger' : st.deepCleanWarning ? 'warn' : '';
   return `
     <div style="padding:10px 0;border-bottom:1px solid var(--border)">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <strong>${escapeHtml(f.name)}</strong>
-        <span class="text-dim" style="font-size:12px">${total.toLocaleString()} total rounds</span>
+        <span class="text-dim" style="font-size:12px">${live.toLocaleString()} live${dryRounds > 0 ? ` · ${dryRounds.toLocaleString()} dry` : ''}</span>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);margin-top:6px">
         <span>Deep clean: ${st.roundsSinceDeepClean.toLocaleString()} / ${DEEP_CLEAN_INTERVAL.toLocaleString()}</span>
@@ -1231,25 +1482,202 @@ function topPRs() {
 /* ============================================================
    FIREARMS
    ============================================================ */
+if (!window._firearmsTab) window._firearmsTab = 'firearms';
+function switchFirearmsTab(tab) { window._firearmsTab = tab; renderFirearms(); }
+
 function renderFirearms() {
   const v = document.getElementById('view-firearms');
+  const tab = window._firearmsTab || 'firearms';
   v.innerHTML = `
     <div class="view-header">
       <div>
         <h2>Firearms</h2>
         <div class="sub">Cumulative round counts and maintenance status</div>
       </div>
-      <button class="btn" onclick="openFirearmModal()">+ Add Firearm</button>
+      ${tab === 'firearms' ? `<button class="btn" onclick="openFirearmModal()">+ Add Firearm</button>` : `<button class="btn" onclick="openMagazineModal()">+ Add Magazine</button>`}
     </div>
-    <div class="grid grid-2">
-      ${DB.firearms.map(f => firearmCard(f)).join('')}
+    <div class="tabs" style="margin-bottom:16px">
+      <div class="tab ${tab==='firearms'?'active':''}" onclick="switchFirearmsTab('firearms')">&#9654; Firearms</div>
+      <div class="tab ${tab==='magazines'?'active':''}" onclick="switchFirearmsTab('magazines')">&#9632; Magazines (${(DB.magazines||[]).filter(m=>m.active!==false).length})</div>
     </div>
+    ${tab === 'firearms' ? `<div class="grid grid-2">${DB.firearms.map(f => firearmCard(f)).join('')}</div>` : renderMagazinesPane()}
   `;
+}
+
+// Helper: mags whose firearmIds pool includes the given firearmId
+function getPoolMags(firearmId) {
+  return (DB.magazines || []).filter(mg => mg.active !== false && Array.isArray(mg.firearmIds) && mg.firearmIds.includes(firearmId));
+}
+
+function renderMagazinesPane() {
+  const mags = [...(DB.magazines || [])].sort((a, b) => a.label.localeCompare(b.label));
+  if (!mags.length) return `<div class="empty"><div class="icon">&#9632;</div>No magazines added yet.<br><br><button class="btn" onclick="openMagazineModal()">Add first magazine</button></div>`;
+
+  // Group by firearmIds key (join sorted ids as key)
+  const groups = {};
+  for (const mg of mags) {
+    const key = (mg.firearmIds || []).slice().sort().join(',');
+    if (!groups[key]) groups[key] = { firearmIds: mg.firearmIds || [], mags: [] };
+    groups[key].mags.push(mg);
+  }
+
+  // Malfunction counts per mag
+  const mfByMag = {};
+  for (const m of (DB.malfunctions || [])) {
+    if (m.magId) mfByMag[m.magId] = (mfByMag[m.magId] || 0) + 1;
+  }
+  // Also count session malfunctions
+  for (const s of DB.sessions) {
+    for (const m of (s.malfunctions || [])) {
+      if (m.magId) mfByMag[m.magId] = (mfByMag[m.magId] || 0) + 1;
+    }
+  }
+
+  return Object.values(groups).map(g => {
+    const poolNames = g.firearmIds.map(fid => { const fw = getFirearm(fid); return fw ? fw.name : fid; }).join(' / ');
+    const rows = g.mags.map(mg => {
+      const lastSpring = mg.springHistory && mg.springHistory.length ? mg.springHistory[mg.springHistory.length - 1] : null;
+      const roundsSinceSpring = (mg.totalRounds || 0) - (lastSpring ? (lastSpring.roundsAtReplacement || 0) : 0);
+      const mfCount = mfByMag[mg.id] || 0;
+      const activeLabel = mg.active === false ? ' <span class="badge neutral">Retired</span>' : '';
+      return `<tr>
+        <td><strong>${escapeHtml(mg.label)}</strong>${activeLabel}</td>
+        <td>${(mg.totalRounds || 0).toLocaleString()}</td>
+        <td>${roundsSinceSpring.toLocaleString()}</td>
+        <td>${lastSpring ? formatDate(lastSpring.date) : '<span class="text-dim">Never</span>'}</td>
+        <td>${mfCount > 0 ? `<span class="badge ${mfCount >= 3 ? 'danger' : 'warn'}">${mfCount}</span>` : '<span class="text-dim">0</span>'}</td>
+        <td>${escapeHtml(mg.notes || '')}</td>
+        <td class="row-actions">
+          <button class="btn small secondary" onclick="openMagazineModal('${mg.id}')">Edit</button>
+          <button class="btn small secondary" onclick="openSpringModal('${mg.id}')">Log Spring</button>
+          <button class="btn small danger" onclick="deleteMagazine('${mg.id}')">Delete</button>
+        </td>
+      </tr>`;
+    }).join('');
+    return `<div class="card" style="margin-bottom:16px">
+      <h3>${escapeHtml(poolNames)} — ${g.mags.length} magazine${g.mags.length!==1?'s':''}</h3>
+      <table>
+        <thead><tr><th>Label</th><th>Total Rounds</th><th>Since Spring</th><th>Last Spring</th><th>Malfunctions</th><th>Notes</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+  }).join('');
+}
+
+function openMagazineModal(id) {
+  const mg = id ? (DB.magazines || []).find(x => x.id === id)
+    : { label: '', firearmIds: [], notes: '', active: true, totalRounds: 0, springHistory: [] };
+  openModal(`
+    <div class="modal-header"><h3>${id ? 'Edit' : 'Add'} Magazine</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-grid-2">
+        <div class="form-row"><label>Label</label>
+          <input id="mg-label" value="${escapeHtml(mg.label)}" placeholder="e.g. A1, S3, E2">
+          <div class="help-text">Match what's on the physical mag (paint pen or label).</div>
+        </div>
+        <div class="form-row"><label>Active</label>
+          <label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-weight:normal;text-transform:none">
+            <input type="checkbox" id="mg-active" ${mg.active !== false ? 'checked' : ''}> In service (uncheck to retire)
+          </label>
+        </div>
+      </div>
+      <div class="form-row"><label>Firearm Pool</label>
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">
+          ${DB.firearms.map(fw => `<label style="display:flex;align-items:center;gap:6px;font-weight:normal;text-transform:none;cursor:pointer">
+            <input type="checkbox" class="mg-fw-check" value="${fw.id}" ${(mg.firearmIds || []).includes(fw.id) ? 'checked' : ''}>
+            ${escapeHtml(fw.name)}
+          </label>`).join('')}
+        </div>
+        <div class="help-text">Check all guns that can use this magazine (e.g. Apollo + Erebus share a pool).</div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row"><label>Total Rounds (lifetime)</label>
+          <input id="mg-rounds" type="number" min="0" value="${mg.totalRounds || 0}">
+          <div class="help-text">Set if starting with a used magazine.</div>
+        </div>
+      </div>
+      <div class="form-row"><label>Notes</label><textarea id="mg-notes">${escapeHtml(mg.notes || '')}</textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="saveMagazine('${id || ''}')">Save</button>
+    </div>
+  `);
+}
+
+function saveMagazine(id) {
+  if (!DB.magazines) DB.magazines = [];
+  const label = document.getElementById('mg-label').value.trim();
+  if (!label) { alert('Label is required.'); return; }
+  const firearmIds = [...document.querySelectorAll('.mg-fw-check:checked')].map(el => el.value);
+  if (!firearmIds.length) { alert('Select at least one firearm for this magazine.'); return; }
+  const data = {
+    label,
+    firearmIds,
+    active: document.getElementById('mg-active').checked,
+    totalRounds: parseInt(document.getElementById('mg-rounds').value) || 0,
+    notes: document.getElementById('mg-notes').value.trim()
+  };
+  if (id) {
+    const idx = DB.magazines.findIndex(x => x.id === id);
+    DB.magazines[idx] = { ...DB.magazines[idx], ...data };
+  } else {
+    DB.magazines.push({ id: uid('mg'), springHistory: [], ...data });
+  }
+  saveDB(); closeModal(); renderFirearms();
+}
+
+function deleteMagazine(id) {
+  if (!confirm('Delete this magazine? Round history will be lost.')) return;
+  DB.magazines = (DB.magazines || []).filter(x => x.id !== id);
+  saveDB(); renderFirearms();
+}
+
+function openSpringModal(magId) {
+  const mg = (DB.magazines || []).find(x => x.id === magId);
+  if (!mg) return;
+  openModal(`
+    <div class="modal-header"><h3>Log Spring Replacement — ${escapeHtml(mg.label)}</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body">
+      <p class="text-dim" style="font-size:13px">Rounds at replacement will be recorded as <strong>${(mg.totalRounds||0).toLocaleString()}</strong>. The "Since Spring" counter will reset from this point.</p>
+      <div class="form-grid-2">
+        <div class="form-row"><label>Date</label><input id="sp-date" type="date" value="${todayISO()}"></div>
+      </div>
+      <div class="form-row"><label>Notes</label><textarea id="sp-notes" placeholder="e.g. Wolff +5% spring"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="saveSpring('${magId}')">Save</button>
+    </div>
+  `);
+}
+
+function saveSpring(magId) {
+  const mg = (DB.magazines || []).find(x => x.id === magId);
+  if (!mg) return;
+  if (!mg.springHistory) mg.springHistory = [];
+  mg.springHistory.push({
+    date: document.getElementById('sp-date').value,
+    roundsAtReplacement: mg.totalRounds || 0,
+    notes: document.getElementById('sp-notes').value.trim()
+  });
+  saveDB(); closeModal(); renderFirearms();
 }
 function firearmCard(f) {
   const st = maintenanceStatus(f.id);
   const total = firearmRoundCount(f.id);
-  const sessionsCount = DB.sessions.filter(s => s.firearmId === f.id).length;
+  const live = liveFireRoundCount(f.id);
+  const dryRounds = total - live + (f.startingRoundCount || 0) - (f.startingRoundCount || 0);
+  // Recompute dry rounds cleanly
+  const dryRoundsCalc = DB.sessions.filter(s => s.type === 'dry_fire').reduce((sum, s) => {
+    if (s.firearmSplits && s.firearmSplits.length) {
+      const sp = s.firearmSplits.find(x => x.firearmId === f.id);
+      return sum + (sp ? sp.rounds || 0 : 0);
+    }
+    return sum + (s.firearmId === f.id ? s.totalRounds || 0 : 0);
+  }, 0);
+  const sessionsCount = DB.sessions.filter(s => s.firearmId === f.id && s.type !== 'dry_fire').length;
+  const drySessionsCount = DB.sessions.filter(s => s.firearmId === f.id && s.type === 'dry_fire').length;
   const fillClass = st.deepCleanDue ? 'danger' : st.deepCleanWarning ? 'warn' : 'success';
   const statusBadge = st.deepCleanDue
     ? '<span class="badge danger">Deep clean overdue</span>'
@@ -1267,8 +1695,16 @@ function firearmCard(f) {
       </div>
       <hr>
       <div class="grid grid-3">
-        <div><div class="text-dim" style="font-size:11px;text-transform:uppercase">Total Rounds</div><div style="font-size:20px;font-weight:600;color:var(--accent)">${total.toLocaleString()}</div></div>
-        <div><div class="text-dim" style="font-size:11px;text-transform:uppercase">Sessions</div><div style="font-size:20px;font-weight:600">${sessionsCount}</div></div>
+        <div>
+          <div class="text-dim" style="font-size:11px;text-transform:uppercase">Live-Fire Rounds</div>
+          <div style="font-size:20px;font-weight:600;color:var(--accent)">${live.toLocaleString()}</div>
+          ${dryRoundsCalc > 0 ? `<div style="font-size:11px;color:var(--text-dim)">${dryRoundsCalc.toLocaleString()} dry-fire</div>` : ''}
+        </div>
+        <div>
+          <div class="text-dim" style="font-size:11px;text-transform:uppercase">Sessions</div>
+          <div style="font-size:20px;font-weight:600">${sessionsCount}</div>
+          ${drySessionsCount > 0 ? `<div style="font-size:11px;color:var(--text-dim)">${drySessionsCount} dry-fire</div>` : ''}
+        </div>
         <div><div class="text-dim" style="font-size:11px;text-transform:uppercase">Since Deep Clean</div><div style="font-size:20px;font-weight:600">${st.roundsSinceDeepClean.toLocaleString()}</div></div>
       </div>
       <div style="margin-top:12px">
@@ -1624,8 +2060,11 @@ function renderAmmo() {
   const used = DB.sessions.reduce((s, sess) => s + (sess.ammoUsage || []).reduce((x, u) => x + (u.rounds || 0), 0), 0);
   v.innerHTML = `
     <div class="view-header">
-      <div><h2>Ammunition</h2><div class="sub">Inventory and consumption</div></div>
-      <button class="btn" onclick="openAmmoModal()">+ Add Ammo</button>
+      <div><h2>Ammunition</h2><div class="sub">Inventory and consumption &mdash; one row per ammo can</div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn secondary" onclick="consolidateAmmoDuplicates()" title="Merge duplicate brand/caliber/grain/type rows into one">&#8635; Consolidate Duplicates</button>
+        <button class="btn" onclick="openAmmoModal()">+ Add Ammo</button>
+      </div>
     </div>
     <div class="grid grid-3" style="margin-bottom:16px">
       <div class="stat"><div class="label">Total in Inventory</div><div class="value accent">${total.toLocaleString()}</div></div>
@@ -1636,19 +2075,25 @@ function renderAmmo() {
       ${DB.ammunition.length ? `
       <table>
         <thead><tr><th>Brand</th><th>Caliber</th><th>Grain</th><th>Type</th><th>Inventory</th><th>Cost / round</th><th></th></tr></thead>
-        <tbody>${DB.ammunition.map(a => `
+        <tbody>${DB.ammunition.map(a => {
+          const current = ammoCurrentCostPerRound(a.id);
+          const cprText = current != null
+            ? `$${current.toFixed(3)} <span class="text-dim" style="font-size:11px" title="Current weighted-average cost of rounds remaining in the can (FIFO depletion of linked Ammo Purchase lots)">in can</span>`
+            : (a.costPerRound ? `$${Number(a.costPerRound).toFixed(3)} <span class="text-dim" style="font-size:11px" title="Manually entered; will be replaced by FIFO calculation once you link Ammo Purchase entries">manual</span>` : '—');
+          return `
           <tr>
             <td>${escapeHtml(a.brand)}</td>
             <td>${escapeHtml(a.caliber)}</td>
             <td>${escapeHtml(a.grain)}gr</td>
             <td>${escapeHtml(a.bulletType)}</td>
             <td><strong>${(a.quantity||0).toLocaleString()}</strong></td>
-            <td>${a.costPerRound ? '$' + Number(a.costPerRound).toFixed(3) : '—'}</td>
+            <td>${cprText}</td>
             <td class="row-actions">
               <button class="btn small secondary" onclick="openAmmoModal('${a.id}')">Edit</button>
               <button class="btn small danger" onclick="deleteAmmo('${a.id}')">Delete</button>
             </td>
-          </tr>`).join('')}</tbody>
+          </tr>`;
+        }).join('')}</tbody>
       </table>` : `<div class="empty"><div class="icon">&#9679;</div>No ammunition tracked yet.<br><br><button class="btn" onclick="openAmmoModal()">Add first ammo</button></div>`}
     </div>
   `;
@@ -1704,6 +2149,139 @@ function deleteAmmo(id) {
   saveDB(); renderAmmo();
 }
 
+/* Build a normalized SKU key from an ammunition record. Used for matching duplicates. */
+function ammoSkuKey(a) {
+  return [
+    (a.brand || '').trim().toLowerCase(),
+    (a.caliber || '').trim().toLowerCase(),
+    String(a.grain || '').trim().toLowerCase(),
+    (a.bulletType || '').trim().toLowerCase()
+  ].join('|');
+}
+
+/**
+ * Merge ammunition rows that share the same brand/caliber/grain/bullet-type into a single
+ * "ammo can" record. Quantities are summed. Session and malfunction references that point
+ * to the merged duplicates are repointed to the surviving canonical record so historical
+ * round counts remain accurate. Cost-per-round on the canonical record is preserved (user
+ * can edit afterward); per-purchase history is in Costs and is not affected.
+ */
+function consolidateAmmoDuplicates() {
+  if (!DB.ammunition.length) { alert('No ammunition to consolidate.'); return; }
+
+  // 1) Group by SKU key
+  const groups = {};
+  for (const a of DB.ammunition) {
+    const key = ammoSkuKey(a);
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(a);
+  }
+
+  // 2) Find groups with duplicates
+  const merges = [];
+  let dupCount = 0;
+  for (const key of Object.keys(groups)) {
+    const list = groups[key];
+    if (list.length > 1) {
+      merges.push({ key, canonical: list[0], dupes: list.slice(1) });
+      dupCount += list.slice(1).length;
+    }
+  }
+
+  if (!merges.length) {
+    alert('No duplicates found — your ammunition is already consolidated.');
+    return;
+  }
+
+  // 3) Dry-run summary
+  const summary = merges.map(m => {
+    const totalQty = (m.canonical.quantity || 0) + m.dupes.reduce((s, d) => s + (d.quantity || 0), 0);
+    const label = `${m.canonical.brand} ${m.canonical.caliber} ${m.canonical.grain}gr ${m.canonical.bulletType}`;
+    return `• ${label}: ${1 + m.dupes.length} rows → 1 row (${totalQty.toLocaleString()} rounds)`;
+  }).join('\n');
+
+  if (!confirm(
+    `Consolidate ammunition?\n\n` +
+    `Will merge ${dupCount} duplicate row${dupCount !== 1 ? 's' : ''} into ${merges.length} ammo can${merges.length !== 1 ? 's' : ''}:\n\n` +
+    `${summary}\n\n` +
+    `Quantities will be summed. Cost-per-round keeps the first row's value (editable after). ` +
+    `Session ammo references will be redirected automatically so historical data stays correct.\n\n` +
+    `Costs / Purchase history is in a separate ledger and is NOT touched.\n\n` +
+    `Proceed?`
+  )) return;
+
+  // 4) Build remap, sum quantities, weighted-average cost-per-round
+  // Cost/round is a quantity-weighted average across the rows being merged so the
+  // displayed price reflects what's in the can, not just the first row's stored price.
+  const remap = {};
+  for (const m of merges) {
+    let totalQty = (m.canonical.quantity || 0);
+    let weightedCost = 0;
+    let costQty = 0;
+    if (m.canonical.costPerRound) {
+      weightedCost += (m.canonical.quantity || 0) * parseFloat(m.canonical.costPerRound);
+      costQty += (m.canonical.quantity || 0);
+    }
+    for (const d of m.dupes) {
+      totalQty += (d.quantity || 0);
+      if (d.costPerRound) {
+        weightedCost += (d.quantity || 0) * parseFloat(d.costPerRound);
+        costQty += (d.quantity || 0);
+      }
+      remap[d.id] = m.canonical.id;
+    }
+    m.canonical.quantity = totalQty;
+    if (costQty > 0) m.canonical.costPerRound = +(weightedCost / costQty).toFixed(4);
+  }
+
+  // 5) Repoint session ammoUsage IDs and merge same-id rows within each session
+  let repointCount = 0;
+  for (const s of DB.sessions) {
+    for (const u of (s.ammoUsage || [])) {
+      if (remap[u.ammoId]) {
+        u.ammoId = remap[u.ammoId];
+        repointCount++;
+      }
+    }
+    // Collapse multiple rows now pointing at the same canonical id into one
+    if (s.ammoUsage && s.ammoUsage.length > 1) {
+      const collapsed = {};
+      for (const u of s.ammoUsage) {
+        if (!u.ammoId) continue;
+        if (!collapsed[u.ammoId]) collapsed[u.ammoId] = { ammoId: u.ammoId, rounds: 0 };
+        collapsed[u.ammoId].rounds += (u.rounds || 0);
+      }
+      s.ammoUsage = Object.values(collapsed);
+    }
+  }
+
+  // 6) Repoint malfunction ammo references (both standalone and session-embedded)
+  for (const m of (DB.malfunctions || [])) {
+    if (m.ammoId && remap[m.ammoId]) m.ammoId = remap[m.ammoId];
+  }
+  for (const s of DB.sessions) {
+    for (const m of (s.malfunctions || [])) {
+      if (m.ammoId && remap[m.ammoId]) m.ammoId = remap[m.ammoId];
+    }
+  }
+
+  // 6b) Repoint purchase ammo links so lifetime cost/round stays attached after merge
+  for (const p of (DB.purchases || [])) {
+    if (p.ammoId && remap[p.ammoId]) p.ammoId = remap[p.ammoId];
+  }
+
+  // 7) Delete the merged duplicate records
+  const toDelete = new Set(Object.keys(remap));
+  DB.ammunition = DB.ammunition.filter(a => !toDelete.has(a.id));
+
+  saveDB();
+  renderAmmo();
+  alert(
+    `Consolidated ${dupCount} duplicate row${dupCount !== 1 ? 's' : ''} into ${merges.length} ammo can${merges.length !== 1 ? 's' : ''}. ` +
+    `${repointCount} session reference${repointCount !== 1 ? 's' : ''} updated.`
+  );
+}
+
 /* ============================================================
    SESSIONS
    ============================================================ */
@@ -1711,6 +2289,27 @@ function deleteAmmo(id) {
 // Persists filter state across re-renders within a session
 if (!window._sessionFilter) {
   window._sessionFilter = { dateFrom: '', dateTo: '', firearmId: '', type: '', keyword: '' };
+}
+if (!window._maintenanceFilter) {
+  window._maintenanceFilter = { dateFrom: '', dateTo: '', firearmId: '', type: '' };
+}
+function applyMaintenanceFilter(records) {
+  const f = window._maintenanceFilter;
+  return records.filter(m => {
+    if (f.dateFrom && m.date < f.dateFrom) return false;
+    if (f.dateTo && m.date > f.dateTo) return false;
+    if (f.firearmId && m.firearmId !== f.firearmId) return false;
+    if (f.type && m.type !== f.type) return false;
+    return true;
+  });
+}
+function updateMaintenanceFilter(key, val) {
+  window._maintenanceFilter[key] = val;
+  renderMaintenance();
+}
+function clearMaintenanceFilter() {
+  window._maintenanceFilter = { dateFrom: '', dateTo: '', firearmId: '', type: '' };
+  renderMaintenance();
 }
 function applySessionFilter(sessions) {
   const f = window._sessionFilter;
@@ -1767,6 +2366,7 @@ function renderSessions() {
       <div><h2>Range Sessions</h2><div class="sub">Practice and competition log</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         ${latestFirearm ? `<button class="btn secondary" onclick="quickFieldStrip('${latestFirearm.id}')" title="Log field strip & clean for ${escapeHtml(latestFirearm.name)}">&#9881; Field Strip ${escapeHtml(latestFirearm.name)}</button>` : ''}
+        <button class="btn secondary" onclick="printSessionRange()" title="Print all sessions matching current filters">&#128438; Print Report</button>
         <button class="btn" onclick="openSessionModal()">+ Log Session</button>
       </div>
     </div>
@@ -1817,6 +2417,7 @@ function renderSessions() {
       </div>
     </div>` : ''}
     ${filtered.length ? filtered.map(s => sessionCard(s)).join('') : `<div class="empty"><div class="icon">&#9650;</div>${hasFilter ? 'No sessions match the current filters.' : 'No sessions yet.'}<br><br>${hasFilter ? `<button class="btn secondary" onclick="clearSessionFilter()">Clear Filters</button>` : `<button class="btn" onclick="openSessionModal()">Log first session</button>`}</div>`}
+    ${recentlyDeletedCard('session')}
   `;
 }
 
@@ -1876,10 +2477,28 @@ function sessionCard(s) {
           <div class="text-dim" style="font-size:11px">rounds</div>
         </div>
       </div>
-      ${ammoLines.length ? `<hr><div style="font-size:13px"><strong style="color:var(--text-dim)">Ammo:</strong> ${ammoLines.join(' &middot; ')}</div>` : ''}
+      ${ammoLines.length ? `<hr><div style="font-size:13px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap"><div><strong style="color:var(--text-dim)">Ammo:</strong> ${ammoLines.join(' &middot; ')}</div>${(() => {
+        const cpr = sessionCostPerRound(s);
+        const cost = sessionAmmoCost(s);
+        if (cpr == null && !cost) return '';
+        return `<div style="text-align:right;white-space:nowrap"><strong style="color:var(--accent)">${cpr != null ? '$' + cpr.toFixed(3) + '/rd' : ''}</strong>${cost ? ` &middot; <span class="text-dim">$${cost.toFixed(2)} total</span>` : ''}</div>`;
+      })()}</div>` : ''}
       ${drillsHtml ? `<div style="margin-top:10px"><strong style="color:var(--text-dim);font-size:12px;text-transform:uppercase">Drills</strong><div class="chip-list">${drillsHtml}</div></div>` : ''}
       ${s.distances ? `<div style="margin-top:10px;font-size:13px"><strong style="color:var(--text-dim)">Distances:</strong> ${escapeHtml(s.distances)}</div>` : ''}
+      ${s.holster ? `<div style="margin-top:6px;font-size:13px"><strong style="color:var(--text-dim)">Holster:</strong> ${escapeHtml(s.holster)}</div>` : ''}
       ${(s.malfunctions && s.malfunctions.length) ? `<div style="margin-top:10px"><strong style="color:var(--danger);font-size:12px;text-transform:uppercase">Malfunctions (${s.malfunctions.length})</strong><div class="chip-list">${s.malfunctions.map(m => `<span class="chip" style="border-color:var(--danger);color:var(--danger)">${escapeHtml(m.type)}${m.roundCount ? ' @ ' + m.roundCount : ''}</span>`).join('')}</div></div>` : ''}
+      <div style="margin-top:8px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text-dim)">
+        <span title="Click to edit location" onclick="inlineEditSessionField('${s.id}','location')" style="cursor:text;padding:2px 4px;border-radius:3px;transition:background 0.15s" onmouseenter="this.style.background='var(--panel-2)'" onmouseleave="this.style.background=''">
+          <span id="se-loc-display-${s.id}">&#128205; ${s.location ? escapeHtml(s.location) : '<em>Add location</em>'}</span>
+        </span>
+      </div>
+      <div id="se-loc-editor-${s.id}" style="display:none;margin-top:6px">
+        <input id="se-loc-input-${s.id}" value="${escapeHtml(s.location||'')}" placeholder="Location" style="width:100%;font-size:13px;padding:4px 8px;background:var(--bg);border:1px solid var(--accent);border-radius:4px;color:var(--text)">
+        <div style="display:flex;gap:6px;margin-top:4px">
+          <button class="btn small" onclick="saveInlineSessionField('${s.id}','location')">Save</button>
+          <button class="btn small secondary" onclick="cancelInlineSessionField('${s.id}','location')">Cancel</button>
+        </div>
+      </div>
       <div id="notes-display-${s.id}" onclick="inlineEditNotes('${s.id}')" style="margin-top:10px;font-size:13px;cursor:text;border-radius:4px;padding:4px;transition:background 0.15s" onmouseenter="this.style.background='var(--panel-2)'" onmouseleave="this.style.background=''" title="Click to edit notes">
         ${s.notes ? `<span style="color:var(--text-dim);white-space:pre-wrap">${escapeHtml(s.notes)}</span>` : `<span style="color:var(--border);font-style:italic;font-size:12px">Click to add notes...</span>`}
       </div>
@@ -1890,14 +2509,177 @@ function sessionCard(s) {
           <button class="btn small secondary" onclick="cancelInlineNote('${s.id}')">Cancel</button>
         </div>
       </div>
-      ${(s.targetImages && s.targetImages.length) ? `<div class="image-gallery">${s.targetImages.map((img) => `<div class="image-thumb" style="background-image:url('${img}')" onclick="showLightbox('${img}')"></div>`).join('')}</div>` : ''}
+      ${(s.targetImages && s.targetImages.length) ? `<div class="image-gallery">${s.targetImages.map((img, idx) => `<div class="image-thumb" style="background-image:url('${img}')" onclick="showLightbox('${img}','${s.id}',${idx})" title="Click to view · Annotate button appears in viewer"></div>`).join('')}</div>` : ''}
       <div class="row-actions" style="margin-top:14px">
         <button class="btn small secondary" onclick="openSessionModal('${s.id}')">Edit</button>
+        <button class="btn small secondary" onclick="printSession('${s.id}')">&#128438; Print</button>
         <button class="btn small danger" onclick="deleteSession('${s.id}')">Delete</button>
       </div>
     </div>
   `;
 }
+/* ============================================================
+   PRINT SESSION REPORT
+   ============================================================ */
+function printSession(id) {
+  const s = DB.sessions.find(x => x.id === id);
+  if (!s) return;
+  openPrintWindow([s]);
+}
+function printSessionRange() {
+  const filtered = applySessionFilter([...DB.sessions].sort((a, b) => a.date.localeCompare(b.date)));
+  if (!filtered.length) { alert('No sessions match the current filters.'); return; }
+  openPrintWindow(filtered);
+}
+function openPrintWindow(sessions) {
+  const html = buildPrintDocument(sessions);
+  const win = window.open('', '_blank');
+  if (!win) { alert('Pop-up blocked. Please allow pop-ups for this page and try again.'); return; }
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 400);
+}
+function buildPrintDocument(sessions) {
+  const styles = `
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Georgia, 'Times New Roman', serif; font-size: 12pt; color: #111; background: #fff; padding: 0; }
+    .session { padding: 28px 36px; page-break-after: always; max-width: 760px; margin: 0 auto; }
+    .session:last-child { page-break-after: avoid; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #111; padding-bottom: 10px; margin-bottom: 16px; }
+    .header-left h1 { font-size: 18pt; font-weight: bold; }
+    .header-left .meta { font-size: 10pt; color: #555; margin-top: 4px; }
+    .header-right { text-align: right; }
+    .header-right .rounds { font-size: 28pt; font-weight: bold; line-height: 1; }
+    .header-right .rounds-label { font-size: 9pt; color: #555; }
+    .app-label { font-size: 8pt; color: #aaa; text-align: right; margin-bottom: 4px; }
+    .section { margin-top: 14px; }
+    .section-title { font-size: 8pt; text-transform: uppercase; letter-spacing: 1px; color: #888; font-family: Arial, sans-serif; margin-bottom: 6px; border-bottom: 1px solid #ddd; padding-bottom: 3px; }
+    .row { display: flex; gap: 24px; flex-wrap: wrap; margin-top: 4px; font-size: 11pt; }
+    .field { flex: 1; min-width: 120px; }
+    .field .label { font-size: 8.5pt; color: #888; font-family: Arial, sans-serif; }
+    .field .value { font-size: 11pt; margin-top: 1px; }
+    table { width: 100%; border-collapse: collapse; font-size: 10.5pt; margin-top: 6px; }
+    th { text-align: left; font-size: 8.5pt; color: #888; font-family: Arial, sans-serif; font-weight: normal; padding: 4px 6px; border-bottom: 1px solid #ddd; }
+    td { padding: 5px 6px; border-bottom: 1px solid #eee; vertical-align: top; }
+    .ratings { display: flex; gap: 32px; margin-top: 6px; }
+    .rating-item { text-align: center; }
+    .rating-item .score { font-size: 22pt; font-weight: bold; line-height: 1; }
+    .rating-item .rating-label { font-size: 8pt; color: #888; font-family: Arial, sans-serif; margin-top: 2px; }
+    .rating-bar { width: 48px; height: 6px; background: #eee; border-radius: 3px; margin: 4px auto 0; }
+    .rating-fill { height: 100%; border-radius: 3px; background: #222; }
+    .notes { font-size: 11pt; line-height: 1.6; white-space: pre-wrap; font-style: italic; color: #333; margin-top: 6px; }
+    .images { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 8px; }
+    .images img { width: 160px; height: 120px; object-fit: cover; border: 1px solid #ddd; border-radius: 4px; }
+    .malf-chip { display: inline-block; border: 1px solid #c00; color: #c00; border-radius: 4px; padding: 2px 7px; font-size: 9.5pt; margin: 2px 3px 2px 0; font-family: Arial, sans-serif; }
+    .tag { display: inline-block; background: #f4f4f4; border-radius: 4px; padding: 2px 8px; font-size: 9.5pt; margin: 2px 3px 2px 0; font-family: Arial, sans-serif; }
+    @media print {
+      body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .session { padding: 0.5in 0.7in; }
+      .no-print { display: none !important; }
+    }
+  `;
+
+  const sessionBlocks = sessions.map(s => {
+    const f = getFirearm(s.firearmId);
+    const typeLabel = { practice: 'Practice', competition: 'Competition', class: 'Class / Training', dry_fire: 'Dry Fire' }[s.type] || s.type;
+    const firearmDisplay = (s.firearmSplits && s.firearmSplits.length)
+      ? s.firearmSplits.map(sp => { const fw = getFirearm(sp.firearmId); return `${fw ? fw.name : '?'} (${sp.rounds} rds)`; }).join(', ')
+      : (f ? f.name : '—');
+
+    // Ammo section
+    const ammoRows = (s.ammoUsage || []).map(u => {
+      const a = getAmmo(u.ammoId);
+      return a ? `<tr><td>${escapeHtml(a.brand)}</td><td>${escapeHtml(a.caliber)} ${escapeHtml(a.grain)}gr ${escapeHtml(a.bulletType)}</td><td>${u.rounds}</td></tr>` : '';
+    }).join('');
+
+    // Drills section
+    const drillRows = (s.drills || []).filter(d => d.name).map(d => {
+      const def = getDrillDef(d.name);
+      const scoring = def?.scoring || 'time';
+      const scoreText = formatDrillScore({ time: d.time, score: d.score, maxScore: d.maxScore }, scoring);
+      return `<tr><td>${escapeHtml(d.name)}</td><td>${escapeHtml(d.distance || '—')}</td><td>${scoreText !== '—' ? scoreText : '—'}</td><td>${escapeHtml(d.notes || '')}</td></tr>`;
+    }).join('');
+
+    // Self-ratings
+    const sr = s.selfRating;
+    const ratingsHtml = sr ? `
+      <div class="section">
+        <div class="section-title">Self-Ratings</div>
+        <div class="ratings">
+          ${[['Focus', sr.focus], ['Fundamentals', sr.fundamentals], ['Satisfaction', sr.satisfaction]].map(([label, val]) => `
+            <div class="rating-item">
+              <div class="score">${val ?? '—'}</div>
+              <div class="rating-label">${label}</div>
+              ${val != null ? `<div class="rating-bar"><div class="rating-fill" style="width:${val * 10}%"></div></div>` : ''}
+            </div>
+          `).join('')}
+        </div>
+      </div>` : '';
+
+    // Malfunctions
+    const malfHtml = (s.malfunctions && s.malfunctions.length) ? `
+      <div class="section">
+        <div class="section-title">Malfunctions (${s.malfunctions.length})</div>
+        <div style="margin-top:6px">${s.malfunctions.map(m => {
+          const mg = m.magId ? (DB.magazines||[]).find(x=>x.id===m.magId) : null;
+          return `<span class="malf-chip">${escapeHtml(m.type)}${m.roundCount ? ' @ rnd ' + m.roundCount : ''}${mg ? ' · ' + escapeHtml(mg.label) : ''}</span>`;
+        }).join('')}</div>
+      </div>` : '';
+
+    // Target images
+    const imagesHtml = (s.targetImages && s.targetImages.length) ? `
+      <div class="section">
+        <div class="section-title">Target Images</div>
+        <div class="images">${s.targetImages.map(img => `<img src="${img}" alt="Target">`).join('')}</div>
+      </div>` : '';
+
+    // Costs
+    const ammoCost = sessionAmmoCost(s);
+    const rangeFee = parseFloat(s.rangeFee) || 0;
+    const cpr = sessionCostPerRound(s);
+    const costsLine = (ammoCost || rangeFee) ? `Ammo: $${ammoCost.toFixed(2)}${rangeFee ? ` · Range fee: $${rangeFee.toFixed(2)}` : ''}${cpr != null ? ` · $${cpr.toFixed(3)}/rd` : ''}` : '';
+
+    return `<div class="session">
+      <div class="app-label">Pistol Tracker — Training Journal</div>
+      <div class="header">
+        <div class="header-left">
+          <h1>${formatDate(s.date)} &mdash; ${escapeHtml(typeLabel)}</h1>
+          <div class="meta">${escapeHtml(firearmDisplay)} &nbsp;&middot;&nbsp; ${escapeHtml(s.location || 'No location')}${s.distances ? ' &nbsp;&middot;&nbsp; ' + escapeHtml(s.distances) : ''}${s.holster ? ' &nbsp;&middot;&nbsp; Holster: ' + escapeHtml(s.holster) : ''}</div>
+          ${costsLine ? `<div class="meta" style="margin-top:4px">${escapeHtml(costsLine)}</div>` : ''}
+        </div>
+        <div class="header-right">
+          <div class="rounds">${(s.totalRounds || 0).toLocaleString()}</div>
+          <div class="rounds-label">rounds</div>
+        </div>
+      </div>
+
+      ${ammoRows ? `<div class="section">
+        <div class="section-title">Ammunition</div>
+        <table><thead><tr><th>Brand</th><th>Load</th><th>Rounds</th></tr></thead><tbody>${ammoRows}</tbody></table>
+      </div>` : ''}
+
+      ${drillRows ? `<div class="section">
+        <div class="section-title">Drills</div>
+        <table><thead><tr><th>Drill</th><th>Distance</th><th>Score / Time</th><th>Notes</th></tr></thead><tbody>${drillRows}</tbody></table>
+      </div>` : ''}
+
+      ${ratingsHtml}
+      ${malfHtml}
+
+      ${s.notes ? `<div class="section">
+        <div class="section-title">Notes</div>
+        <div class="notes">${escapeHtml(s.notes)}</div>
+      </div>` : ''}
+
+      ${imagesHtml}
+    </div>`;
+  }).join('');
+
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Pistol Tracker — Session Report</title>
+    <style>${styles}</style></head><body>${sessionBlocks}</body></html>`;
+}
+
 function openSessionModal(id) {
   const s = id ? DB.sessions.find(x => x.id === id) : {
     date: todayISO(), type: 'practice', firearmId: DB.firearms[0]?.id || '',
@@ -1922,7 +2704,7 @@ function openSessionModal(id) {
           </select>
         </div>
         <div class="form-row"><label>Firearm</label>
-          <select id="se-firearm">${DB.firearms.map(f => `<option value="${f.id}" ${s.firearmId===f.id?'selected':''}>${escapeHtml(f.name)}</option>`).join('')}</select>
+          <select id="se-firearm" onchange="updateSessionMagSection()" >${DB.firearms.map(f => `<option value="${f.id}" ${s.firearmId===f.id?'selected':''}>${escapeHtml(f.name)}</option>`).join('')}</select>
         </div>
       </div>
       <div class="form-row" style="margin-top:-4px">
@@ -1932,11 +2714,15 @@ function openSessionModal(id) {
         </label>
       </div>
       <div id="se-fw-splits" style="display:${(s.firearmSplits && s.firearmSplits.length)?'block':'none'}"></div>
+      <div id="se-mag-section" data-prev-mag-ids="${(s.magIds||[]).join(',')}"></div>
       <div class="form-grid-2">
         <div class="form-row"><label>Location</label><input id="se-location" value="${escapeHtml(s.location)}" placeholder="e.g. Local Range, USPSA Match"></div>
         <div class="form-row"><label>Range Fee ($)</label><input id="se-rangefee" type="number" min="0" step="0.01" value="${s.rangeFee || ''}" placeholder="0.00"><div class="help-text">Optional: lane fee or range entry cost for this session.</div></div>
       </div>
-      <div class="form-row"><label>Distances Practiced</label><input id="se-dist" value="${escapeHtml(s.distances)}" placeholder="e.g. 7yd, 15yd, 25yd"></div>
+      <div class="form-grid-2">
+        <div class="form-row"><label>Distances Practiced</label><input id="se-dist" value="${escapeHtml(s.distances)}" placeholder="e.g. 7yd, 15yd, 25yd"></div>
+        <div class="form-row"><label>Holster (optional)</label><input id="se-holster" value="${escapeHtml(s.holster||'')}" placeholder="e.g. Safariland 5197, BOSS hanger"><div class="help-text">Holster used this session.</div></div>
+      </div>
 
       <hr>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -2006,6 +2792,7 @@ function openSessionModal(id) {
     renderDrillRows();
     renderMalfunctionRows();
     renderSessionImages();
+    updateSessionMagSection();
     ['focus','fund','sat'].forEach(k => {
       const inp = document.getElementById('se-'+k);
       const lbl = document.getElementById('se-'+k+'-val');
@@ -2018,6 +2805,24 @@ function openSessionModal(id) {
 function toggleNoHolster(val) {
   window._tempSession.noHolsterOnly = val;
   renderDrillRows();
+}
+function updateSessionMagSection() {
+  const sec = document.getElementById('se-mag-section');
+  if (!sec) return;
+  const firearmId = document.getElementById('se-firearm').value;
+  const poolMags = getPoolMags(firearmId);
+  const prevIds = (sec.dataset.prevMagIds || '').split(',').filter(Boolean);
+  if (!poolMags.length) { sec.innerHTML = ''; return; }
+  sec.innerHTML = `<div style="margin-top:6px;margin-bottom:2px">
+    <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Magazines Used (optional)</div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px">
+      ${poolMags.map(mg => `<label style="display:flex;align-items:center;gap:5px;font-weight:normal;text-transform:none;cursor:pointer;font-size:13px">
+        <input type="checkbox" class="se-mag-check" value="${mg.id}" ${prevIds.includes(mg.id)?'checked':''}>
+        ${escapeHtml(mg.label)}
+      </label>`).join('')}
+    </div>
+    <div class="help-text">Rounds divided equally among checked mags.</div>
+  </div>`;
 }
 function toggleMultiFirearm(val) {
   window._tempSession.multiFirearm = val;
@@ -2120,7 +2925,7 @@ function renderAmmoRows() {
       <div class="form-row"><label>Ammunition</label>
         <select onchange="updateAmmoRow(${i},'ammoId',this.value)">
           <option value="">— Select ammo —</option>
-          ${DB.ammunition.map(a => `<option value="${a.id}" ${u.ammoId===a.id?'selected':''}>${escapeHtml(a.brand)} ${escapeHtml(a.grain)}gr ${escapeHtml(a.bulletType)} (${(a.quantity||0).toLocaleString()} avail)</option>`).join('')}
+          ${DB.ammunition.map(a => `<option value="${a.id}" ${u.ammoId===a.id?'selected':''}>${escapeHtml(a.brand)} ${escapeHtml(a.caliber)} ${escapeHtml(a.grain)}gr ${escapeHtml(a.bulletType)} &mdash; ${(a.quantity||0).toLocaleString()} in can</option>`).join('')}
         </select>
       </div>
       <div class="form-row"><label>Rounds</label>
@@ -2239,9 +3044,191 @@ function handleImageUpload(evt) {
   }
   evt.target.value = '';
 }
-function showLightbox(src) {
-  document.getElementById('lightbox-img').src = src;
+function showLightbox(src, sessionId, imgIndex) {
+  const img = document.getElementById('lightbox-img');
+  img.src = src;
+  img.dataset.sessionId = sessionId || '';
+  img.dataset.imgIndex = imgIndex != null ? imgIndex : '';
   document.getElementById('lightbox').classList.add('show');
+  // Show annotate button if session context is available
+  let annBtn = document.getElementById('lightbox-annotate-btn');
+  if (!annBtn) {
+    annBtn = document.createElement('button');
+    annBtn.id = 'lightbox-annotate-btn';
+    annBtn.className = 'btn small secondary';
+    annBtn.style.cssText = 'position:fixed;top:16px;right:80px;z-index:10001';
+    annBtn.innerHTML = '&#9999; Annotate';
+    annBtn.addEventListener('click', e => { e.stopPropagation(); openAnnotateTool(img.src, img.dataset.sessionId, parseInt(img.dataset.imgIndex)); });
+    document.body.appendChild(annBtn);
+  }
+  annBtn.style.display = (sessionId != null && imgIndex != null) ? 'inline-flex' : 'none';
+}
+
+/* ============================================================
+   PHOTO ANNOTATION TOOL
+   Canvas overlay for drawing circles on target images
+   ============================================================ */
+let _annotateCircles = [];
+let _annotateColor = '#ff4444';
+let _annotateDrawing = null;
+let _annotateSessionId = null;
+let _annotateImgIndex = null;
+
+function openAnnotateTool(src, sessionId, imgIndex) {
+  document.getElementById('lightbox').classList.remove('show');
+  _annotateCircles = [];
+  _annotateSessionId = sessionId;
+  _annotateImgIndex = imgIndex;
+
+  let overlay = document.getElementById('annotate-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'annotate-overlay';
+    overlay.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:10002;flex-direction:column;align-items:center;justify-content:flex-start;overflow:auto;padding:12px';
+    overlay.innerHTML = `
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;background:rgba(255,255,255,0.06);padding:8px 14px;border-radius:8px">
+        <span style="color:#aaa;font-size:12px;margin-right:4px">Circle color:</span>
+        ${[['#ff4444','Red'],['#ffee44','Yellow'],['#44dd66','Green'],['#4a9eff','Blue'],['#ffffff','White']].map(([c,n]) =>
+          `<button onclick="setAnnotateColor('${c}')" id="ann-col-${c.replace('#','')}" style="width:24px;height:24px;border-radius:50%;background:${c};border:2px solid transparent;cursor:pointer;transition:border 0.15s" title="${n}"></button>`
+        ).join('')}
+        <span style="color:#aaa;font-size:12px;margin:0 4px">Size:</span>
+        <input id="ann-radius" type="range" min="5" max="80" value="20" style="width:80px">
+        <button class="btn small secondary" onclick="clearAnnotations()">Clear All</button>
+        <button class="btn small danger" onclick="undoAnnotation()">Undo</button>
+        <button class="btn small" onclick="saveAnnotation()">Save Image</button>
+        <button class="btn small secondary" onclick="closeAnnotateTool()">Cancel</button>
+      </div>
+      <div style="position:relative;display:inline-block;cursor:crosshair">
+        <img id="annotate-img" style="max-width:90vw;max-height:75vh;display:block;user-select:none">
+        <canvas id="annotate-canvas" style="position:absolute;top:0;left:0;cursor:crosshair"></canvas>
+      </div>
+      <div style="color:#888;font-size:11px;margin-top:8px">Click and drag to draw a circle. Right-click to remove last circle.</div>
+    `;
+    document.body.appendChild(overlay);
+
+    const canvas = overlay.querySelector('#annotate-canvas');
+    canvas.addEventListener('mousedown', annotateMouseDown);
+    canvas.addEventListener('mousemove', annotateMouseMove);
+    canvas.addEventListener('mouseup', annotateMouseUp);
+    canvas.addEventListener('contextmenu', e => { e.preventDefault(); undoAnnotation(); });
+    // Touch support
+    canvas.addEventListener('touchstart', e => { e.preventDefault(); const t = e.touches[0]; annotateMouseDown({ clientX: t.clientX, clientY: t.clientY }); }, { passive: false });
+    canvas.addEventListener('touchmove',  e => { e.preventDefault(); const t = e.touches[0]; annotateMouseMove({ clientX: t.clientX, clientY: t.clientY }); }, { passive: false });
+    canvas.addEventListener('touchend',   e => { e.preventDefault(); annotateMouseUp({}); }, { passive: false });
+  }
+  overlay.style.display = 'flex';
+  setAnnotateColor('#ff4444');
+
+  const img = document.getElementById('annotate-img');
+  img.onload = () => {
+    const canvas = document.getElementById('annotate-canvas');
+    canvas.width  = img.offsetWidth;
+    canvas.height = img.offsetHeight;
+    redrawAnnotations();
+  };
+  img.src = src;
+}
+
+function setAnnotateColor(c) {
+  _annotateColor = c;
+  document.querySelectorAll('[id^="ann-col-"]').forEach(b => b.style.border = '2px solid transparent');
+  const btn = document.getElementById('ann-col-' + c.replace('#', ''));
+  if (btn) btn.style.border = '2px solid white';
+}
+function getAnnotateRadius() {
+  const inp = document.getElementById('ann-radius');
+  const img = document.getElementById('annotate-img');
+  // Scale the radius slider to image display size
+  const scale = img ? img.offsetWidth / img.naturalWidth : 1;
+  return inp ? parseInt(inp.value) : 20;
+}
+function annotateMouseDown(e) {
+  const canvas = document.getElementById('annotate-canvas');
+  const rect = canvas.getBoundingClientRect();
+  _annotateDrawing = { startX: e.clientX - rect.left, startY: e.clientY - rect.top };
+}
+function annotateMouseMove(e) {
+  if (!_annotateDrawing) return;
+  const canvas = document.getElementById('annotate-canvas');
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left, y = e.clientY - rect.top;
+  const r = Math.sqrt((x - _annotateDrawing.startX) ** 2 + (y - _annotateDrawing.startY) ** 2);
+  redrawAnnotations();
+  const ctx = canvas.getContext('2d');
+  drawCircle(ctx, _annotateDrawing.startX, _annotateDrawing.startY, r, _annotateColor, true);
+}
+function annotateMouseUp(e) {
+  if (!_annotateDrawing) return;
+  const canvas = document.getElementById('annotate-canvas');
+  const rect = canvas.getBoundingClientRect();
+  let r;
+  if (e.clientX != null) {
+    const x = e.clientX - rect.left, y = e.clientY - rect.top;
+    r = Math.sqrt((x - _annotateDrawing.startX) ** 2 + (y - _annotateDrawing.startY) ** 2);
+  } else {
+    r = getAnnotateRadius();
+  }
+  if (r > 3) {
+    _annotateCircles.push({ x: _annotateDrawing.startX, y: _annotateDrawing.startY, r, color: _annotateColor });
+  }
+  _annotateDrawing = null;
+  redrawAnnotations();
+}
+function drawCircle(ctx, x, y, r, color, preview) {
+  ctx.beginPath();
+  ctx.arc(x, y, r, 0, Math.PI * 2);
+  ctx.strokeStyle = color;
+  ctx.lineWidth = preview ? 1.5 : 2;
+  ctx.setLineDash(preview ? [5, 3] : []);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+function redrawAnnotations() {
+  const canvas = document.getElementById('annotate-canvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  _annotateCircles.forEach(c => drawCircle(ctx, c.x, c.y, c.r, c.color, false));
+}
+function clearAnnotations() { _annotateCircles = []; redrawAnnotations(); }
+function undoAnnotation() { _annotateCircles.pop(); redrawAnnotations(); }
+function closeAnnotateTool() {
+  const overlay = document.getElementById('annotate-overlay');
+  if (overlay) overlay.style.display = 'none';
+  _annotateDrawing = null;
+}
+function saveAnnotation() {
+  const img = document.getElementById('annotate-img');
+  const canvas = document.getElementById('annotate-canvas');
+  if (!img || !canvas) return;
+  // Composite original image + circles onto an offscreen canvas at native resolution
+  const out = document.createElement('canvas');
+  out.width = img.naturalWidth;
+  out.height = img.naturalHeight;
+  const ctx = out.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+  // Scale circle positions from display to native
+  const scaleX = img.naturalWidth / img.offsetWidth;
+  const scaleY = img.naturalHeight / img.offsetHeight;
+  _annotateCircles.forEach(c => {
+    ctx.beginPath();
+    ctx.arc(c.x * scaleX, c.y * scaleY, c.r * ((scaleX + scaleY) / 2), 0, Math.PI * 2);
+    ctx.strokeStyle = c.color;
+    ctx.lineWidth = Math.max(2, 3 * scaleX);
+    ctx.stroke();
+  });
+  const dataUrl = out.toDataURL('image/jpeg', 0.9);
+  // Save back to the session
+  if (_annotateSessionId) {
+    const s = DB.sessions.find(x => x.id === _annotateSessionId);
+    if (s && s.targetImages && _annotateImgIndex != null) {
+      s.targetImages[_annotateImgIndex] = dataUrl;
+      saveDB();
+      renderSessions();
+      showToast('Annotated image saved.');
+    }
+  }
+  closeAnnotateTool();
 }
 function saveSession(id) {
   const t = window._tempSession;
@@ -2252,6 +3239,7 @@ function saveSession(id) {
   t.distances = document.getElementById('se-dist').value.trim();
   t.notes = document.getElementById('se-notes').value.trim();
   t.rangeFee = parseFloat(document.getElementById('se-rangefee').value) || null;
+  t.holster = document.getElementById('se-holster').value.trim() || null;
   t.selfRating = {
     focus: parseInt(document.getElementById('se-focus').value),
     fundamentals: parseInt(document.getElementById('se-fund').value),
@@ -2279,10 +3267,18 @@ function saveSession(id) {
   if (!t.date) { alert('Date required'); return; }
   if (!t.firearmId) { alert('Firearm required'); return; }
 
+  // Read selected mags from the session modal checkboxes
+  const selectedMagIds = [...document.querySelectorAll('.se-mag-check:checked')].map(el => el.value);
+  t.magIds = selectedMagIds;
+
   let prevAmmo = [];
+  let prevMagIds = [];
+  let prevTotalRounds = 0;
   if (id) {
     const existing = DB.sessions.find(x => x.id === id);
     prevAmmo = existing ? existing.ammoUsage || [] : [];
+    prevMagIds = existing ? existing.magIds || [] : [];
+    prevTotalRounds = existing ? existing.totalRounds || 0 : 0;
   }
   for (const u of prevAmmo) {
     const a = getAmmo(u.ammoId);
@@ -2292,6 +3288,22 @@ function saveSession(id) {
     const a = getAmmo(u.ammoId);
     if (a) a.quantity = Math.max(0, (a.quantity || 0) - u.rounds);
   }
+  // Undo previous mag round attribution
+  if (prevMagIds.length) {
+    const prevPerMag = Math.round(prevTotalRounds / prevMagIds.length);
+    for (const magId of prevMagIds) {
+      const mg = (DB.magazines || []).find(x => x.id === magId);
+      if (mg) mg.totalRounds = Math.max(0, (mg.totalRounds || 0) - prevPerMag);
+    }
+  }
+  // Apply new mag round attribution
+  if (selectedMagIds.length && t.totalRounds > 0) {
+    const perMag = Math.round(t.totalRounds / selectedMagIds.length);
+    for (const magId of selectedMagIds) {
+      const mg = (DB.magazines || []).find(x => x.id === magId);
+      if (mg) mg.totalRounds = (mg.totalRounds || 0) + perMag;
+    }
+  }
 
   if (id) {
     const idx = DB.sessions.findIndex(x => x.id === id);
@@ -2300,8 +3312,9 @@ function saveSession(id) {
     DB.sessions.push({ id: uid('se'), ...t });
   }
   saveDB(); closeModal(); renderSessions();
-  // Offer field strip log if this session is the latest and a field strip is now pending
-  if (!id) {
+  // Offer field strip log if this session is the latest live-fire session and a field strip is now pending.
+  // Dry-fire sessions never trigger the field-strip prompt.
+  if (!id && t.type !== 'dry_fire') {
     const latestForFirearm = [...DB.sessions].filter(x => x.firearmId === t.firearmId).sort((a,b)=>b.date.localeCompare(a.date))[0];
     const isLatest = latestForFirearm && latestForFirearm.id !== id && latestForFirearm.date === t.date;
     const lastFS = lastMaintenance(t.firearmId, 'field_strip');
@@ -2309,7 +3322,7 @@ function saveSession(id) {
     if (isLatest && needsFS) {
       const f = getFirearm(t.firearmId);
       setTimeout(() => {
-        if (confirm(`Session saved. Log a field strip & clean for ${f ? f.name : 'this firearm'} now?\n\n(Atlas guidance: clean after every range session.)`)) {
+        if (confirm(`Session saved. Log a field strip & clean for ${f ? f.name : 'this firearm'} now?\n\n(Atlas guidance: clean after every live-fire range session.)`)) {
           quickFieldStrip(t.firearmId);
         }
       }, 100);
@@ -2341,17 +3354,54 @@ function saveInlineNote(id) {
   disp.style.display = '';
   document.getElementById('notes-editor-' + id).style.display = 'none';
 }
-function deleteSession(id) {
-  if (!confirm('Delete this session? Ammo will be returned to inventory.')) return;
+function inlineEditSessionField(id, field) {
+  document.getElementById(`se-loc-display-${id}`).parentElement.style.display = 'none';
+  document.getElementById(`se-loc-editor-${id}`).style.display = 'block';
+  const inp = document.getElementById(`se-loc-input-${id}`);
+  if (inp) { inp.focus(); inp.select(); }
+}
+function saveInlineSessionField(id, field) {
   const s = DB.sessions.find(x => x.id === id);
-  if (s) {
-    for (const u of (s.ammoUsage || [])) {
-      const a = getAmmo(u.ammoId);
-      if (a) a.quantity = (a.quantity || 0) + u.rounds;
-    }
-  }
-  DB.sessions = DB.sessions.filter(x => x.id !== id);
-  saveDB(); renderSessions();
+  if (!s) return;
+  const inp = document.getElementById(`se-loc-input-${id}`);
+  if (!inp) return;
+  s[field] = inp.value.trim();
+  saveDB();
+  const disp = document.getElementById(`se-loc-display-${id}`);
+  if (disp) disp.innerHTML = `&#128205; ${s.location ? escapeHtml(s.location) : '<em>Add location</em>'}`;
+  cancelInlineSessionField(id, field);
+}
+function cancelInlineSessionField(id, field) {
+  document.getElementById(`se-loc-display-${id}`).parentElement.style.display = '';
+  document.getElementById(`se-loc-editor-${id}`).style.display = 'none';
+}
+// Inline match % editing on match cards
+function inlineEditMatchPct(id) {
+  document.getElementById(`mpct-display-${id}`).style.display = 'none';
+  document.getElementById(`mpct-editor-${id}`).style.display = 'flex';
+  const inp = document.getElementById(`mpct-input-${id}`);
+  if (inp) { inp.focus(); inp.select(); }
+}
+function saveInlineMatchPct(id) {
+  const m = (DB.matches || []).find(x => x.id === id);
+  if (!m) return;
+  const inp = document.getElementById(`mpct-input-${id}`);
+  const val = parseFloat(inp.value);
+  m.matchPercentage = isNaN(val) ? null : val;
+  saveDB();
+  const disp = document.getElementById(`mpct-display-${id}`);
+  if (disp) disp.textContent = m.matchPercentage != null ? m.matchPercentage.toFixed(2) + '%' : '—';
+  document.getElementById(`mpct-display-${id}`).style.display = '';
+  document.getElementById(`mpct-editor-${id}`).style.display = 'none';
+}
+function cancelInlineMatchPct(id) {
+  document.getElementById(`mpct-display-${id}`).style.display = '';
+  document.getElementById(`mpct-editor-${id}`).style.display = 'none';
+}
+function deleteSession(id) {
+  if (!confirm('Move this session to Recently Deleted? Ammo will be returned to inventory.')) return;
+  softDelete('session', id);
+  renderSessions();
 }
 
 /* ============================================================
@@ -2631,7 +3681,7 @@ function renderTrendsPane() {
   return `
     <div class="grid grid-2">
       <div class="card">
-        <h3>Rounds Over Time (cumulative)</h3>
+        <h3>Live-Fire Rounds Over Time (cumulative)</h3>
         <div class="chart-container">${cumulativeRoundsChart()}</div>
       </div>
       <div class="card">
@@ -2868,13 +3918,19 @@ function renderMatchesPane() {
     </div>
 
     ${(() => {
-      // Stage performance chart - render only if any match has stage % data
       const haveStagePct = matches.some(m => (m.stages||[]).some(s => s.stagePercent != null && s.stagePercent !== ''));
       if (!haveStagePct) return '';
-      return `<div class="card">
-        <h3>Stage Performance</h3>
-        <div class="text-dim" style="font-size:12px;margin-bottom:8px">Each row is a match. Each dot is a stage's % of stage winner. Vertical line marks the match's overall %. Stages left of the line dragged you down; stages right of the line pulled you up.</div>
-        <div class="chart-container">${stagePerformanceChart(matches)}</div>
+      return `<div class="grid grid-2" style="margin-bottom:16px">
+        <div class="card">
+          <h3>Stage Performance by Match</h3>
+          <div class="text-dim" style="font-size:12px;margin-bottom:8px">Each row is a match. Each dot is a stage % of stage winner. Line marks your match overall %.</div>
+          <div class="chart-container">${stagePerformanceChart(matches)}</div>
+        </div>
+        <div class="card">
+          <h3>Stage % Trend Over Time</h3>
+          <div class="text-dim" style="font-size:12px;margin-bottom:8px">Every stage % plotted chronologically. Orange line = match overall %. Trend line shows trajectory.</div>
+          <div class="chart-container">${stageTimelineChart(matches)}</div>
+        </div>
       </div>`;
     })()}
 
@@ -2931,6 +3987,79 @@ function stagePerformanceChart(matches) {
   return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:${H}px">${grid}${rows}${legend}</svg>`;
 }
 
+function stageTimelineChart(matches) {
+  // Collect all stage data points sorted chronologically
+  const sorted = [...matches].sort((a, b) => a.date.localeCompare(b.date));
+  const points = [];
+  sorted.forEach(m => {
+    (m.stages || []).forEach(s => {
+      if (s.stagePercent != null && s.stagePercent !== '') {
+        points.push({ date: m.date, pct: parseFloat(s.stagePercent), matchPct: m.matchPercentage, matchName: m.name || m.date });
+      }
+    });
+  });
+  if (!points.length) return '<div class="empty" style="padding:20px">No stage % data yet.</div>';
+
+  const W = 560, H = 200, padL = 36, padB = 30, padT = 10, padR = 10;
+  const minD = new Date(points[0].date).getTime();
+  const maxD = new Date(points[points.length - 1].date).getTime() || minD + 1;
+  const xFor = d => padL + ((new Date(d).getTime() - minD) / Math.max(1, maxD - minD)) * (W - padL - padR);
+  const yFor = v => padT + (1 - Math.min(120, Math.max(0, v)) / 120) * (H - padT - padB);
+
+  // Grid lines
+  let grid = '';
+  [0, 25, 50, 75, 100].forEach(p => {
+    const y = yFor(p);
+    grid += `<line x1="${padL}" x2="${W - padR}" y1="${y.toFixed(1)}" y2="${y.toFixed(1)}" stroke="var(--border)" stroke-dasharray="2,3"/>`;
+    grid += `<text x="${padL - 4}" y="${(y + 3).toFixed(1)}" text-anchor="end" fill="var(--text-dim)" font-size="9">${p}%</text>`;
+  });
+
+  // Match overall % orange dots connected by line
+  const matchPoints = sorted.filter(m => m.matchPercentage != null);
+  const matchPath = matchPoints.map((m, i) => `${i ? 'L' : 'M'} ${xFor(m.date).toFixed(1)} ${yFor(m.matchPercentage).toFixed(1)}`).join(' ');
+  const matchDots = matchPoints.map(m => `<circle cx="${xFor(m.date).toFixed(1)}" cy="${yFor(m.matchPercentage).toFixed(1)}" r="4" fill="var(--accent)"><title>${m.name||m.date}: ${m.matchPercentage.toFixed(1)}%</title></circle>`).join('');
+
+  // Stage % grey dots
+  const stageDots = points.map(p => `<circle cx="${xFor(p.date).toFixed(1)}" cy="${yFor(p.pct).toFixed(1)}" r="3" fill="var(--text-dim)" opacity="0.6"><title>${p.matchName} stage: ${p.pct.toFixed(1)}%</title></circle>`).join('');
+
+  // Trend line on stage % (linear regression)
+  if (points.length >= 2) {
+    const n = points.length;
+    const xs = points.map((_, i) => i);
+    const ys = points.map(p => p.pct);
+    const xMean = xs.reduce((a, b) => a + b, 0) / n;
+    const yMean = ys.reduce((a, b) => a + b, 0) / n;
+    const slope = xs.reduce((a, x, i) => a + (x - xMean) * (ys[i] - yMean), 0) / xs.reduce((a, x) => a + (x - xMean) ** 2, 0.0001);
+    const intercept = yMean - slope * xMean;
+    const ty1 = yFor(intercept);
+    const ty2 = yFor(intercept + slope * (n - 1));
+    const tx1 = xFor(points[0].date);
+    const tx2 = xFor(points[n - 1].date);
+    const trendDir = slope > 0.3 ? '↑ Improving' : slope < -0.3 ? '↓ Declining' : '→ Stable';
+    const trendColor = slope > 0.3 ? 'var(--success)' : slope < -0.3 ? 'var(--danger)' : 'var(--text-dim)';
+    grid += `<line x1="${tx1.toFixed(1)}" y1="${ty1.toFixed(1)}" x2="${tx2.toFixed(1)}" y2="${ty2.toFixed(1)}" stroke="#4a9eff" stroke-width="1.5" opacity="0.7"/>`;
+    grid += `<text x="${W - padR}" y="${padT + 8}" text-anchor="end" fill="${trendColor}" font-size="10">${trendDir}</text>`;
+  }
+
+  // Month labels
+  let lastLabelMonth = -1;
+  points.forEach(p => {
+    const dt = new Date(p.date);
+    if (dt.getMonth() !== lastLabelMonth) {
+      grid += `<text x="${xFor(p.date).toFixed(1)}" y="${H - padB + 14}" text-anchor="middle" fill="var(--text-dim)" font-size="9">${dt.toLocaleString(undefined, { month: 'short', year: '2-digit' })}</text>`;
+      lastLabelMonth = dt.getMonth();
+    }
+  });
+
+  const legend = `<text x="${padL}" y="${H - 2}" fill="var(--text-dim)" font-size="8">● Stage %</text>
+    <text x="${padL + 48}" y="${H - 2}" fill="var(--accent)" font-size="8">● Match %</text>
+    <text x="${padL + 96}" y="${H - 2}" fill="#4a9eff" font-size="8">— Trend</text>`;
+
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto" xmlns="http://www.w3.org/2000/svg">
+    ${grid}${stageDots}${matchPath ? `<path d="${matchPath}" stroke="var(--accent)" stroke-width="1.5" fill="none" opacity="0.5"/>` : ''}${matchDots}${legend}
+  </svg>`;
+}
+
 function matchCard(m) {
   const f = getFirearm(m.firearmId);
   const stages = m.stages || [];
@@ -2958,15 +4087,23 @@ function matchCard(m) {
         <div><div class="text-dim" style="font-size:11px;text-transform:uppercase">Firearm</div><div style="font-weight:500">${escapeHtml(f ? f.name : '—')}</div></div>
         <div><div class="text-dim" style="font-size:11px;text-transform:uppercase">Stages</div><div style="font-weight:500">${stages.length}</div></div>
         <div><div class="text-dim" style="font-size:11px;text-transform:uppercase">Overall HF</div><div style="font-weight:500;color:var(--accent)">${overallHF}</div></div>
-        <div><div class="text-dim" style="font-size:11px;text-transform:uppercase">Match %</div><div style="font-weight:500">${m.matchPercentage != null ? m.matchPercentage.toFixed(2) + '%' : '—'}</div></div>
+        <div>
+          <div class="text-dim" style="font-size:11px;text-transform:uppercase">Match %</div>
+          <div id="mpct-display-${m.id}" onclick="inlineEditMatchPct('${m.id}')" style="font-weight:500;cursor:text;padding:2px 3px;border-radius:3px;transition:background 0.15s" onmouseenter="this.style.background='var(--panel-2)'" onmouseleave="this.style.background=''" title="Click to edit">${m.matchPercentage != null ? m.matchPercentage.toFixed(2) + '%' : '<span style=\'color:var(--border)\'>—</span>'}</div>
+          <div id="mpct-editor-${m.id}" style="display:none;align-items:center;gap:4px;margin-top:2px">
+            <input id="mpct-input-${m.id}" type="number" step="0.01" min="0" max="120" value="${m.matchPercentage != null ? m.matchPercentage : ''}" style="width:70px;font-size:12px;padding:2px 4px;background:var(--bg);border:1px solid var(--accent);border-radius:4px;color:var(--text)">
+            <button class="btn small" onclick="saveInlineMatchPct('${m.id}')">✓</button>
+            <button class="btn small secondary" onclick="cancelInlineMatchPct('${m.id}')">✕</button>
+          </div>
+        </div>
       </div>
       ${m.cost != null && m.cost !== '' ? `<div style="font-size:13px;color:var(--text-dim);margin-bottom:8px"><strong style="color:var(--text)">Cost:</strong> $${Number(m.cost).toFixed(2)}</div>` : ''}
       ${finishLabel ? `<div style="font-size:13px;color:var(--text-dim);margin-bottom:8px"><strong style="color:var(--text)">Finish:</strong> ${finishLabel}</div>` : ''}
+      ${m.practiScoreUrl ? `<div style="margin-bottom:10px"><a href="${escapeHtml(m.practiScoreUrl)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;color:var(--accent);font-size:13px;font-weight:600;text-decoration:none;border:1px solid var(--accent);border-radius:6px;padding:5px 12px">&#9654; View PractiScore Results</a></div>` : ''}
       ${stages.length ? `<details><summary class="text-accent">Stage breakdown (${stages.length})</summary><div style="padding-top:8px"><table><thead><tr><th>#</th><th>Name</th><th>Points</th><th>Time</th><th>HF</th><th>Stage %</th></tr></thead><tbody>${stages.map(st => `<tr><td>${st.number||''}</td><td>${escapeHtml(st.name||'')}</td><td>${st.points||'—'}</td><td>${st.time||'—'}</td><td>${(st.hitFactor!=null && !isNaN(st.hitFactor)) ? Number(st.hitFactor).toFixed(3) : (calcHitFactor(st.points,st.time)||0).toFixed(3)}</td><td>${st.stagePercent!=null ? Number(st.stagePercent).toFixed(2)+'%' : '—'}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
       ${m.notes ? `<div style="margin-top:10px;font-size:13px;color:var(--text-dim);white-space:pre-wrap">${escapeHtml(m.notes)}</div>` : ''}
       <div class="row-actions" style="margin-top:14px">
         <button class="btn small secondary" onclick="openMatchModal('${m.id}')">Edit</button>
-        ${m.practiScoreUrl ? `<a class="btn small secondary" href="${escapeHtml(m.practiScoreUrl)}" target="_blank" rel="noopener">&#9654; PractiScore Results</a>` : ''}
         <button class="btn small danger" onclick="deleteMatch('${m.id}')">Delete</button>
       </div>
     </div>
@@ -3411,10 +4548,10 @@ function openClassifierModal(id) {
       </div>
       <div class="form-grid-3">
         <div class="form-row"><label>Division</label>
-          <select id="cl-div">${USPSA_DIVISIONS.map(d => `<option ${c.division===d?'selected':''}>${d}</option>`).join('')}</select>
+          <select id="cl-div" onchange="onClassifierCodePicked()">${USPSA_DIVISIONS.map(d => `<option ${c.division===d?'selected':''}>${d}</option>`).join('')}</select>
         </div>
         <div class="form-row"><label>Power Factor</label>
-          <select id="cl-pf"><option ${c.powerFactor==='Minor'?'selected':''}>Minor</option><option ${c.powerFactor==='Major'?'selected':''}>Major</option></select>
+          <select id="cl-pf" onchange="onClassifierCodePicked()"><option ${c.powerFactor==='Minor'?'selected':''}>Minor</option><option ${c.powerFactor==='Major'?'selected':''}>Major</option></select>
         </div>
         <div class="form-row"><label>Firearm</label>
           <select id="cl-firearm">${DB.firearms.map(f => `<option value="${f.id}" ${c.firearmId===f.id?'selected':''}>${escapeHtml(f.name)}</option>`).join('')}</select>
@@ -3457,19 +4594,26 @@ function onClassifierCodePicked() {
   const codeEl = document.getElementById('cl-code');
   const nameEl = document.getElementById('cl-name');
   const linkEl = document.getElementById('cl-hhf-link');
+  const divEl  = document.getElementById('cl-div');
+  const pfEl   = document.getElementById('cl-pf');
   if (!codeEl || !nameEl) return;
   const def = classifierDefByCode(codeEl.value);
   if (def && def.name && !nameEl.value.trim()) {
     nameEl.value = def.name;
   }
-  // Update USPSA lookup link with the entered code
-  if (linkEl && codeEl.value.trim()) {
+  // Update USPSA lookup link — division-aware text
+  if (linkEl) {
     const code = codeEl.value.trim().replace(/^CM-?/i, '');
-    linkEl.href = `https://uspsa.org/classifiers/CM-${code}`;
-    linkEl.textContent = `Look up CM-${code} on USPSA ↗`;
-  } else if (linkEl) {
-    linkEl.href = 'https://uspsa.org/classifiers';
-    linkEl.textContent = 'Look up on USPSA ↗';
+    const div  = divEl ? divEl.value : '';
+    const pf   = pfEl  ? pfEl.value  : '';
+    if (code) {
+      linkEl.href = `https://uspsa.org/classifiers/CM-${code}`;
+      const divLabel = div ? ` · ${div}${pf ? ' ' + pf : ''}` : '';
+      linkEl.textContent = `Look up HHF for CM-${code}${divLabel} on USPSA ↗`;
+    } else {
+      linkEl.href = 'https://uspsa.org/classifiers';
+      linkEl.textContent = 'Look up on USPSA ↗';
+    }
   }
 }
 
@@ -3535,45 +4679,159 @@ function deleteClassifier(id) {
    ============================================================ */
 
 /**
- * Calculate the ammo cost for a single session.
- * Returns 0 if no ammo records have a costPerRound set.
+ * FIFO ammo cost allocation.
+ *
+ * For each Ammo Purchase (category="Ammo Purchase", linked to an ammoId, with rounds and cost set),
+ * we treat it as a "lot" with a unit cost. Walking sessions in chronological order, each round
+ * shot in a session consumes rounds from the oldest unspent lot of that SKU.
+ *
+ * This means a session's cost/round reflects exactly which lots were in the can on that date:
+ * if you bought 1,500 @ $0.40 in January and 500 @ $0.20 in February, and you shoot 1,000
+ * rounds in March (all from the January lot) and 1,000 rounds in April (500 from January +
+ * 500 from February), March shows $0.40/round and April shows $0.30/round.
+ *
+ * Results are not cached — recomputed on demand. Sample size is small enough that the cost
+ * is negligible (single-digit milliseconds for hundreds of sessions and dozens of purchases).
+ */
+function computeFifoCosts() {
+  // Build per-SKU purchase queue sorted by date (then by id to break ties stably)
+  const purchasesBySku = {};
+  for (const p of (DB.purchases || [])) {
+    if ((p.category || '').toLowerCase() !== 'ammo purchase') continue;
+    if (!p.ammoId) continue;
+    const rounds = parseFloat(p.rounds);
+    const cost = parseFloat(p.cost);
+    if (!(rounds > 0) || !(cost > 0)) continue;
+    if (!purchasesBySku[p.ammoId]) purchasesBySku[p.ammoId] = [];
+    purchasesBySku[p.ammoId].push({
+      id: p.id,
+      date: p.date || '',
+      rounds, cost,
+      unitCost: cost / rounds,
+      remaining: rounds
+    });
+  }
+  for (const sku in purchasesBySku) {
+    purchasesBySku[sku].sort((a, b) =>
+      (a.date || '').localeCompare(b.date || '') ||
+      (a.id || '').localeCompare(b.id || '')
+    );
+  }
+
+  // Walk sessions in date order, consume FIFO
+  const sessionCosts = {};          // sessionId -> total FIFO-allocated cost
+  const sessionRoundsCovered = {};  // sessionId -> rounds for which a cost was found
+  const sortedSessions = [...DB.sessions].sort((a, b) =>
+    (a.date || '').localeCompare(b.date || '') ||
+    (a.id || '').localeCompare(b.id || '')
+  );
+  for (const s of sortedSessions) {
+    let total = 0;
+    let coveredRounds = 0;
+    for (const u of (s.ammoUsage || [])) {
+      const queue = purchasesBySku[u.ammoId];
+      if (!queue) continue;
+      let needed = parseFloat(u.rounds) || 0;
+      for (const lot of queue) {
+        if (needed <= 0) break;
+        if (lot.remaining <= 0) continue;
+        const take = Math.min(lot.remaining, needed);
+        total += take * lot.unitCost;
+        coveredRounds += take;
+        lot.remaining -= take;
+        needed -= take;
+      }
+    }
+    sessionCosts[s.id] = total;
+    sessionRoundsCovered[s.id] = coveredRounds;
+  }
+
+  return { sessionCosts, sessionRoundsCovered, purchasesBySku };
+}
+
+/**
+ * Weighted-average cost per round of what's still in the can right now.
+ * Uses the FIFO computation to find lots with remaining rounds for this SKU,
+ * then averages over the remaining quantity. As you shoot through older
+ * higher-priced lots, the can's avg drops toward the newer lower-priced ones.
+ * Returns null if no purchase data is available for this SKU.
+ */
+function ammoCurrentCostPerRound(ammoId) {
+  const data = computeFifoCosts();
+  const queue = data.purchasesBySku[ammoId] || [];
+  let totalCost = 0, totalRounds = 0;
+  for (const lot of queue) {
+    if (lot.remaining > 0) {
+      totalCost += lot.remaining * lot.unitCost;
+      totalRounds += lot.remaining;
+    }
+  }
+  return totalRounds > 0 ? totalCost / totalRounds : null;
+}
+
+/**
+ * Cost/round for a specific session, FIFO-derived from purchase lots in date order.
+ * Returns null if no purchase data covers any rounds in this session.
+ */
+function sessionCostPerRound(s) {
+  const data = computeFifoCosts();
+  const cost = data.sessionCosts[s.id] || 0;
+  const covered = data.sessionRoundsCovered[s.id] || 0;
+  return covered > 0 ? cost / covered : null;
+}
+
+/**
+ * Total ammo cost for a single session.
+ * Prefers FIFO allocation from purchase ledger. Falls back to flat costPerRound on
+ * the ammo record only when no FIFO data exists for that session (e.g., sessions that
+ * pre-date your purchase tracking).
  */
 function sessionAmmoCost(s) {
+  const data = computeFifoCosts();
+  const covered = data.sessionRoundsCovered[s.id] || 0;
+  if (covered > 0) {
+    return data.sessionCosts[s.id] || 0;
+  }
+  // No FIFO coverage — fall back to manually stored cost/round on the ammo record.
   return (s.ammoUsage || []).reduce((sum, u) => {
     const a = getAmmo(u.ammoId);
-    return sum + (a && a.costPerRound ? u.rounds * parseFloat(a.costPerRound) : 0);
+    return sum + (a && a.costPerRound ? (u.rounds || 0) * parseFloat(a.costPerRound) : 0);
   }, 0);
 }
+
+if (!window._costsTab) window._costsTab = 'dashboard';
+function switchCostsTab(tab) { window._costsTab = tab; renderCosts(); }
 
 function renderCosts() {
   const v = document.getElementById('view-costs');
 
   // --- Aggregate totals ---
-  const ammoCost    = DB.sessions.reduce((s, x) => s + sessionAmmoCost(x), 0);
-  const rangeFees   = DB.sessions.reduce((s, x) => s + (parseFloat(x.rangeFee) || 0), 0);
-  const matchFees   = (DB.matches || []).reduce((s, m) => s + (parseFloat(m.cost) || 0), 0);
-  const gearTotal   = (DB.purchases || []).reduce((s, p) => s + (parseFloat(p.cost) || 0), 0);
-  const grandTotal  = ammoCost + rangeFees + matchFees + gearTotal;
+  const purchaseIsRangeFee = p => (p.category || '').toLowerCase() === 'range fee';
+
+  const ammoCost          = DB.sessions.reduce((s, x) => s + sessionAmmoCost(x), 0);
+  const sessionRangeFees  = DB.sessions.reduce((s, x) => s + (parseFloat(x.rangeFee) || 0), 0);
+  const purchaseRangeFees = (DB.purchases || []).filter(purchaseIsRangeFee).reduce((s, p) => s + (parseFloat(p.cost) || 0), 0);
+  const rangeFees         = sessionRangeFees + purchaseRangeFees;
+  const matchFees         = (DB.matches || []).reduce((s, m) => s + (parseFloat(m.cost) || 0), 0);
+  const gearTotal         = (DB.purchases || []).filter(p => !purchaseIsRangeFee(p)).reduce((s, p) => s + (parseFloat(p.cost) || 0), 0);
+  const grandTotal        = ammoCost + rangeFees + matchFees + gearTotal;
 
   const thisYear = new Date().getFullYear();
-  const ytdAmmo   = DB.sessions.filter(s => new Date(s.date).getFullYear() === thisYear).reduce((s, x) => s + sessionAmmoCost(x), 0);
-  const ytdRange  = DB.sessions.filter(s => new Date(s.date).getFullYear() === thisYear).reduce((s, x) => s + (parseFloat(x.rangeFee) || 0), 0);
-  const ytdMatch  = (DB.matches || []).filter(m => new Date(m.date).getFullYear() === thisYear).reduce((s, m) => s + (parseFloat(m.cost) || 0), 0);
-  const ytdGear   = (DB.purchases || []).filter(p => new Date(p.date).getFullYear() === thisYear).reduce((s, p) => s + (parseFloat(p.cost) || 0), 0);
+  const inYear   = d => new Date(d).getFullYear() === thisYear;
+  const ytdAmmo  = DB.sessions.filter(s => inYear(s.date)).reduce((s, x) => s + sessionAmmoCost(x), 0);
+  const ytdSessionRange  = DB.sessions.filter(s => inYear(s.date)).reduce((s, x) => s + (parseFloat(x.rangeFee) || 0), 0);
+  const ytdPurchaseRange = (DB.purchases || []).filter(p => inYear(p.date) && purchaseIsRangeFee(p)).reduce((s, p) => s + (parseFloat(p.cost) || 0), 0);
+  const ytdRange         = ytdSessionRange + ytdPurchaseRange;
+  const ytdMatch  = (DB.matches || []).filter(m => inYear(m.date)).reduce((s, m) => s + (parseFloat(m.cost) || 0), 0);
+  const ytdGear   = (DB.purchases || []).filter(p => inYear(p.date) && !purchaseIsRangeFee(p)).reduce((s, p) => s + (parseFloat(p.cost) || 0), 0);
   const ytdTotal  = ytdAmmo + ytdRange + ytdMatch + ytdGear;
 
-  // Cost-per-round uses session rounds + match rounds (if entered)
   const sessionRounds = DB.sessions.reduce((s, x) => s + (x.totalRounds || 0), 0);
   const matchRounds   = (DB.matches || []).reduce((s, m) => s + (m.totalRounds || 0), 0);
   const totalRoundsForCost = sessionRounds + matchRounds;
   const costPerRound = totalRoundsForCost > 0 && grandTotal > 0 ? grandTotal / totalRoundsForCost : null;
 
-  const categories = [
-    { label: 'Ammo (sessions)',  value: ammoCost,  note: 'rounds × cost/round on ammo record' },
-    { label: 'Match Fees',       value: matchFees,  note: 'entry, travel, lodging' },
-    { label: 'Range Fees',       value: rangeFees,  note: 'lane / entry per session' },
-    { label: 'Gear & Purchases', value: gearTotal,  note: 'equipment, service, training' }
-  ];
+  const tab = window._costsTab || 'dashboard';
 
   v.innerHTML = `
     <div class="view-header">
@@ -3581,49 +4839,203 @@ function renderCosts() {
       <button class="btn" onclick="openPurchaseModal()">+ Add Purchase</button>
     </div>
 
+    <div class="tabs" style="margin-bottom:16px">
+      <div class="tab ${tab==='dashboard'?'active':''}" onclick="switchCostsTab('dashboard')">&#9685; Dashboard</div>
+      <div class="tab ${tab==='log'?'active':''}" onclick="switchCostsTab('log')">&#9776; Log</div>
+    </div>
+
+    ${tab === 'dashboard' ? renderCostsDashboard({
+      ammoCost, rangeFees, matchFees, gearTotal, grandTotal,
+      ytdAmmo, ytdRange, ytdMatch, ytdGear, ytdTotal,
+      thisYear, totalRoundsForCost, costPerRound, purchaseIsRangeFee
+    }) : renderCostsLog()}
+  `;
+}
+
+function renderCostsDashboard({ ammoCost, rangeFees, matchFees, gearTotal, grandTotal,
+    ytdAmmo, ytdRange, ytdMatch, ytdGear, ytdTotal,
+    thisYear, totalRoundsForCost, costPerRound, purchaseIsRangeFee }) {
+
+  // --- Monthly data: last 13 months ---
+  const monthlyData = [];
+  const now = new Date();
+  for (let i = 12; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const ym = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const label = d.toLocaleString('default', { month: 'short', year: '2-digit' });
+    const inMonth = dateStr => dateStr && dateStr.startsWith(ym);
+    const ammo   = DB.sessions.filter(s => inMonth(s.date)).reduce((s, x) => s + sessionAmmoCost(x), 0);
+    const range  = DB.sessions.filter(s => inMonth(s.date)).reduce((s, x) => s + (parseFloat(x.rangeFee)||0), 0)
+                 + (DB.purchases||[]).filter(p => inMonth(p.date) && (p.category||'').toLowerCase()==='range fee').reduce((s,p)=>s+(parseFloat(p.cost)||0),0);
+    const match  = (DB.matches||[]).filter(m => inMonth(m.date)).reduce((s,m)=>s+(parseFloat(m.cost)||0),0);
+    const gear   = (DB.purchases||[]).filter(p => inMonth(p.date) && (p.category||'').toLowerCase()!=='range fee').reduce((s,p)=>s+(parseFloat(p.cost)||0),0);
+    monthlyData.push({ ym, label, ammo, range, match, gear, total: ammo+range+match+gear });
+  }
+  const maxMonthly = Math.max(...monthlyData.map(d => d.total), 1);
+
+  // --- Per-firearm breakdown ---
+  const fwData = DB.firearms.map(fw => {
+    const fwSessions = DB.sessions.filter(s => {
+      if (s.firearmSplits && s.firearmSplits.length) return s.firearmSplits.some(sp => sp.firearmId === fw.id);
+      return s.firearmId === fw.id;
+    });
+    const fwAmmo  = fwSessions.reduce((s, x) => s + sessionAmmoCost(x, fw.id), 0);
+    const fwRange = fwSessions.reduce((s, x) => s + (parseFloat(x.rangeFee)||0), 0);
+    const fwMatch = (DB.matches||[]).filter(m => m.firearmId === fw.id).reduce((s,m)=>s+(parseFloat(m.cost)||0),0);
+    const fwTotal = fwAmmo + fwRange + fwMatch;
+    return { fw, fwAmmo, fwRange, fwMatch, fwTotal };
+  }).filter(d => d.fwTotal > 0);
+
+  // --- SVG monthly bar chart ---
+  const chartW = 620, chartH = 200, padL = 50, padB = 30, padT = 10, padR = 10;
+  const innerW = chartW - padL - padR;
+  const innerH = chartH - padB - padT;
+  const barW = Math.floor(innerW / monthlyData.length) - 3;
+  const COLORS = { ammo: '#ff6b35', range: '#4a9eff', match: '#4caf50', gear: '#9c6fe4' };
+  const yScale = v => innerH - (v / maxMonthly) * innerH;
+
+  // Y-axis gridlines
+  const yTicks = [0.25, 0.5, 0.75, 1.0].map(pct => ({
+    y: Math.round(padT + yScale(maxMonthly * pct)),
+    label: '$' + Math.round(maxMonthly * pct)
+  }));
+
+  const bars = monthlyData.map((d, i) => {
+    const x = padL + i * (innerW / monthlyData.length) + 1;
+    const segments = [
+      { key: 'ammo',  val: d.ammo },
+      { key: 'range', val: d.range },
+      { key: 'match', val: d.match },
+      { key: 'gear',  val: d.gear }
+    ];
+    let stackY = padT + innerH;
+    const rects = segments.filter(s => s.val > 0).map(s => {
+      const h = (s.val / maxMonthly) * innerH;
+      stackY -= h;
+      return `<rect x="${x}" y="${stackY.toFixed(1)}" width="${barW}" height="${h.toFixed(1)}" fill="${COLORS[s.key]}" rx="1"/>`;
+    });
+    const labelY = padT + innerH + 18;
+    return rects.join('') + `<text x="${(x + barW/2).toFixed(1)}" y="${labelY}" text-anchor="middle" font-size="9" fill="var(--text-dim)">${d.label}</text>`;
+  });
+
+  const monthlySVG = `<svg viewBox="0 0 ${chartW} ${chartH}" style="width:100%;height:auto;display:block">
+    ${yTicks.map(t => `<line x1="${padL}" y1="${t.y}" x2="${chartW-padR}" y2="${t.y}" stroke="var(--border)" stroke-width="1"/>
+      <text x="${padL-4}" y="${t.y+4}" text-anchor="end" font-size="9" fill="var(--text-dim)">${t.label}</text>`).join('')}
+    <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+innerH}" stroke="var(--border)" stroke-width="1"/>
+    <line x1="${padL}" y1="${padT+innerH}" x2="${chartW-padR}" y2="${padT+innerH}" stroke="var(--border)" stroke-width="1"/>
+    ${bars.join('')}
+  </svg>`;
+
+  // --- SVG donut chart ---
+  const donutData = [
+    { label: 'Ammo',    value: ammoCost,  color: COLORS.ammo },
+    { label: 'Range',   value: rangeFees, color: COLORS.range },
+    { label: 'Match',   value: matchFees, color: COLORS.match },
+    { label: 'Gear',    value: gearTotal, color: COLORS.gear }
+  ].filter(d => d.value > 0);
+
+  let donutSVG = '';
+  if (grandTotal > 0 && donutData.length) {
+    const cx = 90, cy = 90, r = 70, strokeW = 28;
+    const circumference = 2 * Math.PI * r;
+    let offset = 0;
+    const slices = donutData.map(d => {
+      const pct = d.value / grandTotal;
+      const dash = pct * circumference;
+      const slice = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${d.color}" stroke-width="${strokeW}"
+        stroke-dasharray="${dash.toFixed(2)} ${(circumference - dash).toFixed(2)}"
+        stroke-dashoffset="${(-offset * circumference / 1).toFixed(2)}"
+        transform="rotate(-90 ${cx} ${cy})"/>`;
+      offset += pct;
+      return slice;
+    });
+    const legendItems = donutData.map((d, i) => {
+      const legendY = 24 + i * 22;
+      return `<rect x="195" y="${legendY}" width="12" height="12" fill="${d.color}" rx="2"/>
+        <text x="212" y="${legendY+10}" font-size="12" fill="var(--text)">${d.label}: $${d.value.toFixed(0)} (${(d.value/grandTotal*100).toFixed(0)}%)</text>`;
+    });
+    donutSVG = `<svg viewBox="0 0 420 180" style="width:100%;max-width:380px;height:auto;display:block;margin:0 auto">
+      ${slices.join('')}
+      <circle cx="${cx}" cy="${cy}" r="${r - strokeW/2 - 2}" fill="var(--card-bg)"/>
+      <text x="${cx}" y="${cy-8}" text-anchor="middle" font-size="11" fill="var(--text-dim)">Total</text>
+      <text x="${cx}" y="${cy+10}" text-anchor="middle" font-size="14" font-weight="bold" fill="var(--text)">$${grandTotal.toFixed(0)}</text>
+      ${legendItems.join('')}
+    </svg>`;
+  } else {
+    donutSVG = `<div class="empty" style="padding:20px">No spend data yet.</div>`;
+  }
+
+  return `
     <div class="grid grid-4" style="margin-bottom:16px">
       <div class="stat"><div class="label">Total Spent</div><div class="value accent">$${grandTotal.toFixed(2)}</div></div>
       <div class="stat"><div class="label">Spent ${thisYear}</div><div class="value">$${ytdTotal.toFixed(2)}</div></div>
-      <div class="stat"><div class="label">Rounds (sessions + matches)</div><div class="value">${totalRoundsForCost.toLocaleString()}</div></div>
+      <div class="stat"><div class="label">Rounds Fired</div><div class="value">${totalRoundsForCost.toLocaleString()}</div></div>
       <div class="stat"><div class="label">All-In Cost / Round</div><div class="value">${costPerRound != null ? '$' + costPerRound.toFixed(3) : '—'}</div></div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <h3>Monthly Spend — Last 13 Months</h3>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;font-size:12px">
+        <span><span style="display:inline-block;width:10px;height:10px;background:${COLORS.ammo};border-radius:2px;margin-right:4px"></span>Ammo</span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:${COLORS.range};border-radius:2px;margin-right:4px"></span>Range Fees</span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:${COLORS.match};border-radius:2px;margin-right:4px"></span>Match Fees</span>
+        <span><span style="display:inline-block;width:10px;height:10px;background:${COLORS.gear};border-radius:2px;margin-right:4px"></span>Gear</span>
+      </div>
+      ${monthlySVG}
     </div>
 
     <div class="grid grid-2" style="margin-bottom:16px">
       <div class="card">
         <h3>Spend by Category</h3>
-        ${categories.map(c => {
-          const pct = grandTotal > 0 ? (c.value / grandTotal) * 100 : 0;
-          return `<div style="margin:10px 0">
-            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
-              <span><strong>${escapeHtml(c.label)}</strong> <span class="text-dim" style="font-size:11px">${escapeHtml(c.note)}</span></span>
-              <span><strong style="color:var(--accent)">$${c.value.toFixed(2)}</strong> <span class="text-dim">(${pct.toFixed(1)}%)</span></span>
-            </div>
-            <div class="progress"><div class="progress-fill" style="width:${pct}%"></div></div>
-          </div>`;
-        }).join('')}
+        ${donutSVG}
       </div>
       <div class="card">
         <h3>Year-to-Date (${thisYear})</h3>
         ${[
-          { label: 'Ammo',            value: ytdAmmo },
-          { label: 'Match Fees',      value: ytdMatch },
-          { label: 'Range Fees',      value: ytdRange },
-          { label: 'Gear & Purchases',value: ytdGear }
-        ].map(c => `
-          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px">
-            <span>${escapeHtml(c.label)}</span><strong>$${c.value.toFixed(2)}</strong>
-          </div>
-        `).join('')}
-        <div style="display:flex;justify-content:space-between;padding:10px 0;font-size:14px">
-          <strong>YTD Total</strong>
-          <strong style="color:var(--accent)">$${ytdTotal.toFixed(2)}</strong>
+          { label: 'Ammo',             value: ytdAmmo,  color: COLORS.ammo },
+          { label: 'Range Fees',       value: ytdRange, color: COLORS.range },
+          { label: 'Match Fees',       value: ytdMatch, color: COLORS.match },
+          { label: 'Gear & Purchases', value: ytdGear,  color: COLORS.gear }
+        ].map(c => {
+          const pct = ytdTotal > 0 ? (c.value / ytdTotal) * 100 : 0;
+          return `<div style="margin:10px 0">
+            <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+              <span style="display:flex;align-items:center;gap:6px"><span style="display:inline-block;width:10px;height:10px;background:${c.color};border-radius:2px"></span>${escapeHtml(c.label)}</span>
+              <span><strong>$${c.value.toFixed(2)}</strong> <span class="text-dim">(${pct.toFixed(0)}%)</span></span>
+            </div>
+            <div class="progress"><div class="progress-fill" style="width:${pct}%;background:${c.color}"></div></div>
+          </div>`;
+        }).join('')}
+        <div style="display:flex;justify-content:space-between;padding:10px 0 0;font-size:14px;border-top:1px solid var(--border);margin-top:8px">
+          <strong>YTD Total</strong><strong style="color:var(--accent)">$${ytdTotal.toFixed(2)}</strong>
         </div>
       </div>
     </div>
 
+    ${fwData.length ? `<div class="card" style="margin-bottom:16px">
+      <h3>Spend by Firearm</h3>
+      <div class="text-dim" style="font-size:12px;margin-bottom:10px">Ammo + range fees from sessions attributed to each gun; match fees from logged matches. Gear purchases are not firearm-attributed.</div>
+      <table>
+        <thead><tr><th>Firearm</th><th>Ammo Cost</th><th>Range Fees</th><th>Match Fees</th><th>Total</th></tr></thead>
+        <tbody>
+          ${fwData.map(d => `<tr>
+            <td><strong>${escapeHtml(d.fw.name)}</strong></td>
+            <td>$${d.fwAmmo.toFixed(2)}</td>
+            <td>$${d.fwRange.toFixed(2)}</td>
+            <td>$${d.fwMatch.toFixed(2)}</td>
+            <td><strong style="color:var(--accent)">$${d.fwTotal.toFixed(2)}</strong></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>` : ''}
+  `;
+}
+
+function renderCostsLog() {
+  return `
     <div class="card" style="margin-bottom:16px">
       <h3>Ammo Cost by Session</h3>
-      <div class="text-dim" style="font-size:12px;margin-bottom:10px">Auto-calculated from rounds fired × cost/round set on each ammo record. Set a cost/round in Ammunition to populate this table.</div>
+      <div class="text-dim" style="font-size:12px;margin-bottom:10px">Auto-calculated from rounds fired × cost/round. Set a cost/round in Ammunition to populate this table.</div>
       ${(() => {
         const rows = [...DB.sessions]
           .sort((a, b) => b.date.localeCompare(a.date))
@@ -3683,7 +5095,8 @@ function renderCosts() {
  */
 function openPurchaseModal(id) {
   const p = id ? (DB.purchases || []).find(x => x.id === id) : {
-    date: todayISO(), category: 'Gear / Equipment', item: '', vendor: '', cost: '', notes: ''
+    date: todayISO(), category: 'Gear / Equipment', item: '', vendor: '', cost: '', notes: '',
+    rounds: '', ammoId: '', addToInventory: true
   };
   openModal(`
     <div class="modal-header"><h3>${id ? 'Edit' : 'Add'} Purchase</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
@@ -3691,7 +5104,7 @@ function openPurchaseModal(id) {
       <div class="form-grid-2">
         <div class="form-row"><label>Date</label><input id="pu-date" type="date" value="${p.date}"></div>
         <div class="form-row"><label>Category</label>
-          <select id="pu-cat">
+          <select id="pu-cat" onchange="updatePurchaseAmmoSection()">
             ${['Gear / Equipment','Ammo Purchase','Service / Repair','Training / Class','Travel','Range Fee','Other'].map(c => `<option ${p.category === c ? 'selected' : ''}>${c}</option>`).join('')}
           </select>
         </div>
@@ -3701,13 +5114,45 @@ function openPurchaseModal(id) {
         <div class="form-row"><label>Vendor</label><input id="pu-vendor" value="${escapeHtml(p.vendor || '')}" placeholder="e.g. Atlas Gunworks, Primary Arms"></div>
       </div>
       <div class="form-row"><label>Cost ($)</label><input id="pu-cost" type="number" min="0" step="0.01" value="${p.cost || ''}" placeholder="0.00"></div>
+
+      <!-- Ammo-purchase-only section: rounds + linked ammo SKU. Shown/hidden by updatePurchaseAmmoSection(). -->
+      <div id="pu-ammo-section" style="display:none">
+        <hr>
+        <div style="font-weight:600;margin-bottom:6px">Ammo details</div>
+        <div class="form-grid-2">
+          <div class="form-row"><label>Rounds purchased</label>
+            <input id="pu-rounds" type="number" min="0" value="${p.rounds || ''}" placeholder="e.g. 1000">
+            <div class="help-text">Drives the lifetime weighted-average cost/round.</div>
+          </div>
+          <div class="form-row"><label>Linked ammo can</label>
+            <select id="pu-ammoId">
+              <option value="">— Not linked —</option>
+              ${(DB.ammunition || []).map(a => `<option value="${a.id}" ${p.ammoId === a.id ? 'selected' : ''}>${escapeHtml(a.brand)} ${escapeHtml(a.caliber)} ${escapeHtml(a.grain)}gr ${escapeHtml(a.bulletType)}</option>`).join('')}
+            </select>
+            <div class="help-text">Pick the matching ammo can. The average cost/round for that can will include this purchase.</div>
+          </div>
+        </div>
+        <div class="form-row"><label style="display:flex;align-items:center;gap:8px;text-transform:none;font-weight:normal">
+          <input id="pu-addToInv" type="checkbox" ${p.addToInventory !== false ? 'checked' : ''}>
+          <span>Add these rounds to the linked ammo can's inventory now</span>
+        </label></div>
+      </div>
+
       <div class="form-row"><label>Notes</label><textarea id="pu-notes">${escapeHtml(p.notes || '')}</textarea></div>
     </div>
     <div class="modal-footer">
       <button class="btn secondary" onclick="closeModal()">Cancel</button>
       <button class="btn" onclick="savePurchase('${id || ''}')">Save</button>
     </div>
-  `);
+  `, () => updatePurchaseAmmoSection());
+}
+
+/** Show/hide the Ammo-only fields in the purchase modal based on selected category. */
+function updatePurchaseAmmoSection() {
+  const cat = document.getElementById('pu-cat');
+  const sec = document.getElementById('pu-ammo-section');
+  if (!cat || !sec) return;
+  sec.style.display = cat.value === 'Ammo Purchase' ? 'block' : 'none';
 }
 
 /** Save a new or edited purchase record. */
@@ -3720,20 +5165,45 @@ function savePurchase(id) {
     cost:     parseFloat(document.getElementById('pu-cost').value) || 0,
     notes:    document.getElementById('pu-notes').value.trim()
   };
+  if (data.category === 'Ammo Purchase') {
+    data.rounds = parseFloat(document.getElementById('pu-rounds').value) || 0;
+    data.ammoId = document.getElementById('pu-ammoId').value || '';
+    data.addToInventory = !!document.getElementById('pu-addToInv').checked;
+  }
   if (!data.item) { alert('Item name required'); return; }
   if (!DB.purchases) DB.purchases = [];
+
+  // Capture previous version (for edit) so we can reverse a prior inventory bump
+  const prev = id ? (DB.purchases.find(x => x.id === id) || null) : null;
+
   if (id) {
     const idx = DB.purchases.findIndex(x => x.id === id);
     DB.purchases[idx] = { ...DB.purchases[idx], ...data };
   } else {
     DB.purchases.push({ id: uid('pu'), ...data });
   }
+
+  // Inventory adjustment for ammo purchases: refund any prior bump, then apply current
+  if (prev && prev.category === 'Ammo Purchase' && prev.addToInventory && prev.ammoId && prev.rounds) {
+    const a = getAmmo(prev.ammoId);
+    if (a) a.quantity = Math.max(0, (a.quantity || 0) - parseFloat(prev.rounds));
+  }
+  if (data.category === 'Ammo Purchase' && data.addToInventory && data.ammoId && data.rounds > 0) {
+    const a = getAmmo(data.ammoId);
+    if (a) a.quantity = (a.quantity || 0) + parseFloat(data.rounds);
+  }
+
   saveDB(); closeModal(); renderCosts();
 }
 
-/** Delete a purchase record by id. */
+/** Delete a purchase record by id. Reverses any inventory bump it added. */
 function deletePurchase(id) {
   if (!confirm('Delete this purchase record?')) return;
+  const p = (DB.purchases || []).find(x => x.id === id);
+  if (p && p.category === 'Ammo Purchase' && p.addToInventory && p.ammoId && p.rounds) {
+    const a = getAmmo(p.ammoId);
+    if (a) a.quantity = Math.max(0, (a.quantity || 0) - parseFloat(p.rounds));
+  }
   DB.purchases = (DB.purchases || []).filter(x => x.id !== id);
   saveDB(); renderCosts();
 }
@@ -3756,7 +5226,9 @@ function renderHelp() {
   v.innerHTML = `
     <div class="view-header">
       <div><h2>Help &amp; Guide</h2><div class="sub">How to use every section of Pistol Tracker</div></div>
-      <button class="btn secondary" onclick="startTour()">&#9654; Take the Tour</button>
+      <button class="btn secondary" onclick="startOnboarding()">&#9881; Setup Wizard</button>
+      <button class="btn secondary" onclick="startFullTour()">&#128506; Full Tour</button>
+      <button class="btn secondary" onclick="startTour()">&#9654; Quick Tour</button>
     </div>
 
     <div class="card">
@@ -3918,7 +5390,7 @@ function renderMalfunctions() {
       }).length}</div></div>
     </div>
 
-    ${all.length ? `<div class="grid grid-2">
+    ${all.length ? `<div class="grid grid-2" style="margin-bottom:16px">
       <div class="card">
         <h3>Breakdown by Type</h3>
         ${Object.entries(byType).sort((a,b)=>b[1]-a[1]).map(([t, c]) => `
@@ -3942,37 +5414,81 @@ function renderMalfunctions() {
       </div>
     </div>` : ''}
 
+    ${(() => {
+      const byMag = {};
+      for (const m of all) {
+        const magId = m.magId;
+        if (!magId) continue;
+        if (!byMag[magId]) byMag[magId] = { count: 0, types: {} };
+        byMag[magId].count++;
+        byMag[magId].types[m.type] = (byMag[magId].types[m.type] || 0) + 1;
+      }
+      const rows = Object.entries(byMag).sort((a,b)=>b[1].count-a[1].count);
+      if (!rows.length) return '';
+      const maxMag = rows[0][1].count;
+      return `<div class="card" style="margin-bottom:16px">
+        <h3>Malfunction Correlation by Magazine</h3>
+        <div class="text-dim" style="font-size:12px;margin-bottom:10px">Only malfunctions where a magazine was identified are shown. High counts may indicate a problem mag.</div>
+        <table>
+          <thead><tr><th>Magazine</th><th>Pool</th><th>Total</th><th>Top Type</th><th>Rounds Through Mag</th></tr></thead>
+          <tbody>${rows.map(([magId, data]) => {
+            const mg = (DB.magazines || []).find(x => x.id === magId);
+            const poolNames = mg ? (mg.firearmIds || []).map(fid => { const fw = getFirearm(fid); return fw ? fw.name : ''; }).filter(Boolean).join(' / ') : '—';
+            const topType = Object.entries(data.types).sort((a,b)=>b[1]-a[1])[0];
+            const barW = Math.round((data.count / maxMag) * 100);
+            return `<tr>
+              <td><strong>${mg ? escapeHtml(mg.label) : magId}</strong></td>
+              <td class="text-dim" style="font-size:12px">${escapeHtml(poolNames)}</td>
+              <td>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <span class="badge ${data.count >= 3 ? 'danger' : 'warn'}">${data.count}</span>
+                  <div class="progress" style="width:80px;flex-shrink:0"><div class="progress-fill danger" style="width:${barW}%"></div></div>
+                </div>
+              </td>
+              <td style="font-size:12px">${topType ? escapeHtml(topType[0]) : '—'}</td>
+              <td>${mg ? (mg.totalRounds||0).toLocaleString() : '—'}</td>
+            </tr>`;
+          }).join('')}</tbody>
+        </table>
+      </div>`;
+    })()}
+
     <div class="card">
       <h3>Full Malfunction Log</h3>
       ${all.length ? `<table>
-        <thead><tr><th>Date</th><th>Firearm</th><th>Type</th><th>Round Count</th><th>Resolution</th><th>Ammo</th><th>Notes</th></tr></thead>
+        <thead><tr><th>Date</th><th>Firearm</th><th>Type</th><th>Mag</th><th>Round Count</th><th>Resolution</th><th>Ammo</th><th>Notes</th><th></th></tr></thead>
         <tbody>${all.map(m => {
           const f = getFirearm(m.firearmId);
           const a = getAmmo(m.ammoId);
+          const mg = m.magId ? (DB.magazines||[]).find(x=>x.id===m.magId) : null;
           return `<tr>
             <td>${formatDate(m.date)}</td>
             <td>${escapeHtml(f ? f.name : '—')}</td>
             <td><span class="badge danger">${escapeHtml(m.type)}</span></td>
+            <td>${mg ? escapeHtml(mg.label) : (m.magazine ? escapeHtml(m.magazine) : '<span class="text-dim">—</span>')}</td>
             <td>${m.roundCount || '—'}</td>
             <td>${escapeHtml(m.resolution || '—')}</td>
             <td>${a ? escapeHtml(a.brand + ' ' + a.grain + 'gr') : '<span class="text-dim">—</span>'}</td>
             <td style="max-width:280px">${escapeHtml(m.notes||'')}</td>
+            <td class="row-actions">${m.source !== 'session' ? `<button class="btn small danger" onclick="deleteMalfunction('${m.id}')">Delete</button>` : '<span class="text-dim" style="font-size:11px">in session</span>'}</td>
           </tr>`;
         }).join('')}</tbody>
       </table>` : `<div class="empty"><div class="icon">&#9888;</div>No malfunctions logged. That's a good thing!<br><br><div class="text-dim" style="font-size:12px">Log them inside sessions or as standalone entries.</div></div>`}
     </div>
+    ${recentlyDeletedCard('malfunction')}
   `;
 }
 
 function openStandaloneMalfunctionModal() {
   if (!DB.firearms.length) { alert('Add a firearm first.'); return; }
+  const firstFwId = DB.firearms[0].id;
   openModal(`
     <div class="modal-header"><h3>Log Malfunction</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
     <div class="modal-body">
       <div class="form-grid-2">
         <div class="form-row"><label>Date</label><input id="mf-date" type="date" value="${todayISO()}"></div>
         <div class="form-row"><label>Firearm</label>
-          <select id="mf-firearm">${DB.firearms.map(f => `<option value="${f.id}">${escapeHtml(f.name)}</option>`).join('')}</select>
+          <select id="mf-firearm" onchange="updateMalfunctionMagSelect()">${DB.firearms.map(f => `<option value="${f.id}">${escapeHtml(f.name)}</option>`).join('')}</select>
         </div>
       </div>
       <div class="form-grid-2">
@@ -3985,7 +5501,9 @@ function openStandaloneMalfunctionModal() {
         <div class="form-row"><label>Resolution</label>
           <select id="mf-res">${['Tap-Rack-Bang','Tap-Rack-Reassess','Mortar (double feed)','Manual clear','Disassembly required','Mag swap','Resolved itself','Other'].map(r => `<option>${r}</option>`).join('')}</select>
         </div>
-        <div class="form-row"><label>Magazine</label><input id="mf-mag" placeholder="optional"></div>
+        <div class="form-row"><label>Magazine</label>
+          <select id="mf-mag"><option value="">— Unknown —</option>${getPoolMags(firstFwId).map(mg => `<option value="${mg.id}">${escapeHtml(mg.label)}</option>`).join('')}</select>
+        </div>
       </div>
       <div class="form-row"><label>Ammo (optional)</label>
         <select id="mf-ammo"><option value="">— Unknown —</option>${DB.ammunition.map(a => `<option value="${a.id}">${escapeHtml(a.brand)} ${escapeHtml(a.grain)}gr ${escapeHtml(a.bulletType)}</option>`).join('')}</select>
@@ -3998,6 +5516,13 @@ function openStandaloneMalfunctionModal() {
     </div>
   `);
 }
+function updateMalfunctionMagSelect() {
+  const firearmId = document.getElementById('mf-firearm').value;
+  const sel = document.getElementById('mf-mag');
+  if (!sel) return;
+  const mags = getPoolMags(firearmId);
+  sel.innerHTML = `<option value="">— Unknown —</option>${mags.map(mg => `<option value="${mg.id}">${escapeHtml(mg.label)}</option>`).join('')}`;
+}
 function saveStandaloneMalfunction() {
   if (!DB.malfunctions) DB.malfunctions = [];
   DB.malfunctions.push({
@@ -4007,11 +5532,16 @@ function saveStandaloneMalfunction() {
     type: document.getElementById('mf-type').value,
     roundCount: parseInt(document.getElementById('mf-rounds').value) || null,
     resolution: document.getElementById('mf-res').value,
-    magazine: document.getElementById('mf-mag').value.trim(),
+    magId: document.getElementById('mf-mag').value || null,
     ammoId: document.getElementById('mf-ammo').value,
     notes: document.getElementById('mf-notes').value.trim()
   });
   saveDB(); closeModal(); renderMalfunctions();
+}
+function deleteMalfunction(id) {
+  if (!confirm('Move this malfunction to Recently Deleted?')) return;
+  softDelete('malfunction', id);
+  renderMalfunctions();
 }
 
 /* ============================================================
@@ -4019,7 +5549,10 @@ function saveStandaloneMalfunction() {
    ============================================================ */
 function renderMaintenance() {
   const v = document.getElementById('view-maintenance');
-  const log = [...DB.maintenance].sort((a, b) => b.date.localeCompare(a.date));
+  const allLog = [...DB.maintenance].sort((a, b) => b.date.localeCompare(a.date));
+  const mf = window._maintenanceFilter;
+  const log = applyMaintenanceFilter(allLog);
+  const hasFilter = mf.dateFrom || mf.dateTo || mf.firearmId || mf.type;
   v.innerHTML = `
     <div class="view-header">
       <div><h2>Maintenance</h2><div class="sub">Field strips, deep cleans, and inspections</div></div>
@@ -4077,6 +5610,46 @@ function renderMaintenance() {
       })()}
     </div>
 
+    <!-- Maintenance Log filter bar -->
+    <div class="card" style="margin-bottom:16px;padding:14px 16px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end">
+        <div>
+          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">From</label>
+          <input type="date" value="${mf.dateFrom}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMaintenanceFilter('dateFrom',this.value)">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">To</label>
+          <input type="date" value="${mf.dateTo}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMaintenanceFilter('dateTo',this.value)">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">Firearm</label>
+          <select style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateMaintenanceFilter('firearmId',this.value)">
+            <option value="">All firearms</option>
+            ${DB.firearms.map(fw => `<option value="${fw.id}" ${mf.firearmId===fw.id?'selected':''}>${escapeHtml(fw.name)}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">Task Type</label>
+          <select style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateMaintenanceFilter('type',this.value)">
+            <option value="">All types</option>
+            <option value="field_strip" ${mf.type==='field_strip'?'selected':''}>Field Strip</option>
+            <option value="deep_clean" ${mf.type==='deep_clean'?'selected':''}>Deep Clean</option>
+            <option value="annual_inspection" ${mf.type==='annual_inspection'?'selected':''}>Annual Inspection</option>
+            <option value="recoil_spring" ${mf.type==='recoil_spring'?'selected':''}>Recoil Spring</option>
+            <option value="mag_springs" ${mf.type==='mag_springs'?'selected':''}>Mag Springs</option>
+            <option value="mag_maintenance" ${mf.type==='mag_maintenance'?'selected':''}>Magazine Maintenance</option>
+            <option value="comp_clean" ${mf.type==='comp_clean'?'selected':''}>Comp Cleaning</option>
+            <option value="repair" ${mf.type==='repair'?'selected':''}>Repair</option>
+            <option value="other" ${mf.type==='other'?'selected':''}>Other</option>
+          </select>
+        </div>
+        <div style="display:flex;align-items:flex-end">
+          ${hasFilter ? `<button class="btn small secondary" onclick="clearMaintenanceFilter()" style="width:100%">&#10005; Clear</button>` : '<div></div>'}
+        </div>
+      </div>
+      ${hasFilter ? `<div style="margin-top:8px;font-size:12px;color:var(--text-dim)">Showing ${log.length} of ${allLog.length} record${allLog.length!==1?'s':''}</div>` : ''}
+    </div>
+
     <div class="card">
       <h3>Maintenance Log</h3>
       ${log.length ? `<table>
@@ -4096,8 +5669,10 @@ function renderMaintenance() {
             </td>
           </tr>`;
         }).join('')}</tbody>
-      </table>` : `<div class="empty">No maintenance logged yet.</div>`}
+      </table>` : `<div class="empty">${hasFilter ? 'No records match the current filters.' : 'No maintenance logged yet.'}</div>`}
+      ${hasFilter && log.length === 0 ? `<div style="text-align:center;margin-top:8px"><button class="btn secondary" onclick="clearMaintenanceFilter()">Clear Filters</button></div>` : ''}
     </div>
+    ${recentlyDeletedCard('maintenance')}
   `;
 }
 function openMaintenanceModal(id, firearmId) {
@@ -4239,9 +5814,9 @@ function saveMaintenance(id) {
   saveDB(); closeModal(); renderMaintenance();
 }
 function deleteMaintenance(id) {
-  if (!confirm('Delete this maintenance record?')) return;
-  DB.maintenance = DB.maintenance.filter(x => x.id !== id);
-  saveDB(); renderMaintenance();
+  if (!confirm('Move this maintenance record to Recently Deleted?')) return;
+  softDelete('maintenance', id);
+  renderMaintenance();
 }
 
 /* ============================================================
@@ -4367,6 +5942,49 @@ function renderSettings() {
       <div class="help-text" style="margin-top:4px">
         First time? Create a folder called <strong>Pistol Tracker</strong> inside iCloud Drive to keep your sync file organised.
       </div>
+
+      ${autoSyncSupported() ? `
+        <hr style="margin:20px 0">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+          <div>
+            <div style="font-weight:600;color:var(--accent)">&#8634; Auto-Sync (set up once, runs automatically)</div>
+            <div style="font-size:12px;color:var(--text-dim);margin-top:4px">Pick a sync file in iCloud Drive once. The app writes to it on every change, reads from it on open. No more manual export/import.</div>
+          </div>
+        </div>
+        ${autoSyncStatus.connected ? `
+          <div style="background:rgba(63,185,80,0.1);border:1px solid var(--success);border-radius:6px;padding:12px;font-size:13px">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+              <div>
+                <strong style="color:var(--success)">&#10003; Auto-sync ON</strong>
+                <span style="color:var(--text-dim)"> &middot; ${escapeHtml(autoSyncStatus.filename || 'sync file')}</span>
+                <div style="font-size:11px;color:var(--text-dim);margin-top:2px">Last write: <span id="autosync-last-write">${autoSyncLastWriteLabel()}</span>${autoSyncStatus.lastError ? ' &middot; <span style="color:var(--danger)">' + escapeHtml(autoSyncStatus.lastError) + '</span>' : ''}</div>
+              </div>
+              <div style="display:flex;gap:6px">
+                <button class="btn small secondary" onclick="writeAutoSync()" title="Force a write now">Sync Now</button>
+                <button class="btn small danger" onclick="disconnectAutoSync()">Disconnect</button>
+              </div>
+            </div>
+          </div>
+        ` : (autoSyncStatus.filename ? `
+          <div style="background:rgba(210,153,34,0.1);border:1px solid var(--warn);border-radius:6px;padding:12px;font-size:13px">
+            <strong style="color:var(--warn)">Auto-sync needs to be reconnected</strong>
+            <div style="font-size:12px;color:var(--text-dim);margin-top:4px">Browser permission was lost (this happens after browser restarts). Click below to re-grant write access to <strong>${escapeHtml(autoSyncStatus.filename)}</strong>.</div>
+            <div style="margin-top:10px;display:flex;gap:8px">
+              <button class="btn small" onclick="reconnectAutoSync()">Reconnect</button>
+              <button class="btn small secondary" onclick="connectAutoSync()">Pick a different file</button>
+              <button class="btn small danger" onclick="disconnectAutoSync()">Disconnect</button>
+            </div>
+          </div>
+        ` : `
+          <button class="btn" onclick="connectAutoSync()">&#9729; Set Up Auto-Sync</button>
+          <div class="help-text" style="margin-top:6px">When the file picker opens, navigate to <strong>iCloud Drive &rarr; Pistol Tracker</strong> and either select an existing <code>pistol-tracker-sync.json</code> or save a new one there.</div>
+        `)}
+      ` : `
+        <hr style="margin:20px 0">
+        <div class="text-dim" style="font-size:12px">
+          <strong>Auto-sync available in Chrome/Edge on Mac.</strong> This browser doesn't support the File System Access API, so use the manual Export/Import buttons above. Your data still syncs reliably — it just takes two clicks instead of being automatic.
+        </div>
+      `}
     </div>
 
     <div class="card">
@@ -4380,7 +5998,20 @@ function renderSettings() {
           Import JSON Backup
           <input type="file" accept=".json" style="display:none" onchange="importJSON(event)">
         </label>
+        ${(DB.settings.sampleDataIds||[]).length ? `<button class="btn secondary" onclick="if(confirm('Remove all sample data?')){removeSampleData();renderSettings();showToast('Sample data removed.');}">Remove Sample Data</button>` : ''}
       </div>
+    </div>
+
+    <div class="card">
+      <h3>&#128203; RangeReady CSV Importer</h3>
+      <p class="text-dim" style="font-size:13px">Import sessions from a RangeReady CSV export. The importer auto-detects columns and lets you preview before committing. Only adds new sessions — existing data is not overwritten.</p>
+      <div style="margin-top:12px">
+        <label class="btn secondary" style="cursor:pointer">
+          &#128196; Choose RangeReady CSV…
+          <input type="file" accept=".csv,.txt" style="display:none" onchange="loadRangeReadyCSV(event)">
+        </label>
+      </div>
+      <div id="rr-preview" style="margin-top:16px"></div>
     </div>
 
     <div class="card">
@@ -4478,6 +6109,196 @@ function snoozeBackupNudge() {
   renderDashboard();
 }
 /* ============================================================
+   AUTO-SYNC via File System Access API
+   Browsers that support it (Chrome/Edge, partial Safari 17+):
+   - User picks a sync file in iCloud Drive once
+   - Every saveDB() also writes that file (debounced)
+   - On app load, reads from that file if it's newer than local
+   On unsupported browsers (iOS Safari mostly), the section is hidden
+   and the manual Export/Import workflow below remains the primary path.
+   ============================================================ */
+function autoSyncSupported() {
+  return typeof window !== 'undefined'
+    && 'showSaveFilePicker' in window
+    && 'showOpenFilePicker' in window;
+}
+const AUTO_SYNC_IDB_NAME = 'pistolTrackerSync';
+const AUTO_SYNC_STORE = 'handles';
+const AUTO_SYNC_KEY = 'syncFile';
+
+function idbOpenSync() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(AUTO_SYNC_IDB_NAME, 1);
+    req.onupgradeneeded = () => {
+      const db = req.result;
+      if (!db.objectStoreNames.contains(AUTO_SYNC_STORE)) db.createObjectStore(AUTO_SYNC_STORE);
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbSetHandle(handle) {
+  const db = await idbOpenSync();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(AUTO_SYNC_STORE, 'readwrite');
+    tx.objectStore(AUTO_SYNC_STORE).put(handle, AUTO_SYNC_KEY);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+async function idbGetHandle() {
+  const db = await idbOpenSync();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(AUTO_SYNC_STORE, 'readonly');
+    const req = tx.objectStore(AUTO_SYNC_STORE).get(AUTO_SYNC_KEY);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function idbClearHandle() {
+  const db = await idbOpenSync();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(AUTO_SYNC_STORE, 'readwrite');
+    tx.objectStore(AUTO_SYNC_STORE).delete(AUTO_SYNC_KEY);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+let autoSyncHandle = null;
+let autoSyncStatus = { connected: false, filename: '', lastWrite: null, lastError: '' };
+let autoSyncDebounce = null;
+
+async function connectAutoSync() {
+  if (!autoSyncSupported()) {
+    alert('Your browser does not support auto-sync. Use Export/Import below instead.\n\nTip: Chrome on Mac and Edge support auto-sync. iOS Safari does not.');
+    return;
+  }
+  try {
+    const handle = await window.showSaveFilePicker({
+      suggestedName: 'pistol-tracker-sync.json',
+      types: [{ description: 'Pistol Tracker sync file', accept: { 'application/json': ['.json'] } }]
+    });
+    const perm = await handle.requestPermission({ mode: 'readwrite' });
+    if (perm !== 'granted') { alert('Write permission required.'); return; }
+    await idbSetHandle(handle);
+    autoSyncHandle = handle;
+    autoSyncStatus.connected = true;
+    autoSyncStatus.filename = handle.name;
+    if (!DB.settings) DB.settings = {};
+    DB.settings.autoSyncFilename = handle.name;
+    await writeAutoSync();
+    saveDB();
+    renderSettings();
+  } catch (err) {
+    if (err.name !== 'AbortError') alert('Could not connect auto-sync: ' + err.message);
+  }
+}
+async function reconnectAutoSync() {
+  if (!autoSyncSupported()) { alert('Browser does not support auto-sync.'); return; }
+  try {
+    if (!autoSyncHandle) autoSyncHandle = await idbGetHandle();
+    if (!autoSyncHandle) { connectAutoSync(); return; }
+    const perm = await autoSyncHandle.requestPermission({ mode: 'readwrite' });
+    if (perm === 'granted') {
+      autoSyncStatus.connected = true;
+      autoSyncStatus.filename = autoSyncHandle.name;
+      renderSettings();
+    } else {
+      alert('Permission denied.');
+    }
+  } catch (err) {
+    alert('Reconnect failed: ' + err.message);
+  }
+}
+async function disconnectAutoSync() {
+  if (!confirm('Disconnect auto-sync? You can reconnect anytime — your local data stays.')) return;
+  await idbClearHandle();
+  autoSyncHandle = null;
+  autoSyncStatus = { connected: false, filename: '', lastWrite: null, lastError: '' };
+  if (DB.settings) delete DB.settings.autoSyncFilename;
+  saveDB();
+  renderSettings();
+}
+async function writeAutoSync() {
+  if (!autoSyncHandle || !autoSyncStatus.connected) return;
+  try {
+    const writable = await autoSyncHandle.createWritable();
+    await writable.write(JSON.stringify(DB, null, 2));
+    await writable.close();
+    autoSyncStatus.lastWrite = new Date();
+    autoSyncStatus.lastError = '';
+    // Update sidebar status if visible
+    const el = document.getElementById('autosync-last-write');
+    if (el) el.textContent = 'just now';
+  } catch (err) {
+    autoSyncStatus.lastError = err.message;
+    console.warn('Auto-sync write failed:', err);
+  }
+}
+function queueAutoSync() {
+  if (!autoSyncHandle || !autoSyncStatus.connected) return;
+  if (autoSyncDebounce) clearTimeout(autoSyncDebounce);
+  autoSyncDebounce = setTimeout(writeAutoSync, 1500);
+}
+async function tryLoadFromAutoSync() {
+  if (!autoSyncSupported()) return;
+  try {
+    const handle = await idbGetHandle();
+    if (!handle) return;
+    autoSyncHandle = handle;
+    autoSyncStatus.filename = handle.name;
+    const perm = await handle.queryPermission({ mode: 'readwrite' });
+    if (perm !== 'granted') {
+      // Need user click to re-grant; mark filename so UI shows reconnect button
+      autoSyncStatus.connected = false;
+      return;
+    }
+    autoSyncStatus.connected = true;
+    const file = await handle.getFile();
+    if (!file.size) return;  // empty file, nothing to load
+    const remote = JSON.parse(await file.text());
+    const localTs = DB._lastModified || 0;
+    const remoteTs = remote._lastModified || file.lastModified || 0;
+    const localSessionCount = (DB.sessions || []).length;
+    const remoteSessionCount = (remote.sessions || []).length;
+
+    // Auto-sync NEVER overwrites local data automatically on startup.
+    // It only writes local data TO the file. If a newer file exists,
+    // show a non-destructive notification so the user can manually import if they choose.
+    if (remoteTs > localTs + 300000 && remoteSessionCount >= localSessionCount) {
+      const remoteLabel = new Date(remoteTs).toLocaleString();
+      // Show a dismissible alert on the dashboard rather than a confirm that can wipe data
+      const banner = document.createElement('div');
+      banner.id = 'autosync-newer-banner';
+      banner.className = 'alert info';
+      banner.style.cssText = 'justify-content:space-between;flex-wrap:wrap;gap:8px;margin:8px 16px 0';
+      banner.innerHTML = `<span>&#128196; Your sync file (${escapeHtml(remoteLabel)}, ${remoteSessionCount} sessions) is newer than this device. Go to <strong>Settings → Import Sync File</strong> to load it.</span>
+        <button class="btn small secondary" onclick="this.parentElement.remove()">Dismiss</button>`;
+      // Insert after the view header on dashboard
+      setTimeout(() => {
+        const dash = document.getElementById('view-dashboard');
+        if (dash && !document.getElementById('autosync-newer-banner')) {
+          dash.prepend(banner);
+        }
+      }, 800);
+    }
+  } catch (err) {
+    console.warn('tryLoadFromAutoSync failed:', err);
+  }
+}
+function autoSyncLastWriteLabel() {
+  if (!autoSyncStatus.lastWrite) return 'not yet';
+  const sec = Math.round((Date.now() - autoSyncStatus.lastWrite.getTime()) / 1000);
+  if (sec < 5) return 'just now';
+  if (sec < 60) return sec + 's ago';
+  const min = Math.round(sec / 60);
+  if (min < 60) return min + 'm ago';
+  const hr = Math.round(min / 60);
+  return hr + 'h ago';
+}
+
+/* ============================================================
    iCLOUD SYNC  (fixed filename, overwrites same file each time)
    ============================================================ */
 function exportSyncFile() {
@@ -4510,6 +6331,7 @@ function importSyncFile(evt) {
       if (!parsed.settings) parsed.settings = {};
       parsed.settings.lastSyncImportDate = todayISO();
       DB = parsed;
+      DB._lastModified = Date.now(); // stamp NOW — ensures this device is always newer than any sync file after import
       saveDB();
       renderSettings();
       alert('Sync complete — your data is now up to date.');
@@ -4555,6 +6377,7 @@ function importJSON(evt) {
       const parsed = JSON.parse(e.target.result);
       if (!confirm('This will overwrite all current data. Continue?')) return;
       DB = parsed;
+      DB._lastModified = Date.now(); // stamp NOW so this device is always newer than any sync file after import
       saveDB();
       renderSettings();
       alert('Import complete.');
@@ -4564,6 +6387,167 @@ function importJSON(evt) {
   };
   reader.readAsText(file);
 }
+/* ============================================================
+   RANGEREADY CSV IMPORTER
+   ============================================================ */
+function parseCSV(text) {
+  const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.trim());
+  if (!lines.length) return [];
+  function splitLine(line) {
+    const result = []; let cur = ''; let inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { inQ = !inQ; }
+      else if (c === ',' && !inQ) { result.push(cur.trim()); cur = ''; }
+      else { cur += c; }
+    }
+    result.push(cur.trim());
+    return result.map(v => v.replace(/^"|"$/g, '').trim());
+  }
+  const headers = splitLine(lines[0]);
+  return lines.slice(1).map(line => {
+    const vals = splitLine(line);
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = vals[i] || ''; });
+    return obj;
+  });
+}
+
+function detectRRColumn(headers, candidates) {
+  const h = headers.map(x => x.toLowerCase().replace(/[^a-z0-9]/g, ''));
+  for (const c of candidates) {
+    const idx = h.findIndex(x => x.includes(c.toLowerCase().replace(/[^a-z0-9]/g, '')));
+    if (idx >= 0) return headers[idx];
+  }
+  return null;
+}
+
+let _rrRows = null;
+let _rrMapping = {};
+
+function loadRangeReadyCSV(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const rows = parseCSV(e.target.result);
+    if (!rows.length) { document.getElementById('rr-preview').innerHTML = '<div class="alert warn">No data found in file.</div>'; return; }
+    _rrRows = rows;
+    const headers = Object.keys(rows[0]);
+    // Auto-detect columns
+    _rrMapping = {
+      date:     detectRRColumn(headers, ['date','Date','session date']),
+      firearm:  detectRRColumn(headers, ['firearm','gun','weapon','rifle','pistol']),
+      rounds:   detectRRColumn(headers, ['rounds','ammo','shots','count','quantity','total']),
+      location: detectRRColumn(headers, ['location','range','place','venue']),
+      drill:    detectRRColumn(headers, ['drill','exercise','activity','stage','training','workout']),
+      notes:    detectRRColumn(headers, ['note','comment','description','details','memo']),
+      type:     detectRRColumn(headers, ['type','session type','category'])
+    };
+    renderRRPreview(headers, rows);
+  };
+  reader.readAsText(file);
+}
+
+function renderRRPreview(headers, rows) {
+  const preview = document.getElementById('rr-preview');
+  if (!preview) return;
+  const selectors = Object.entries(_rrMapping).map(([field, col]) => `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px">
+      <span style="width:80px;color:var(--text-dim);font-size:11px;text-transform:uppercase">${field}</span>
+      <select onchange="_rrMapping['${field}']=this.value;renderRRPreview(${JSON.stringify(headers)}, _rrRows)" style="flex:1;padding:4px 6px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px">
+        <option value="">— not mapped —</option>
+        ${headers.map(h => `<option value="${escapeHtml(h)}" ${col===h?'selected':''}>${escapeHtml(h)}</option>`).join('')}
+      </select>
+    </div>
+  `).join('');
+
+  // Preview first 5 rows
+  const previewRows = rows.slice(0, 5).map(row => {
+    const date = _rrMapping.date ? row[_rrMapping.date] : '';
+    const firearm = _rrMapping.firearm ? row[_rrMapping.firearm] : '';
+    const rounds = _rrMapping.rounds ? row[_rrMapping.rounds] : '';
+    const location = _rrMapping.location ? row[_rrMapping.location] : '';
+    return `<tr><td>${escapeHtml(date)}</td><td>${escapeHtml(firearm)}</td><td>${escapeHtml(rounds)}</td><td>${escapeHtml(location)}</td></tr>`;
+  }).join('');
+
+  preview.innerHTML = `
+    <div style="margin-bottom:12px">
+      <strong>Column Mapping</strong>
+      <div class="text-dim" style="font-size:12px;margin-bottom:10px">Auto-detected from headers. Adjust if needed.</div>
+      ${selectors}
+    </div>
+    <div style="margin-bottom:12px">
+      <strong>Preview (first 5 rows)</strong>
+      <table style="margin-top:8px"><thead><tr><th>Date</th><th>Firearm</th><th>Rounds</th><th>Location</th></tr></thead>
+      <tbody>${previewRows}</tbody></table>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button class="btn" onclick="importRangeReadyCSV()">Import ${rows.length} Sessions</button>
+      <button class="btn secondary" onclick="document.getElementById('rr-preview').innerHTML=''">Cancel</button>
+      <span class="text-dim" style="font-size:12px">Duplicate sessions (same date + rounds) will be skipped.</span>
+    </div>
+  `;
+}
+
+function importRangeReadyCSV() {
+  if (!_rrRows) return;
+  const defaultFirearm = DB.firearms[0];
+  let imported = 0, skipped = 0;
+  for (const row of _rrRows) {
+    const dateRaw = _rrMapping.date ? row[_rrMapping.date] : '';
+    // Parse various date formats: MM/DD/YYYY, YYYY-MM-DD, M/D/YY
+    let date = '';
+    const mdy = dateRaw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+    const iso = dateRaw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (iso) { date = dateRaw; }
+    else if (mdy) {
+      const y = mdy[3].length === 2 ? '20' + mdy[3] : mdy[3];
+      date = `${y}-${String(mdy[1]).padStart(2,'0')}-${String(mdy[2]).padStart(2,'0')}`;
+    }
+    if (!date) { skipped++; continue; }
+
+    const rounds = parseInt((_rrMapping.rounds ? row[_rrMapping.rounds] : '') || '0') || 0;
+    const location = (_rrMapping.location ? row[_rrMapping.location] : '') || '';
+    const drillName = (_rrMapping.drill ? row[_rrMapping.drill] : '') || '';
+    const notes = (_rrMapping.notes ? row[_rrMapping.notes] : '') || '';
+    const typeRaw = (_rrMapping.type ? row[_rrMapping.type] : '') || '';
+    const type = /compet|match/i.test(typeRaw) ? 'competition' : /dry|snap/i.test(typeRaw) ? 'dry_fire' : /class|train/i.test(typeRaw) ? 'class' : 'practice';
+
+    // Match firearm by name
+    const firearmNameRaw = _rrMapping.firearm ? row[_rrMapping.firearm] : '';
+    const firearm = DB.firearms.find(f => firearmNameRaw && f.name.toLowerCase().includes(firearmNameRaw.toLowerCase().split(' ')[0]))
+      || defaultFirearm;
+    if (!firearm) { skipped++; continue; }
+
+    // Skip duplicate: same date, firearm, rounds
+    const isDup = DB.sessions.some(s => s.date === date && s.firearmId === firearm.id && s.totalRounds === rounds);
+    if (isDup) { skipped++; continue; }
+
+    const drills = drillName ? [{ name: drillName, distance: '', time: null, score: null, maxScore: null, notes: '' }] : [];
+    const combinedNotes = [drillName && !drills.length ? drillName : '', notes].filter(Boolean).join(' — ');
+
+    DB.sessions.push({
+      id: uid('se'),
+      date, type,
+      firearmId: firearm.id,
+      location, distances: '',
+      notes: combinedNotes,
+      totalRounds: rounds,
+      ammoUsage: [], drills,
+      targetImages: [], malfunctions: [],
+      selfRating: { focus: 5, fundamentals: 5, satisfaction: 5 },
+      magIds: []
+    });
+    imported++;
+  }
+  saveDB();
+  document.getElementById('rr-preview').innerHTML = `<div class="alert success" style="background:var(--panel-2);border:1px solid var(--success);border-radius:8px;padding:12px">
+    <strong>&#10003; Import complete:</strong> ${imported} sessions added, ${skipped} skipped (duplicates or unparseable dates).
+  </div>`;
+  showToast(`Imported ${imported} sessions from RangeReady CSV.`);
+}
+
 function resetAll() {
   if (!confirm('Reset ALL data? This cannot be undone.')) return;
   if (!confirm('Last chance. Really reset everything?')) return;
@@ -4585,57 +6569,85 @@ function roundsChart() {
     months.push({
       key: `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`,
       label: d.toLocaleString(undefined,{month:'short'}),
-      rounds: 0
+      live: 0, dry: 0
     });
   }
   for (const s of DB.sessions) {
     const k = s.date.slice(0, 7);
     const m = months.find(x => x.key === k);
-    if (m) m.rounds += s.totalRounds || 0;
+    if (!m) continue;
+    if (s.type === 'dry_fire') m.dry += s.totalRounds || 0;
+    else m.live += s.totalRounds || 0;
   }
-  const maxR = Math.max(...months.map(m=>m.rounds), 100);
+  const maxR = Math.max(...months.map(m => m.live + m.dry), 100);
   const W = 600, H = 200, padL = 36, padB = 24, padT = 10, padR = 8;
   const barW = (W - padL - padR) / months.length - 4;
   let bars = '';
   months.forEach((m, i) => {
-    const h = ((m.rounds / maxR) * (H - padT - padB));
     const x = padL + i * (barW + 4);
-    const y = H - padB - h;
-    bars += `<rect x="${x}" y="${y}" width="${barW}" height="${h}" fill="var(--accent)" rx="2"></rect>`;
-    bars += `<text x="${x + barW/2}" y="${H - 8}" text-anchor="middle" fill="var(--text-dim)" font-size="10">${m.label}</text>`;
-    if (m.rounds > 0) bars += `<text x="${x + barW/2}" y="${y - 4}" text-anchor="middle" fill="var(--text)" font-size="10">${m.rounds}</text>`;
+    const hLive = ((m.live / maxR) * (H - padT - padB));
+    const hDry  = ((m.dry  / maxR) * (H - padT - padB));
+    const yLive = H - padB - hLive;
+    const yDry  = yLive - hDry;
+    if (hLive > 0) bars += `<rect x="${x}" y="${yLive.toFixed(1)}" width="${barW}" height="${hLive.toFixed(1)}" fill="var(--accent)" rx="2"/>`;
+    if (hDry  > 0) bars += `<rect x="${x}" y="${yDry.toFixed(1)}"  width="${barW}" height="${hDry.toFixed(1)}"  fill="#4a9eff" rx="2"/>`;
+    bars += `<text x="${(x + barW/2).toFixed(1)}" y="${H - 8}" text-anchor="middle" fill="var(--text-dim)" font-size="10">${m.label}</text>`;
+    const total = m.live + m.dry;
+    if (total > 0) bars += `<text x="${(x + barW/2).toFixed(1)}" y="${Math.min(yDry, yLive) - 3}" text-anchor="middle" fill="var(--text)" font-size="10">${total}</text>`;
   });
   let grid = '';
   for (let i = 0; i <= 4; i++) {
     const y = padT + i * ((H - padT - padB) / 4);
     const val = Math.round(maxR - i * (maxR/4));
-    grid += `<line x1="${padL}" x2="${W-padR}" y1="${y}" y2="${y}" stroke="var(--border)" stroke-dasharray="2,3"></line>`;
+    grid += `<line x1="${padL}" x2="${W-padR}" y1="${y}" y2="${y}" stroke="var(--border)" stroke-dasharray="2,3"/>`;
     grid += `<text x="${padL-6}" y="${y+3}" text-anchor="end" fill="var(--text-dim)" font-size="10">${val}</text>`;
   }
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${grid}${bars}</svg>`;
+  const legend = `<text x="${padL}" y="${H-1}" fill="var(--accent)" font-size="9">&#9632; Live-fire</text><text x="${padL+60}" y="${H-1}" fill="#4a9eff" font-size="9">&#9632; Dry-fire</text>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${grid}${bars}${legend}</svg>`;
 }
 
 function cumulativeRoundsChart() {
   const sessions = [...DB.sessions].sort((a,b)=>a.date.localeCompare(b.date));
   if (!sessions.length) return `<div class="empty">No session data yet.</div>`;
   const W = 600, H = 220, padL = 50, padB = 30, padT = 10, padR = 10;
-  let cum = 0;
-  const points = sessions.map(s => { cum += s.totalRounds || 0; return { date: s.date, cum }; });
-  const maxC = Math.max(...points.map(p=>p.cum), 100);
+  let cumLive = 0, cumAll = 0;
+  const pointsLive = [], pointsAll = [];
+  for (const s of sessions) {
+    const r = s.totalRounds || 0;
+    cumAll += r;
+    pointsAll.push({ date: s.date, cum: cumAll });
+    if (s.type !== 'dry_fire') { cumLive += r; }
+    pointsLive.push({ date: s.date, cum: cumLive });
+  }
+  const hasDry = cumAll > cumLive;
+  // Use live-fire as the primary points for axis scaling
+  const points = pointsLive;
+  const maxC = Math.max(...pointsAll.map(p=>p.cum), 100);
   const minD = new Date(points[0].date).getTime();
   const maxD = new Date(points[points.length-1].date).getTime() || minD + 1;
   const xFor = d => padL + ((new Date(d).getTime() - minD) / Math.max(1, maxD - minD)) * (W - padL - padR);
   const yFor = c => H - padB - (c / maxC) * (H - padT - padB);
-  let path = points.map((p, i) => `${i?'L':'M'} ${xFor(p.date).toFixed(1)} ${yFor(p.cum).toFixed(1)}`).join(' ');
-  let dots = points.map(p => `<circle cx="${xFor(p.date)}" cy="${yFor(p.cum)}" r="3" fill="var(--accent)"></circle>`).join('');
+  const pathLive = points.map((p, i) => `${i?'L':'M'} ${xFor(p.date).toFixed(1)} ${yFor(p.cum).toFixed(1)}`).join(' ');
+  const dots = points.map(p => `<circle cx="${xFor(p.date)}" cy="${yFor(p.cum)}" r="3" fill="var(--accent)"/>`).join('');
   let grid = '';
   for (let i = 0; i <= 4; i++) {
     const y = padT + i * ((H - padT - padB) / 4);
     const val = Math.round(maxC - i * (maxC/4));
-    grid += `<line x1="${padL}" x2="${W-padR}" y1="${y}" y2="${y}" stroke="var(--border)" stroke-dasharray="2,3"></line>`;
+    grid += `<line x1="${padL}" x2="${W-padR}" y1="${y}" y2="${y}" stroke="var(--border)" stroke-dasharray="2,3"/>`;
     grid += `<text x="${padL-6}" y="${y+3}" text-anchor="end" fill="var(--text-dim)" font-size="10">${val.toLocaleString()}</text>`;
   }
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${grid}<path d="${path}" stroke="var(--accent)" stroke-width="2" fill="none"/>${dots}</svg>`;
+  // Second line for total (all sessions) when dry-fire rounds exist
+  const pathAll = hasDry ? pointsAll.map((p,i) => `${i?'L':'M'} ${xFor(p.date).toFixed(1)} ${yFor(p.cum).toFixed(1)}`).join(' ') : '';
+  const legend = hasDry
+    ? `<text x="${padL}" y="${H-2}" fill="var(--accent)" font-size="9">&#9632; Live-fire</text><text x="${padL+60}" y="${H-2}" fill="#4a9eff" font-size="9">&#9632; All (incl. dry)</text>`
+    : `<text x="${padL}" y="${H-2}" fill="var(--accent)" font-size="9">&#9632; Live-fire rounds</text>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    ${grid}
+    ${hasDry ? `<path d="${pathAll}" stroke="#4a9eff" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/>` : ''}
+    <path d="${pathLive}" stroke="var(--accent)" stroke-width="2" fill="none"/>
+    ${dots}
+    ${legend}
+  </svg>`;
 }
 
 function sessionRatingsChart(sessions) {
@@ -4831,6 +6843,11 @@ function tourNav(dir) { _tourStep = Math.max(0, Math.min(TOUR_STEPS.length - 1, 
 saveDB();
 renderView('dashboard');
 
+// Try to restore auto-sync from previous session and pull remote if newer
+if (typeof tryLoadFromAutoSync === 'function') {
+  tryLoadFromAutoSync().catch(err => console.warn('auto-sync init failed', err));
+}
+
 /* ============================================================
    MOBILE SIDEBAR TOGGLE
    ============================================================ */
@@ -4858,6 +6875,499 @@ document.querySelectorAll('nav a').forEach(a => {
     if (window.innerWidth < 768) toggleSidebar(true);
   });
 });
+
+/* ============================================================
+   ONBOARDING WIZARD
+   Two paths: Quick Setup (Option A) and Full Tour (Option B, future).
+   Triggered automatically on firstUse. Replayable from Help.
+   ============================================================ */
+const WIZARD_SAMPLE_FIREARMS = [
+  { id: 'wz-fa-1', name: 'Competition Pistol', model: 'Demo', manufacturer: 'Demo', caliber: '9mm', dateAcquired: '', startingRoundCount: 0, recoilSpringInterval: 5000, recoilSpringWeight: '', notes: 'Sample data — delete when ready.' }
+];
+const WIZARD_SAMPLE_AMMO = [
+  { id: 'wz-am-1', brand: 'Federal American Eagle', caliber: '9mm', grain: '115', bulletType: 'FMJ', quantity: 1000, notes: 'Sample data — delete when ready.' }
+];
+function wizardSampleSessions() {
+  const today = new Date();
+  const daysAgo = n => { const d = new Date(today); d.setDate(d.getDate() - n); return d.toISOString().slice(0,10); };
+  return [
+    { id:'wz-se-1', date:daysAgo(3),  type:'practice',    firearmId:'wz-fa-1', location:'Local Range', distances:'7yd, 15yd', totalRounds:150, ammoUsage:[{ammoId:'wz-am-1',rounds:150}], drills:[{name:'Bill Drill',distance:'7yd',time:2.14,score:null,maxScore:null,notes:''}], malfunctions:[], targetImages:[], selfRating:{focus:7,fundamentals:8,satisfaction:7}, notes:'Good session, draws improving.' },
+    { id:'wz-se-2', date:daysAgo(10), type:'practice',    firearmId:'wz-fa-1', location:'Local Range', distances:'7yd, 25yd', totalRounds:200, ammoUsage:[{ammoId:'wz-am-1',rounds:200}], drills:[{name:'El Presidente',distance:'10yd',time:7.82,score:54,maxScore:60,notes:''},{name:'Draw to First Shot',distance:'7yd',time:1.23,score:null,maxScore:null,notes:''}], malfunctions:[], targetImages:[], selfRating:{focus:6,fundamentals:7,satisfaction:8}, notes:'' },
+    { id:'wz-se-3', date:daysAgo(17), type:'practice',    firearmId:'wz-fa-1', location:'Local Range', distances:'7yd',       totalRounds:100, ammoUsage:[{ammoId:'wz-am-1',rounds:100}], drills:[{name:'B-8 Standards',distance:'25yd',time:null,score:88,maxScore:100,notes:''}], malfunctions:[], targetImages:[], selfRating:{focus:8,fundamentals:8,satisfaction:9}, notes:'Best B-8 score yet.' },
+    { id:'wz-se-4', date:daysAgo(24), type:'competition', firearmId:'wz-fa-1', location:'Area Range',  distances:'',          totalRounds:120, ammoUsage:[{ammoId:'wz-am-1',rounds:120}], drills:[], malfunctions:[], targetImages:[], selfRating:{focus:7,fundamentals:7,satisfaction:7}, notes:'First match — nervous but fun.' },
+    { id:'wz-se-5', date:daysAgo(31), type:'dry_fire',    firearmId:'wz-fa-1', location:'Home',        distances:'',          totalRounds:0,   ammoUsage:[], drills:[{name:'Draw to First Shot',distance:'7yd',time:1.05,score:null,maxScore:null,notes:''}], malfunctions:[], targetImages:[], selfRating:{focus:9,fundamentals:8,satisfaction:8}, notes:'Focused on grip and presentation.' }
+  ];
+}
+function wizardSampleMaintenance() {
+  const today = new Date();
+  const daysAgo = n => { const d = new Date(today); d.setDate(d.getDate() - n); return d.toISOString().slice(0,10); };
+  return [
+    { id:'wz-ma-1', date:daysAgo(3),  firearmId:'wz-fa-1', type:'field_strip', notes:'After practice session.', performedBy:'Self', partsReplaced:'' },
+    { id:'wz-ma-2', date:daysAgo(10), firearmId:'wz-fa-1', type:'field_strip', notes:'After practice session.', performedBy:'Self', partsReplaced:'' },
+    { id:'wz-ma-3', date:daysAgo(17), firearmId:'wz-fa-1', type:'field_strip', notes:'After practice session.', performedBy:'Self', partsReplaced:'' }
+  ];
+}
+const WIZARD_SAMPLE_IDS = ['wz-fa-1','wz-am-1','wz-se-1','wz-se-2','wz-se-3','wz-se-4','wz-se-5','wz-ma-1','wz-ma-2','wz-ma-3'];
+
+let _wiz = { step: 0, sampleLoaded: false, newFirearmId: null, newAmmoId: null };
+
+function startOnboarding() {
+  _wiz = { step: 0, sampleLoaded: (DB.settings.sampleDataIds || []).length > 0, newFirearmId: null, newAmmoId: null };
+  let overlay = document.getElementById('wiz-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'wiz-overlay';
+    overlay.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:10010;align-items:center;justify-content:center;padding:16px';
+    document.body.appendChild(overlay);
+  }
+  overlay.style.display = 'flex';
+  renderWizardStep();
+}
+
+function closeOnboarding() {
+  const overlay = document.getElementById('wiz-overlay');
+  if (overlay) overlay.style.display = 'none';
+  DB.settings.firstUse = false;
+  saveDB();
+  renderDashboard();
+}
+
+function wizNext() { _wiz.step++; renderWizardStep(); }
+function wizBack() { _wiz.step = Math.max(0, _wiz.step - 1); renderWizardStep(); }
+
+function renderWizardStep() {
+  const overlay = document.getElementById('wiz-overlay');
+  if (!overlay) return;
+
+  const steps = ['welcome','firearm','ammo','sample','prefs','done'];
+  const totalSteps = steps.length - 1; // welcome doesn't count
+  const step = steps[_wiz.step];
+  const progress = _wiz.step === 0 ? 0 : Math.round((_wiz.step / totalSteps) * 100);
+
+  const progressBar = _wiz.step > 0 ? `
+    <div style="width:100%;background:var(--border);border-radius:4px;height:4px;margin-bottom:20px">
+      <div style="height:4px;background:var(--accent);border-radius:4px;width:${progress}%;transition:width 0.3s"></div>
+    </div>
+    <div style="font-size:11px;color:var(--text-dim);margin-bottom:16px;text-align:right">Step ${_wiz.step} of ${totalSteps}</div>
+  ` : '';
+
+  let content = '';
+
+  if (step === 'welcome') {
+    content = `
+      <div style="text-align:center;padding:8px 0 24px">
+        <div style="font-size:48px;margin-bottom:12px">🎯</div>
+        <h2 style="font-size:22px;margin-bottom:8px">Welcome to Pistol Tracker!</h2>
+        <p style="color:var(--text-dim);font-size:14px;line-height:1.7;max-width:420px;margin:0 auto 24px">Your personal training log, maintenance scheduler, and competition tracker — all in one place. No account needed, no internet required.</p>
+        <p style="color:var(--text-dim);font-size:13px;margin-bottom:24px">How would you like to get started?</p>
+        <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+          <div onclick="wizNext()" style="cursor:pointer;background:var(--panel-2);border:2px solid var(--accent);border-radius:12px;padding:20px 24px;max-width:200px;text-align:left;transition:background 0.15s" onmouseenter="this.style.background='var(--bg)'" onmouseleave="this.style.background='var(--panel-2)'">
+            <div style="font-size:24px;margin-bottom:8px">⚡</div>
+            <div style="font-weight:600;margin-bottom:4px">Quick Setup</div>
+            <div style="font-size:12px;color:var(--text-dim)">Add your firearm and ammo, set preferences. Ready to log in ~3 minutes.</div>
+          </div>
+          <div onclick="closeOnboarding();startFullTour();" style="cursor:pointer;background:var(--panel-2);border:2px solid var(--border);border-radius:12px;padding:20px 24px;max-width:200px;text-align:left;transition:background 0.15s;border-color:var(--border)" onmouseenter="this.style.background='var(--bg)'" onmouseleave="this.style.background='var(--panel-2)'">
+            <div style="font-size:24px;margin-bottom:8px">🗺</div>
+            <div style="font-weight:600;margin-bottom:4px">Full Tour</div>
+            <div style="font-size:12px;color:var(--text-dim)">Walk through all 13 sections with tips and explanations for each one.</div>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:20px">
+        <button class="btn small secondary" onclick="closeOnboarding()">Skip — I'll explore on my own</button>
+      </div>
+    `;
+  }
+
+  else if (step === 'firearm') {
+    const defaultName = DB.firearms.length ? '' : '';
+    content = `
+      <h2 style="font-size:18px;margin-bottom:6px">First, let's add your firearm.</h2>
+      <p style="color:var(--text-dim);font-size:13px;margin-bottom:20px">You can add more later from the Firearms section. Fill in what you know — nothing is required except the name.</p>
+      <div class="form-grid-2">
+        <div class="form-row"><label>Name <span style="color:var(--accent)">*</span></label>
+          <input id="wz-fa-name" placeholder="e.g. Glock 34, CZ Shadow 2, Staccato C2" style="font-size:14px">
+        </div>
+        <div class="form-row"><label>Manufacturer</label>
+          <input id="wz-fa-mfr" placeholder="e.g. Glock, CZ, Staccato">
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row"><label>Caliber</label>
+          <select id="wz-fa-cal">
+            ${['9mm','10mm','.40 S&W','.45 ACP','.357 Sig','.38 Special','.357 Magnum','Other'].map(c => `<option${c==='9mm'?' selected':''}>${c}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-row"><label>Optic / Sight</label>
+          <input id="wz-fa-optic" placeholder="e.g. Trijicon RMR, iron sights">
+        </div>
+      </div>
+      <div style="margin-top:8px">
+        <button class="btn" onclick="wizSaveFirearm()">Save &amp; Continue →</button>
+        <button class="btn secondary" style="margin-left:8px" onclick="wizNext()">Skip for now</button>
+      </div>
+    `;
+  }
+
+  else if (step === 'ammo') {
+    content = `
+      <h2 style="font-size:18px;margin-bottom:6px">Add your primary ammo.</h2>
+      <p style="color:var(--text-dim);font-size:13px;margin-bottom:20px">The app tracks your inventory and automatically decrements rounds when you log sessions. You can add more ammo types later.</p>
+      <div class="form-grid-2">
+        <div class="form-row"><label>Brand</label>
+          <input id="wz-am-brand" placeholder="e.g. Federal, Blazer Brass, Winchester">
+        </div>
+        <div class="form-row"><label>Bullet Type</label>
+          <select id="wz-am-type">
+            ${['FMJ','JHP','Match','Frangible','Other'].map(t => `<option>${t}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="form-grid-3">
+        <div class="form-row"><label>Caliber</label>
+          <select id="wz-am-cal">
+            ${['9mm','10mm','.40 S&W','.45 ACP','.357 Sig','.38 Special','Other'].map(c => `<option${c==='9mm'?' selected':''}>${c}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-row"><label>Grain</label>
+          <input id="wz-am-grain" type="number" value="115" min="1" placeholder="115">
+        </div>
+        <div class="form-row"><label>Rounds on hand</label>
+          <input id="wz-am-qty" type="number" value="500" min="0" placeholder="500">
+        </div>
+      </div>
+      <div style="margin-top:8px">
+        <button class="btn" onclick="wizSaveAmmo()">Save &amp; Continue →</button>
+        <button class="btn secondary" style="margin-left:8px" onclick="wizNext()">Skip for now</button>
+      </div>
+    `;
+  }
+
+  else if (step === 'sample') {
+    if (_wiz.sampleLoaded) {
+      content = `
+        <h2 style="font-size:18px;margin-bottom:6px">Sample data is loaded. ✓</h2>
+        <p style="color:var(--text-dim);font-size:13px;margin-bottom:20px">Your app already has sample sessions and data to explore. You can remove it any time from Settings or using the delete buttons on individual records.</p>
+        <button class="btn" onclick="wizNext()">Continue →</button>
+      `;
+    } else {
+      content = `
+        <h2 style="font-size:18px;margin-bottom:6px">Want to see the app in action?</h2>
+        <p style="color:var(--text-dim);font-size:13px;margin-bottom:16px">We can load a few sample sessions, maintenance records, and scores so the app doesn't feel empty while you're getting familiar with it. You'll have the option to remove it all at the end.</p>
+        <div style="background:var(--panel-2);border-radius:8px;padding:14px;margin-bottom:20px;font-size:13px;color:var(--text-dim)">
+          <strong style="color:var(--text)">Sample data includes:</strong><br>
+          5 sessions (practice, competition, dry-fire) · 3 field strip records · sample drill scores and self-ratings
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn" onclick="wizLoadSample()">&#128218; Load Sample Data</button>
+          <button class="btn secondary" onclick="wizNext()">No thanks, start fresh</button>
+        </div>
+      `;
+    }
+  }
+
+  else if (step === 'prefs') {
+    const prefs = DB.settings.competition || {};
+    content = `
+      <h2 style="font-size:18px;margin-bottom:6px">Set your competition defaults.</h2>
+      <p style="color:var(--text-dim);font-size:13px;margin-bottom:20px">These pre-fill your match and classifier forms. You can always change them per-entry or in Settings.</p>
+      <div class="form-grid-2">
+        <div class="form-row"><label>Default Division</label>
+          <select id="wz-div">
+            ${USPSA_DIVISIONS.map(d => `<option ${(prefs.defaultDivision||'Carry Optics')===d?'selected':''}>${d}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-row"><label>Default Power Factor</label>
+          <select id="wz-pf">
+            <option ${(prefs.defaultPowerFactor||'Minor')==='Minor'?'selected':''}>Minor</option>
+            <option ${(prefs.defaultPowerFactor||'Minor')==='Major'?'selected':''}>Major</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-top:8px">
+        <button class="btn" onclick="wizSavePrefs()">Save &amp; Continue →</button>
+        <button class="btn secondary" style="margin-left:8px" onclick="wizNext()">Skip</button>
+      </div>
+    `;
+  }
+
+  else if (step === 'done') {
+    const hasFirearm = DB.firearms.some(f => !WIZARD_SAMPLE_IDS.includes(f.id));
+    content = `
+      <div style="text-align:center;padding:8px 0 16px">
+        <div style="font-size:48px;margin-bottom:12px">🎉</div>
+        <h2 style="font-size:20px;margin-bottom:8px">You're all set!</h2>
+        <p style="color:var(--text-dim);font-size:13px;line-height:1.7;max-width:420px;margin:0 auto 20px">
+          Head to <strong style="color:var(--text)">Sessions</strong> to log your first range session, or explore the sidebar to see what's available. The <strong style="color:var(--text)">Help</strong> section covers every feature in detail.
+        </p>
+        ${_wiz.sampleLoaded ? `
+          <div style="background:var(--panel-2);border-radius:8px;padding:14px;margin-bottom:20px;text-align:left;font-size:13px">
+            <strong>Sample data is loaded.</strong> Would you like to remove it now?
+            <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+              <button class="btn small danger" onclick="wizRemoveSample()">Remove Sample Data</button>
+              <button class="btn small secondary" onclick="wizKeepSample()">Keep It for Now</button>
+            </div>
+          </div>
+        ` : ''}
+        ${!_wiz.sampleLoaded ? `<button class="btn" onclick="closeOnboarding()">Go to Dashboard →</button>` : ''}
+      </div>
+    `;
+  }
+
+  overlay.innerHTML = `
+    <div style="background:var(--card-bg);border-radius:16px;padding:28px 32px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;position:relative">
+      <button onclick="closeOnboarding()" style="position:absolute;top:14px;right:16px;background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;line-height:1" title="Close">&times;</button>
+      ${progressBar}
+      ${content}
+    </div>
+  `;
+}
+
+function wizSaveFirearm() {
+  const name = document.getElementById('wz-fa-name').value.trim();
+  if (!name) { alert('Please enter a name for your firearm.'); return; }
+  const id = uid('fa');
+  DB.firearms.push({
+    id, name,
+    manufacturer: document.getElementById('wz-fa-mfr').value.trim(),
+    model: '', caliber: document.getElementById('wz-fa-cal').value,
+    dateAcquired: '', startingRoundCount: 0,
+    recoilSpringInterval: 5000, recoilSpringWeight: '',
+    notes: document.getElementById('wz-fa-optic').value.trim() ? `Optic: ${document.getElementById('wz-fa-optic').value.trim()}` : ''
+  });
+  _wiz.newFirearmId = id;
+  saveDB();
+  wizNext();
+}
+
+function wizSaveAmmo() {
+  const brand = document.getElementById('wz-am-brand').value.trim();
+  if (!brand) { alert('Please enter a brand name.'); return; }
+  const id = uid('am');
+  if (!DB.ammunition) DB.ammunition = [];
+  DB.ammunition.push({
+    id, brand,
+    caliber: document.getElementById('wz-am-cal').value,
+    grain: document.getElementById('wz-am-grain').value,
+    bulletType: document.getElementById('wz-am-type').value,
+    quantity: parseInt(document.getElementById('wz-am-qty').value) || 0,
+    notes: ''
+  });
+  _wiz.newAmmoId = id;
+  saveDB();
+  wizNext();
+}
+
+function wizLoadSample() {
+  // Add sample firearms (only if not already present)
+  WIZARD_SAMPLE_FIREARMS.forEach(f => { if (!DB.firearms.find(x => x.id === f.id)) DB.firearms.push({...f}); });
+  WIZARD_SAMPLE_AMMO.forEach(a => { if (!DB.ammunition.find(x => x.id === a.id)) DB.ammunition.push({...a}); });
+  wizardSampleSessions().forEach(s => { if (!DB.sessions.find(x => x.id === s.id)) DB.sessions.push({...s}); });
+  wizardSampleMaintenance().forEach(m => { if (!DB.maintenance.find(x => x.id === m.id)) DB.maintenance.push({...m}); });
+  DB.settings.sampleDataIds = WIZARD_SAMPLE_IDS;
+  _wiz.sampleLoaded = true;
+  // Save to localStorage only — skip auto-sync so sample data never overwrites the sync file
+  DB._lastModified = Date.now();
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); } catch(e) {}
+  wizNext();
+}
+
+function wizSavePrefs() {
+  if (!DB.settings.competition) DB.settings.competition = {};
+  DB.settings.competition.defaultDivision  = document.getElementById('wz-div').value;
+  DB.settings.competition.defaultPowerFactor = document.getElementById('wz-pf').value;
+  saveDB();
+  wizNext();
+}
+
+function wizRemoveSample() {
+  removeSampleData();
+  closeOnboarding();
+  showToast('Sample data removed. You\'re starting fresh!');
+}
+
+function wizKeepSample() {
+  closeOnboarding();
+  showToast('Sample data kept. Delete individual records from Sessions, Maintenance, or use Settings → Remove Sample Data.');
+}
+
+function removeSampleData() {
+  const ids = DB.settings.sampleDataIds || WIZARD_SAMPLE_IDS;
+  DB.firearms    = DB.firearms.filter(x => !ids.includes(x.id));
+  DB.ammunition  = DB.ammunition.filter(x => !ids.includes(x.id));
+  DB.sessions    = DB.sessions.filter(x => !ids.includes(x.id));
+  DB.maintenance = DB.maintenance.filter(x => !ids.includes(x.id));
+  DB.settings.sampleDataIds = [];
+  saveDB();
+}
+
+// Auto-trigger on first use — only fires when DB has NO real data (no firearms added yet)
+if (DB.settings.firstUse && DB.firearms.filter(f => !WIZARD_SAMPLE_IDS.includes(f.id)).length === 0) {
+  setTimeout(() => startOnboarding(), 600);
+}
+
+/* ============================================================
+   OPTION B — FULL TOUR
+   Floating bottom bar that navigates through all 13 sections.
+   ============================================================ */
+const FULL_TOUR_STEPS = [
+  {
+    view: 'dashboard',
+    title: 'Dashboard',
+    icon: '⬤',
+    body: 'Your command center. The stat cards at the top show live-fire rounds, session counts, and ammo inventory. Scroll down for your firearm status, the monthly rounds chart (stacked live vs. dry-fire), recent sessions, and personal records.',
+    tips: ['Orange alerts at the top flag maintenance due, low ammo, or training gaps.', 'The monthly chart stacks live-fire (orange) and dry-fire (blue) rounds separately.', 'Classification shows your current USPSA estimated class once you log classifiers.']
+  },
+  {
+    view: 'firearms',
+    title: 'Firearms',
+    icon: '◆',
+    body: 'Every gun you own is registered here with its cumulative round count, maintenance status, and barrel tracking. The Magazines tab (top of the page) is where you add and manage individual magazines with round counts and spring history.',
+    tips: ['Round counts include both session rounds and match rounds.', 'The deep-clean progress bar fills as rounds accumulate — turns red when overdue.', 'Click Magazines tab to track individual mag IDs, lifetime rounds, and spring replacements.']
+  },
+  {
+    view: 'optics',
+    title: 'Optics & Gear',
+    icon: '⊙',
+    body: 'Track every optic with zero distance, mount height, torque spec, dot size, and a settings snapshot. The battery log shows when you last replaced the battery and warns you at ~11 months. Spare Parts inventory lives here too.',
+    tips: ['Log a settings snapshot to remember your brightness and mode settings.', 'The battery warning gives you plenty of lead time before a match.', 'Spare Parts tracks quantities so you know what\'s on the shelf before ordering.']
+  },
+  {
+    view: 'ammo',
+    title: 'Ammunition',
+    icon: '●',
+    body: 'Tracks your inventory by brand, caliber, grain, and bullet type. When you log a session, rounds automatically decrement from the matching can. The FIFO cost system calculates your true per-round cost using purchase history in date order.',
+    tips: ['Set a cost/round on each ammo record to enable per-session cost tracking.', 'Use "↻ Consolidate Duplicates" to merge cans with the same brand/caliber/grain/type.', 'Link a purchase to an ammo can to feed the FIFO cost ledger automatically.']
+  },
+  {
+    view: 'sessions',
+    title: 'Sessions',
+    icon: '▲',
+    body: 'The heart of the app. Log every range session with firearm, ammo, drills, distances, self-ratings, malfunctions, holster, and target photos. The filter bar lets you search by date range, firearm, type, or keyword. Click 🖨 Print on any card for a formatted training journal page.',
+    tips: ['Self-ratings (Focus, Fundamentals, Satisfaction) feed the trend charts in Progress.', 'Click the 📍 location on any card to edit it inline — no modal needed.', 'The Print Report button (top right) prints all currently filtered sessions at once.']
+  },
+  {
+    view: 'progress',
+    title: 'Progress',
+    icon: '★',
+    body: 'Five tabs: Personal Records (best times/scores per drill), Goals (set targets and mark achieved), Skill Assessment (1–10 self-ratings across 8 skill areas), Trends (charts of cumulative rounds and self-ratings over time), and Calendar (52-week training heatmap).',
+    tips: ['PRs are auto-detected — the app finds your best time or score per drill automatically.', 'The Trends tab shows if your fundamentals ratings are improving or slipping.', 'The calendar color intensity shows how frequently you trained each week.']
+  },
+  {
+    view: 'competition',
+    title: 'Competition',
+    icon: '♟',
+    body: 'Log USPSA matches with stage-by-stage breakdown, finish position, match %, and entry cost. The Classifiers tab tracks your hit factors and auto-calculates your estimated classification. Two charts show stage performance per match and your stage % trend over time.',
+    tips: ['The Stage % Trend chart shows a linear trend line — useful for spotting consistency.', 'Log a PractiScore URL on any match for one-click access to official results.', 'Classification is estimated from your best 4 of last 8 classifiers per the USPSA formula.']
+  },
+  {
+    view: 'costs',
+    title: 'Costs',
+    icon: '▶',
+    body: 'The Dashboard tab shows a 13-month stacked bar chart, a category donut chart, year-to-date breakdown, and per-firearm spending. The Log tab shows ammo cost by session and your full purchase history. All costs are calculated automatically from session and match data.',
+    tips: ['Ammo costs use FIFO pricing — each session consumes from the oldest purchase lot first.', 'Per-firearm spending attributes ammo + range fees from sessions and match fees from matches.', 'Log purchases with category "Range Fee" and they automatically route to the Range Fees bucket.']
+  },
+  {
+    view: 'malfunctions',
+    title: 'Malfunctions',
+    icon: '⚠',
+    body: 'Log every stoppage with type, magazine, ammo, round count, and resolution. The analytics show breakdowns by type and firearm. If you track magazines, the Malfunction Correlation table shows which mag is causing the most problems — useful for diagnosing a bad magazine.',
+    tips: ['Log malfunctions inside sessions (during session entry) or as standalone records here.', 'The magazine correlation table only appears once you start tagging mags on malfunctions.', 'A high count on one magazine is a strong indicator to retire it.']
+  },
+  {
+    view: 'maintenance',
+    title: 'Maintenance',
+    icon: '⚙',
+    body: 'The Schedule table at the top shows every firearm\'s current status at a glance — deep clean progress, recoil spring wear, last field strip, and overdue flags. Below it, the Maintenance Log lists every logged task with date-range, firearm, and task-type filtering.',
+    tips: ['Field strip reminders appear on the Sessions page after each live-fire session.', 'The recoil spring progress bar turns orange at 80% of your set interval, red when due.', 'Deep clean is tracked per-firearm at 10,000 rounds per Atlas Gunworks guidance.']
+  },
+  {
+    view: 'reference',
+    title: 'Atlas Reference',
+    icon: 'ℹ',
+    body: 'A built-in maintenance reference for Atlas Gunworks pistols. Covers the recommended maintenance schedule, a step-by-step field strip checklist, and links to official Atlas cleaning videos. Useful at the bench when you need a quick reminder of the procedure.',
+    tips: ['Atlas guidance: use oil, not grease on 2011s.', 'The field strip checklist walks through every step in order.', 'Video links open the official Atlas Gunworks cleaning guides.']
+  },
+  {
+    view: 'help',
+    title: 'Help',
+    icon: 'ℹ',
+    body: 'A comprehensive inline guide covering every section of the app. The Setup Wizard button relaunches the Quick Setup flow for new users. The App Tour button runs the 12-step overview tour. Everything is documented here — check here before asking elsewhere.',
+    tips: ['The Setup Wizard can be replayed any time from here — useful for onboarding a new user.', 'Help covers iCloud sync, cost tracking, magazine tracking, and every other feature.', 'You\'re currently on step 12 of 13 — one more section to go.']
+  },
+  {
+    view: 'settings',
+    title: 'Settings',
+    icon: '≡',
+    body: 'iCloud Sync keeps iPhone and Mac in sync via a shared file in iCloud Drive. Auto-Sync (Chrome/Edge) writes every change automatically. The Data section handles full JSON backups and CSV exports. The RangeReady CSV Importer brings in historical data from RangeReady app exports.',
+    tips: ['Export a JSON backup regularly — the Dashboard reminds you after 30 days.', 'The Drill Library editor lets you add, rename, or remove drills from the session logging list.', 'Auto-Sync requires Chrome or Edge — Safari on iOS falls back to manual export/import.']
+  }
+];
+
+let _tourB = { step: 0 };
+
+function startFullTour() {
+  // Close wizard overlay if open
+  const wizOverlay = document.getElementById('wiz-overlay');
+  if (wizOverlay) wizOverlay.style.display = 'none';
+
+  _tourB.step = 0;
+  let bar = document.getElementById('full-tour-bar');
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'full-tour-bar';
+    bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:10005;background:var(--card-bg);border-top:3px solid var(--accent);box-shadow:0 -4px 24px rgba(0,0,0,0.4);padding:0';
+    document.body.appendChild(bar);
+  }
+  bar.style.display = 'block';
+  renderFullTourStep();
+}
+
+function closeFullTour() {
+  const bar = document.getElementById('full-tour-bar');
+  if (bar) bar.style.display = 'none';
+}
+
+function fullTourNav(dir) {
+  _tourB.step = Math.max(0, Math.min(FULL_TOUR_STEPS.length - 1, _tourB.step + dir));
+  renderFullTourStep();
+}
+
+function renderFullTourStep() {
+  const bar = document.getElementById('full-tour-bar');
+  if (!bar) return;
+  const s = FULL_TOUR_STEPS[_tourB.step];
+  const total = FULL_TOUR_STEPS.length;
+  const pct = Math.round(((_tourB.step + 1) / total) * 100);
+
+  // Navigate to the section
+  setView(s.view);
+
+  bar.innerHTML = `
+    <div style="height:3px;background:var(--border)">
+      <div style="height:3px;background:var(--accent);width:${pct}%;transition:width 0.3s"></div>
+    </div>
+    <div style="display:flex;align-items:flex-start;gap:20px;padding:14px 20px;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Step ${_tourB.step + 1} of ${total}</span>
+          <span style="color:var(--accent);font-weight:700;font-size:15px">${escapeHtml(s.title)}</span>
+        </div>
+        <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:8px">${escapeHtml(s.body)}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">
+          ${s.tips.map(t => `<div style="font-size:11px;color:var(--text-dim);background:var(--panel-2);border-radius:4px;padding:3px 8px;line-height:1.5">💡 ${escapeHtml(t)}</div>`).join('')}
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;padding-top:4px">
+        ${_tourB.step > 0 ? `<button class="btn small secondary" onclick="fullTourNav(-1)">← Back</button>` : ''}
+        ${_tourB.step < total - 1
+          ? `<button class="btn" onclick="fullTourNav(1)">Next →</button>`
+          : `<button class="btn" onclick="closeFullTour();showToast('Tour complete! Explore the app or return to Help any time.')">Finish ✓</button>`}
+        <button class="btn small secondary" onclick="closeFullTour()" title="Exit tour">✕ Exit</button>
+      </div>
+    </div>
+  `;
+}
 
 /* ============================================================
    SERVICE WORKER (PWA offline support)
