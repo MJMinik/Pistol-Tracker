@@ -94,6 +94,29 @@
   .btn.small { padding: 5px 10px; font-size: 12px; }
   .btn.success { background: var(--success); }
 
+  /* Contextual help */
+  .help-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--panel-2); border: 1px solid var(--border);
+    color: var(--text-dim); font-size: 13px; font-weight: 600;
+    cursor: pointer; margin-left: 10px; flex-shrink: 0;
+    transition: background 0.15s, color 0.15s;
+    vertical-align: middle;
+  }
+  .help-btn:hover, .help-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .section-help-panel {
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;
+    font-size: 13px; line-height: 1.7; color: var(--text);
+    display: none;
+  }
+  .section-help-panel.open { display: block; }
+  .section-help-panel h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin: 12px 0 4px; }
+  .section-help-panel h4:first-child { margin-top: 0; }
+  .section-help-panel ul { padding-left: 18px; margin: 4px 0; }
+  .section-help-panel li { margin-bottom: 3px; }
+
   .card {
     background: var(--panel); border: 1px solid var(--border);
     border-radius: 8px; padding: 20px; margin-bottom: 16px;
@@ -1300,6 +1323,187 @@ function setView(name) {
   if (link) link.classList.add('active');
   renderView(name);
 }
+/* ============================================================
+   CONTEXTUAL HELP
+   ============================================================ */
+const SECTION_HELP = {
+  dashboard: `
+    <h4>Overview</h4>
+    The Dashboard is your at-a-glance command center. It shows live stats, maintenance alerts, recent sessions, and personal records — all updated in real time from your data.
+    <h4>Stat Cards</h4>
+    <ul>
+      <li><strong>Total Rounds Fired</strong> — cumulative live-fire rounds across all firearms and sessions.</li>
+      <li><strong>Range Sessions</strong> — total sessions logged (live + dry-fire shown separately).</li>
+      <li><strong>Ammo Inventory</strong> — current rounds on hand across all SKUs.</li>
+      <li><strong>Open Goals</strong> — training goals not yet marked achieved.</li>
+    </ul>
+    <h4>Alerts</h4>
+    Orange/red banners appear when a firearm needs a field strip, deep clean, recoil spring replacement, or annual inspection. Click <strong>+ Log Maintenance</strong> on the Firearms page to clear them.
+    <h4>Rounds by Month</h4>
+    Bar chart showing your last 12 months of training volume. Orange = live-fire, blue = dry-fire.`,
+
+  firearms: `
+    <h4>Overview</h4>
+    The Firearms page tracks your registered guns — round counts, maintenance status, recoil spring progress, and barrel info.
+    <h4>Adding a Firearm</h4>
+    Click <strong>+ Add Firearm</strong>. Enter the name, manufacturer, caliber, and optionally a starting round count if the gun already has rounds on it.
+    <h4>Round Counts</h4>
+    Rounds are automatically credited when you log a session or competition match. The deep clean progress bar fills as rounds accumulate since the last deep clean.
+    <h4>Maintenance Status</h4>
+    Each card shows the last field strip, deep clean, annual inspection, and recoil spring date. Use <strong>+ Log Maintenance</strong> to record any of these tasks.
+    <h4>Magazines Tab</h4>
+    Switch to the Magazines tab to add, edit, or retire magazines. Track lifetime rounds per mag and log spring replacements.`,
+
+  optics: `
+    <h4>Overview</h4>
+    Track every optic and sight on your firearms — zero distance, mount height, torque spec, settings snapshot, and battery change history.
+    <h4>Adding an Optic</h4>
+    Click <strong>+ Add Optic</strong>. Assign it to a firearm and fill in the details you want to track. All fields are optional except the name.
+    <h4>Battery Log</h4>
+    Click <strong>+ Log Change</strong> on any optic card to record a battery replacement. The card shows a warning when ~11 months have passed since the last change.
+    <h4>Spare Parts</h4>
+    The Spare Parts table at the bottom tracks consumables like springs, pins, and cleaning supplies. Adjust quantities as you use or reorder parts.`,
+
+  ammunition: `
+    <h4>Overview</h4>
+    The Ammunition page tracks your inventory. Rounds are automatically deducted when you save a session.
+    <h4>Adding Ammo</h4>
+    Click <strong>+ Add Ammo</strong>. Enter brand, caliber, grain, bullet type, current quantity, and an optional cost per round for automatic cost tracking in the Costs section.
+    <h4>Cost Per Round</h4>
+    Enter a cost per round (e.g. 0.285) to unlock automatic ammo cost calculations. Each session will show its ammo cost and the Costs page will track totals.
+    <h4>Low Ammo Alert</h4>
+    A Dashboard warning appears when any SKU drops to 50 rounds or below.
+    <h4>Consolidate Duplicates</h4>
+    If you have multiple rows of the same ammo, click <strong>↻ Consolidate Duplicates</strong> to merge them automatically.`,
+
+  sessions: `
+    <h4>Overview</h4>
+    Sessions are the core of your training log. Each session records the firearm used, rounds fired, drills practiced, self-ratings, malfunctions, and target images.
+    <h4>Logging a Session</h4>
+    Click <strong>+ Log Session</strong>. Select session type (Practice, Competition, Class, Dry Fire), firearm, date, location, and ammo used. Add drills with optional times/scores.
+    <h4>Session Types</h4>
+    <ul>
+      <li><strong>Practice</strong> — standard live-fire range session.</li>
+      <li><strong>Dry Fire</strong> — no rounds; compatible drills shown automatically. Does not trigger field strip reminder.</li>
+      <li><strong>Competition / Class</strong> — logged the same as Practice but categorized separately.</li>
+    </ul>
+    <h4>Self-Ratings</h4>
+    Rate Focus, Fundamentals, and Satisfaction (1–10) after each session. These feed the trend charts in Progress.
+    <h4>Search & Filter</h4>
+    Use the filter bar at the top to narrow sessions by date range, firearm, type, or keyword.`,
+
+  progress: `
+    <h4>Overview</h4>
+    The Progress section tracks your improvement over time — personal records, goals, skill assessments, trend charts, and a training frequency heatmap.
+    <h4>Personal Records</h4>
+    PRs are auto-derived from your drill history. Time-based drills: lowest time wins. Score-based: highest score wins.
+    <h4>Goals</h4>
+    Set a goal with a target metric (e.g. "Bill Drill under 2.0s"). Check it off when achieved.
+    <h4>Skill Assessment</h4>
+    Rate yourself across 8 skill areas periodically (every 1–2 months). Snapshots generate a trend chart once you have 2+ assessments.
+    <h4>Trends</h4>
+    Cumulative round chart, session self-rating trend, and drill progression for your most-practiced drills.
+    <h4>Calendar</h4>
+    A 52-week training frequency heatmap. Each square is one day — orange intensity shows session count. Hover to see details.`,
+
+  competition: `
+    <h4>Overview</h4>
+    Log USPSA matches, track classifiers, and monitor your classification progress.
+    <h4>Matches</h4>
+    Click <strong>+ Add Match</strong> to log a match. Enter stage-level points, time, and percentage. Hit Factor is calculated automatically. Add a PractiScore link for easy reference.
+    <h4>Round Counts</h4>
+    Enter total rounds fired in the match. This credits the firearm's round count without requiring a separate session entry — do not log match rounds as a session too or they'll be double-counted.
+    <h4>Classifiers</h4>
+    Log each USPSA classifier with your points, time, and the division's High Hit Factor (HHF) from the USPSA portal. Your percentage and equivalent class are calculated automatically.
+    <h4>Classification</h4>
+    Shows your estimated USPSA classification using the official "best 4 of last 8 classifiers" formula. This is an estimate — official numbers come from the USPSA member portal.`,
+
+  costs: `
+    <h4>Overview</h4>
+    The Costs section automatically tracks what you're spending on training — ammo, range fees, match fees, and gear purchases.
+    <h4>Ammo Costs</h4>
+    Calculated automatically from sessions using FIFO pricing — each session consumes from the oldest purchase lot first.
+    <h4>Range Fees</h4>
+    Enter a range fee when logging a session. It flows automatically into the Range Fees bucket here.
+    <h4>Gear & Purchases</h4>
+    Log equipment purchases, holsters, training classes, and other expenses. Use category "Range Fee" to route lane fees correctly.
+    <h4>Dashboard Tab</h4>
+    Summary stats, monthly bar chart, category donut chart, and per-firearm spending breakdown.`,
+
+  malfunctions: `
+    <h4>Overview</h4>
+    Track stoppages and reliability issues. Malfunctions can be logged inside a session or as standalone entries here.
+    <h4>Logging a Malfunction</h4>
+    Click <strong>+ Log Malfunction</strong>. Select the firearm, type (failure to feed, failure to eject, etc.), round count at the time, and resolution steps.
+    <h4>Analytics</h4>
+    The summary cards show malfunction rate per 1,000 rounds by firearm, patterns by type, and correlation by magazine — helping you identify whether issues are gun-related, ammo-related, or magazine-related.
+    <h4>Industry Standard</h4>
+    Under 1 malfunction per 1,000 rounds is the benchmark for a competition-grade pistol.`,
+
+  maintenance: `
+    <h4>Overview</h4>
+    The Maintenance log tracks every cleaning and service event for each firearm.
+    <h4>Logging Maintenance</h4>
+    Click <strong>+ Log Maintenance</strong> or use the button on any Firearm card. Select the task type and date.
+    <h4>Task Types</h4>
+    <ul>
+      <li><strong>Field Strip & Clean</strong> — after every live-fire session (Atlas guidance).</li>
+      <li><strong>Deep Clean</strong> — every 10,000 cumulative rounds.</li>
+      <li><strong>Annual Inspection</strong> — once per calendar year.</li>
+      <li><strong>Recoil Spring</strong> — per firearm setting (default 5,000 rounds).</li>
+      <li><strong>Magazine Springs</strong> — every 6 months (configured in Settings).</li>
+    </ul>
+    <h4>Filter Bar</h4>
+    Filter the log by date range, firearm, or task type using the bar at the top.`,
+
+  reference: `
+    <h4>Overview</h4>
+    The Atlas Reference section contains Atlas Gunworks maintenance guidance, the official field strip checklist, and links to Atlas video guides.
+    <h4>Maintenance Schedule</h4>
+    The table shows Atlas-recommended intervals for all maintenance tasks. Use this as your authority for when to clean and service your Atlas firearms.
+    <h4>Field Strip Checklist</h4>
+    Step-by-step checklist from Atlas Gunworks for a proper field strip and clean after each range session.
+    <h4>Video Guides</h4>
+    Links to official Atlas Gunworks cleaning and maintenance videos.`,
+
+  help: `
+    <h4>Overview</h4>
+    The Help section contains guides for every part of the app. Use it when you need a refresher on how something works.
+    <h4>Setup Wizard</h4>
+    Click <strong>Setup Wizard</strong> to replay the initial setup walkthrough — useful for new devices or after a data reset.
+    <h4>Full Tour</h4>
+    Click <strong>Full Tour</strong> for a guided walkthrough of all 13 sections with tips at each stop.`,
+
+  settings: `
+    <h4>Overview</h4>
+    Settings handles data backup, sync, drill library management, and app preferences.
+    <h4>iCloud Sync</h4>
+    Use <strong>Export Sync File</strong> at the range (iPhone) and <strong>Import Sync File</strong> at home (Mac) to keep your devices in sync via iCloud Drive.
+    <h4>JSON Backup</h4>
+    <strong>Download JSON Backup</strong> saves a complete timestamped backup of all your data. Do this regularly. Use <strong>Import JSON Backup</strong> to restore.
+    <h4>Drill Library</h4>
+    Add, remove, or customize the drills available when logging sessions. Built-in drills can be removed — they won't appear in new sessions but historical data is preserved.
+    <h4>Magazine Spring Schedule</h4>
+    Set the start date and replacement interval for magazine spring reminders. The Dashboard alert is driven by this setting.`
+};
+
+function toggleSectionHelp(section, btn) {
+  const panelId = 'help-panel-' + section;
+  let panel = document.getElementById(panelId);
+  if (!panel) return;
+  const isOpen = panel.classList.contains('open');
+  panel.classList.toggle('open', !isOpen);
+  btn.classList.toggle('active', !isOpen);
+}
+
+function sectionHelpBtn(section) {
+  return `<button class="help-btn" onclick="toggleSectionHelp('${section}', this)" title="Help for this section">?</button>`;
+}
+
+function sectionHelpPanel(section) {
+  return `<div id="help-panel-${section}" class="section-help-panel">${SECTION_HELP[section] || ''}</div>`;
+}
+
 function renderView(name) {
   const fns = {
     dashboard: renderDashboard, firearms: renderFirearms, optics: renderOptics, ammo: renderAmmo,
@@ -1400,12 +1604,12 @@ function renderDashboard() {
   v.innerHTML = `
     <div class="view-header">
       <div>
-        <h2>Dashboard</h2>
+        <h2>Dashboard ${sectionHelpBtn('dashboard')}</h2>
         <div class="sub">${formatDate(new Date())} &middot; Training since January 2025</div>
       </div>
       <button class="btn" onclick="openSessionModal()">+ Log Session</button>
     </div>
-
+    ${sectionHelpPanel('dashboard')}
     ${backupAlertHtml}
     ${alerts.length ? alerts.map(a => `<div class="alert ${a.level}">&#9888; ${escapeHtml(a.text)}</div>`).join('') : ''}
 
@@ -1517,11 +1721,12 @@ function renderFirearms() {
   v.innerHTML = `
     <div class="view-header">
       <div>
-        <h2>Firearms</h2>
+        <h2>Firearms ${sectionHelpBtn('firearms')}</h2>
         <div class="sub">Cumulative round counts and maintenance status</div>
       </div>
       ${tab === 'firearms' ? `<button class="btn" onclick="openFirearmModal()">+ Add Firearm</button>` : `<button class="btn" onclick="openMagazineModal()">+ Add Magazine</button>`}
     </div>
+    ${sectionHelpPanel('firearms')}
     <div class="tabs" style="margin-bottom:16px">
       <div class="tab ${tab==='firearms'?'active':''}" onclick="switchFirearmsTab('firearms')">&#9654; Firearms</div>
       <div class="tab ${tab==='magazines'?'active':''}" onclick="switchFirearmsTab('magazines')">&#9632; Magazines (${(DB.magazines||[]).filter(m=>m.active!==false).length})</div>
@@ -1853,10 +2058,10 @@ function renderOptics() {
   const parts = DB.parts || [];
   v.innerHTML = `
     <div class="view-header">
-      <div><h2>Optics &amp; Gear</h2><div class="sub">Sights, settings, batteries, and spare parts</div></div>
+      <div><h2>Optics &amp; Gear ${sectionHelpBtn('optics')}</h2><div class="sub">Sights, settings, batteries, and spare parts</div></div>
       <button class="btn" onclick="openOpticModal()">+ Add Optic</button>
     </div>
-
+    ${sectionHelpPanel('optics')}
     ${optics.length === 0 ? `
       <div class="card" style="text-align:center;padding:40px;color:var(--text-dim)">
         <div style="font-size:32px;margin-bottom:12px">&#9678;</div>
@@ -2086,12 +2291,13 @@ function renderAmmo() {
   const used = DB.sessions.reduce((s, sess) => s + (sess.ammoUsage || []).reduce((x, u) => x + (u.rounds || 0), 0), 0);
   v.innerHTML = `
     <div class="view-header">
-      <div><h2>Ammunition</h2><div class="sub">Inventory and consumption &mdash; one row per ammo can</div></div>
+      <div><h2>Ammunition ${sectionHelpBtn('ammunition')}</h2><div class="sub">Inventory and consumption &mdash; one row per ammo can</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn secondary" onclick="consolidateAmmoDuplicates()" title="Merge duplicate brand/caliber/grain/type rows into one">&#8635; Consolidate Duplicates</button>
         <button class="btn" onclick="openAmmoModal()">+ Add Ammo</button>
       </div>
     </div>
+    ${sectionHelpPanel('ammunition')}
     <div class="grid grid-3" style="margin-bottom:16px">
       <div class="stat"><div class="label">Total in Inventory</div><div class="value accent">${total.toLocaleString()}</div></div>
       <div class="stat"><div class="label">Total Used</div><div class="value">${used.toLocaleString()}</div></div>
@@ -2389,14 +2595,14 @@ function renderSessions() {
 
   v.innerHTML = `
     <div class="view-header">
-      <div><h2>Range Sessions</h2><div class="sub">Practice and competition log</div></div>
+      <div><h2>Range Sessions ${sectionHelpBtn('sessions')}</h2><div class="sub">Practice and competition log</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         ${latestFirearm ? `<button class="btn secondary" onclick="quickFieldStrip('${latestFirearm.id}')" title="Log field strip & clean for ${escapeHtml(latestFirearm.name)}">&#9881; Field Strip ${escapeHtml(latestFirearm.name)}</button>` : ''}
         <button class="btn secondary" onclick="printSessionRange()" title="Print all sessions matching current filters">&#128438; Print Report</button>
         <button class="btn" onclick="openSessionModal()">+ Log Session</button>
       </div>
     </div>
-
+    ${sectionHelpPanel('sessions')}
     <!-- Filter bar -->
     <div class="card" style="margin-bottom:16px;padding:14px 16px">
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end">
@@ -3437,9 +3643,9 @@ function renderProgress() {
   const v = document.getElementById('view-progress');
   v.innerHTML = `
     <div class="view-header">
-      <div><h2>Personal Progress</h2><div class="sub">Personal records, goals, and skill development</div></div>
+      <div><h2>Personal Progress ${sectionHelpBtn('progress')}</h2><div class="sub">Personal records, goals, and skill development</div></div>
     </div>
-
+    ${sectionHelpPanel('progress')}
     <div class="tabs" id="prog-tabs">
       <div class="tab active" data-pane="prs">Personal Records</div>
       <div class="tab" data-pane="goals">Goals</div>
@@ -3888,13 +4094,13 @@ function renderCompetition() {
   const v = document.getElementById('view-competition');
   v.innerHTML = `
     <div class="view-header">
-      <div><h2>Competition</h2><div class="sub">USPSA matches, classifiers, and classification progress</div></div>
+      <div><h2>Competition ${sectionHelpBtn('competition')}</h2><div class="sub">USPSA matches, classifiers, and classification progress</div></div>
       <div style="display:flex;gap:8px">
         <button class="btn secondary" onclick="openClassifierModal()">+ Classifier</button>
         <button class="btn" onclick="openMatchModal()">+ Match</button>
       </div>
     </div>
-
+    ${sectionHelpPanel('competition')}
     <div class="tabs" id="comp-tabs">
       <div class="tab active" data-pane="matches">Matches (${(DB.matches||[]).length})</div>
       <div class="tab" data-pane="classifiers">Classifiers (${(DB.classifiers||[]).length})</div>
@@ -4861,10 +5067,10 @@ function renderCosts() {
 
   v.innerHTML = `
     <div class="view-header">
-      <div><h2>Costs</h2><div class="sub">Ammo, match fees, range fees, and gear expenses</div></div>
+      <div><h2>Costs ${sectionHelpBtn('costs')}</h2><div class="sub">Ammo, match fees, range fees, and gear expenses</div></div>
       <button class="btn" onclick="openPurchaseModal()">+ Add Purchase</button>
     </div>
-
+    ${sectionHelpPanel('costs')}
     <div class="tabs" style="margin-bottom:16px">
       <div class="tab ${tab==='dashboard'?'active':''}" onclick="switchCostsTab('dashboard')">&#9685; Dashboard</div>
       <div class="tab ${tab==='log'?'active':''}" onclick="switchCostsTab('log')">&#9776; Log</div>
@@ -5251,12 +5457,14 @@ function renderHelp() {
 
   v.innerHTML = `
     <div class="view-header">
-      <div><h2>Help &amp; Guide</h2><div class="sub">How to use every section of Pistol Tracker</div></div>
-      <button class="btn secondary" onclick="startOnboarding()">&#9881; Setup Wizard</button>
-      <button class="btn secondary" onclick="startFullTour()">&#128506; Full Tour</button>
-      <button class="btn secondary" onclick="startTour()">&#9654; Quick Tour</button>
+      <div><h2>Help &amp; Guide ${sectionHelpBtn('help')}</h2><div class="sub">How to use every section of Pistol Tracker</div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn secondary" onclick="startOnboarding()">&#9881; Setup Wizard</button>
+        <button class="btn secondary" onclick="startFullTour()">&#128506; Full Tour</button>
+        <button class="btn secondary" onclick="startTour()">&#9654; Quick Tour</button>
+      </div>
     </div>
-
+    ${sectionHelpPanel('help')}
     <div class="card">
       ${helpSection('&#9678;', 'Getting Started', `
         <strong style="color:var(--text)">First time?</strong> Your four firearms are already loaded. Here's the recommended setup order:
@@ -5402,10 +5610,10 @@ function renderMalfunctions() {
 
   v.innerHTML = `
     <div class="view-header">
-      <div><h2>Malfunctions</h2><div class="sub">Stoppage tracking and analytics</div></div>
+      <div><h2>Malfunctions ${sectionHelpBtn('malfunctions')}</h2><div class="sub">Stoppage tracking and analytics</div></div>
       <button class="btn" onclick="openStandaloneMalfunctionModal()">+ Log Malfunction</button>
     </div>
-
+    ${sectionHelpPanel('malfunctions')}
     <div class="grid grid-4" style="margin-bottom:16px">
       <div class="stat"><div class="label">Total Logged</div><div class="value">${all.length}</div></div>
       <div class="stat"><div class="label">Per 1,000 Rounds</div><div class="value accent">${rate}</div></div>
@@ -5581,10 +5789,10 @@ function renderMaintenance() {
   const hasFilter = mf.dateFrom || mf.dateTo || mf.firearmId || mf.type;
   v.innerHTML = `
     <div class="view-header">
-      <div><h2>Maintenance</h2><div class="sub">Field strips, deep cleans, and inspections</div></div>
+      <div><h2>Maintenance ${sectionHelpBtn('maintenance')}</h2><div class="sub">Field strips, deep cleans, and inspections</div></div>
       <button class="btn" onclick="openMaintenanceModal()">+ Log Maintenance</button>
     </div>
-
+    ${sectionHelpPanel('maintenance')}
     <div class="card">
       <h3>Schedule by Firearm</h3>
       <table>
@@ -5852,9 +6060,9 @@ function renderReference() {
   const v = document.getElementById('view-reference');
   v.innerHTML = `
     <div class="view-header">
-      <div><h2>Atlas Gunworks Reference</h2><div class="sub">Maintenance guidance compiled from public Atlas material</div></div>
+      <div><h2>Atlas Gunworks Reference ${sectionHelpBtn('reference')}</h2><div class="sub">Maintenance guidance compiled from public Atlas material</div></div>
     </div>
-
+    ${sectionHelpPanel('reference')}
     <div class="alert info">&#9432; This reference summarizes publicly available Atlas Gunworks guidance. Always verify against the current Atlas Gunworks Pistol Manual and your owner's manual.</div>
 
     <div class="card">
@@ -5920,8 +6128,8 @@ function renderSettings() {
   const lastExport = DB.settings.lastSyncExportDate;
   const lastImport = DB.settings.lastSyncImportDate;
   v.innerHTML = `
-    <div class="view-header"><div><h2>Settings</h2><div class="sub">iCloud sync, data export, drill library</div></div></div>
-
+    <div class="view-header"><div><h2>Settings ${sectionHelpBtn('settings')}</h2><div class="sub">iCloud sync, data export, drill library</div></div></div>
+    ${sectionHelpPanel('settings')}
     <!-- iCloud Sync card -->
     <div class="card" style="border-color:var(--accent)">
       <h3 style="color:var(--accent)">&#9729; iCloud Sync</h3>
