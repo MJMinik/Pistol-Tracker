@@ -1862,10 +1862,9 @@ function openMagazineModal(id) {
         <input id="mg-label" value="${escapeHtml(mg.label)}" placeholder="e.g. A1, S3, E2">
         <div class="help-text">Match what's on the physical mag (paint pen or label).</div>
       </div>
-      <div class="form-row">
-        <label style="display:flex;align-items:center;gap:8px;font-weight:normal;text-transform:none;cursor:pointer;width:100%">
-          <input type="checkbox" id="mg-active" ${mg.active !== false ? 'checked' : ''}> Active — uncheck to retire this magazine
-        </label>
+      <div style="margin-bottom:12px;display:flex;align-items:center;gap:8px;cursor:pointer" onclick="document.getElementById('mg-active').click()">
+        <input type="checkbox" id="mg-active" ${mg.active !== false ? 'checked' : ''} onclick="event.stopPropagation()">
+        <span style="font-size:13px">Active — uncheck to retire this magazine</span>
       </div>
       <div class="form-row">
         <label>Firearm Pool ${tip('Check all firearms that can use this magazine. Magazines shared between guns (e.g. Apollo + Erebus) should have both checked.')}</label>
