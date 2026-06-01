@@ -1870,10 +1870,10 @@ function openMagazineModal(id) {
         </div>
       </div>
       <div class="form-row"><label>Firearm Pool ${tip('Check all firearms that can use this magazine. Magazines shared between guns (e.g. Apollo + Erebus) should have both checked.')}</label>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-top:6px">
-          ${DB.firearms.map(fw => `<label style="display:flex;align-items:center;gap:8px;font-weight:normal;text-transform:none;cursor:pointer;padding:6px 8px;background:var(--panel-2);border:1px solid var(--border);border-radius:6px">
-            <input type="checkbox" class="mg-fw-check" value="${fw.id}" ${(mg.firearmIds || []).includes(fw.id) ? 'checked' : ''}>
-            ${escapeHtml(fw.name)}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">
+          ${DB.firearms.map(fw => `<label style="display:flex;align-items:center;gap:8px;font-weight:normal;text-transform:none;cursor:pointer;padding:8px 10px;background:var(--panel-2);border:1px solid var(--border);border-radius:6px;white-space:nowrap;overflow:hidden">
+            <input type="checkbox" class="mg-fw-check" value="${fw.id}" ${(mg.firearmIds || []).includes(fw.id) ? 'checked' : ''} style="flex-shrink:0">
+            <span style="overflow:hidden;text-overflow:ellipsis">${escapeHtml(fw.name)}</span>
           </label>`).join('')}
         </div>
         <div class="help-text">Check all guns that can use this magazine.</div>
