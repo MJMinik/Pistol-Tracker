@@ -71,6 +71,48 @@
   nav a.active { background: var(--panel-2); color: var(--accent); border-left-color: var(--accent); }
   nav .icon { font-size: 16px; width: 20px; text-align: center; }
   .sidebar-footer { padding: 12px 20px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-dim); }
+
+  /* Global search */
+  .search-bar {
+    padding: 10px 16px; border-bottom: 1px solid var(--border);
+  }
+  .search-bar input {
+    width: 100%; padding: 7px 10px 7px 30px;
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-size: 13px;
+  }
+  .search-bar input:focus { outline: none; border-color: var(--accent); }
+  .search-bar .search-icon {
+    position: absolute; left: 26px; top: 50%; transform: translateY(-50%);
+    color: var(--text-dim); font-size: 13px; pointer-events: none;
+  }
+  .search-overlay {
+    display: none; position: fixed; inset: 0; z-index: 300;
+    background: rgba(0,0,0,0.7); padding: 60px 20px 20px;
+  }
+  .search-overlay.show { display: flex; flex-direction: column; align-items: center; }
+  .search-overlay-box {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; width: 100%; max-width: 640px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6); overflow: hidden;
+  }
+  .search-overlay-input {
+    width: 100%; padding: 16px 20px; font-size: 16px;
+    background: transparent; border: none; color: var(--text);
+    border-bottom: 1px solid var(--border);
+  }
+  .search-overlay-input:focus { outline: none; }
+  .search-results { max-height: 60vh; overflow-y: auto; }
+  .search-result-group { padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .search-result-group:last-child { border-bottom: none; }
+  .search-result-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); padding: 4px 16px; }
+  .search-result-item {
+    padding: 10px 16px; cursor: pointer; display: flex; flex-direction: column; gap: 2px;
+  }
+  .search-result-item:hover { background: var(--panel-2); }
+  .search-result-item .title { font-size: 14px; font-weight: 500; }
+  .search-result-item .subtitle { font-size: 12px; color: var(--text-dim); }
+  .search-empty { padding: 32px; text-align: center; color: var(--text-dim); font-size: 14px; }
   main { flex: 1; overflow-y: auto; padding: 24px 32px; }
   .view { display: none; }
   .view.active { display: block; }
@@ -490,10 +532,25 @@
   <!-- Tap-to-close overlay shown behind the open sidebar on mobile -->
   <div id="sidebar-overlay" class="sidebar-overlay" onclick="toggleSidebar(true)"></div>
 
+  <!-- Global search overlay -->
+  <div id="search-overlay" class="search-overlay" onclick="if(event.target===this)closeGlobalSearch()">
+    <div class="search-overlay-box">
+      <input class="search-overlay-input" id="global-search-input" type="search" placeholder="Search sessions, firearms, maintenance, matches…" oninput="runGlobalSearch(this.value)" onkeydown="if(event.key==='Escape')closeGlobalSearch()">
+      <div class="search-results" id="global-search-results">
+        <div class="search-empty">Start typing to search across all your data.</div>
+      </div>
+    </div>
+  </div>
+
   <aside class="sidebar">
     <div class="brand">
       <h1>Pistol Tracker</h1>
       <div class="sub">Practice & Maintenance</div>
+    </div>
+    <!-- Search bar -->
+    <div class="search-bar" style="position:relative">
+      <span class="search-icon">&#128269;</span>
+      <input type="search" placeholder="Search…" onclick="openGlobalSearch()" readonly style="cursor:pointer">
     </div>
     <nav>
       <a data-view="dashboard" class="active"><span class="icon">&#9678;</span> Dashboard</a>
@@ -1524,6 +1581,146 @@ const SECTION_HELP = {
     <h4>Magazine Spring Schedule</h4>
     Set the start date and replacement interval for magazine spring reminders. The Dashboard alert is driven by this setting.`
 };
+
+/* ============================================================
+   GLOBAL SEARCH
+   ============================================================ */
+function openGlobalSearch() {
+  const overlay = document.getElementById('search-overlay');
+  overlay.classList.add('show');
+  setTimeout(() => document.getElementById('global-search-input').focus(), 50);
+}
+
+function closeGlobalSearch() {
+  document.getElementById('search-overlay').classList.remove('show');
+  document.getElementById('global-search-input').value = '';
+  document.getElementById('global-search-results').innerHTML = '<div class="search-empty">Start typing to search across all your data.</div>';
+}
+
+function runGlobalSearch(kw) {
+  const container = document.getElementById('global-search-results');
+  const q = kw.trim().toLowerCase();
+  if (!q) {
+    container.innerHTML = '<div class="search-empty">Start typing to search across all your data.</div>';
+    return;
+  }
+
+  const results = [];
+
+  // Sessions
+  for (const s of DB.sessions) {
+    const fw = getFirearm(s.firearmId);
+    const hay = [s.date, s.location, s.notes, s.type, fw ? fw.name : '', (s.drills||[]).map(d=>d.name).join(' ')].join(' ').toLowerCase();
+    if (hay.includes(q)) results.push({
+      group: 'Sessions', icon: '▲',
+      title: `${formatDate(s.date)} — ${fw ? fw.name : '?'}`,
+      subtitle: `${s.type} · ${s.totalRounds || 0} rounds${s.location ? ' · ' + s.location : ''}`,
+      action: () => { closeGlobalSearch(); navigate('sessions'); }
+    });
+  }
+
+  // Maintenance
+  for (const m of DB.maintenance) {
+    const fw = getFirearm(m.firearmId);
+    const hay = [m.date, m.type, m.notes, fw ? fw.name : ''].join(' ').toLowerCase();
+    if (hay.includes(q)) results.push({
+      group: 'Maintenance', icon: '⚙',
+      title: `${formatDate(m.date)} — ${m.type.replace(/_/g,' ')}`,
+      subtitle: fw ? fw.name : '—',
+      action: () => { closeGlobalSearch(); navigate('maintenance'); }
+    });
+  }
+
+  // Malfunctions
+  for (const m of allMalfunctions()) {
+    const fw = getFirearm(m.firearmId);
+    const hay = [m.date, m.type, m.notes, m.resolution, fw ? fw.name : ''].join(' ').toLowerCase();
+    if (hay.includes(q)) results.push({
+      group: 'Malfunctions', icon: '⚠',
+      title: `${formatDate(m.date)} — ${m.type}`,
+      subtitle: fw ? fw.name : '—',
+      action: () => { closeGlobalSearch(); navigate('malfunctions'); }
+    });
+  }
+
+  // Matches
+  for (const m of (DB.matches || [])) {
+    const fw = getFirearm(m.firearmId);
+    const hay = [m.date, m.name, m.location, m.matchType, m.division, m.notes, fw ? fw.name : ''].join(' ').toLowerCase();
+    if (hay.includes(q)) results.push({
+      group: 'Competition', icon: '🏆',
+      title: `${formatDate(m.date)} — ${m.name || m.matchType}`,
+      subtitle: `${m.matchType || ''}${m.location ? ' · ' + m.location : ''}`,
+      action: () => { closeGlobalSearch(); navigate('competition'); }
+    });
+  }
+
+  // Firearms
+  for (const f of DB.firearms) {
+    const hay = [f.name, f.manufacturer, f.model, f.caliber, f.serialNumber, f.notes].join(' ').toLowerCase();
+    if (hay.includes(q)) results.push({
+      group: 'Firearms', icon: '◆',
+      title: f.name,
+      subtitle: `${f.manufacturer} · ${f.caliber}${f.serialNumber ? ' · SN: ' + f.serialNumber : ''}`,
+      action: () => { closeGlobalSearch(); navigate('firearms'); }
+    });
+  }
+
+  // Ammunition
+  for (const a of DB.ammunition) {
+    const hay = [a.brand, a.caliber, a.grain, a.bulletType, a.notes].join(' ').toLowerCase();
+    if (hay.includes(q)) results.push({
+      group: 'Ammunition', icon: '●',
+      title: `${a.brand} ${a.grain}gr ${a.bulletType}`,
+      subtitle: `${a.caliber} · ${a.quantity} rounds in stock`,
+      action: () => { closeGlobalSearch(); navigate('ammo'); }
+    });
+  }
+
+  // Purchases
+  for (const p of (DB.purchases || [])) {
+    const hay = [p.date, p.item, p.category, p.vendor, p.notes].join(' ').toLowerCase();
+    if (hay.includes(q)) results.push({
+      group: 'Purchases', icon: '$',
+      title: p.item || p.category,
+      subtitle: `${formatDate(p.date)}${p.vendor ? ' · ' + p.vendor : ''}${p.cost ? ' · $' + p.cost : ''}`,
+      action: () => { closeGlobalSearch(); navigate('costs'); }
+    });
+  }
+
+  if (!results.length) {
+    container.innerHTML = `<div class="search-empty">No results for "<strong>${escapeHtml(kw)}</strong>"</div>`;
+    return;
+  }
+
+  // Group results
+  const groups = {};
+  for (const r of results) {
+    if (!groups[r.group]) groups[r.group] = [];
+    groups[r.group].push(r);
+  }
+
+  container.innerHTML = Object.entries(groups).map(([groupName, items]) => `
+    <div class="search-result-group">
+      <div class="search-result-label">${groupName} (${items.length})</div>
+      ${items.slice(0, 5).map((item, i) => `
+        <div class="search-result-item" onclick="searchResultActions[${results.indexOf(item)}]()">
+          <div class="title">${item.icon} ${escapeHtml(item.title)}</div>
+          <div class="subtitle">${escapeHtml(item.subtitle)}</div>
+        </div>
+      `).join('')}
+      ${items.length > 5 ? `<div style="padding:6px 16px;font-size:12px;color:var(--text-dim)">${items.length - 5} more — refine your search to narrow results</div>` : ''}
+    </div>
+  `).join('');
+
+  // Store actions for onclick
+  window.searchResultActions = results.map(r => r.action);
+}
+
+// Close search on Escape key globally
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeGlobalSearch();
+});
 
 function filterHelpSections(keyword) {
   const kw = keyword.trim().toLowerCase();
