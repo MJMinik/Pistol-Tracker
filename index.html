@@ -1867,14 +1867,17 @@ function openMagazineModal(id) {
           <input type="checkbox" id="mg-active" ${mg.active !== false ? 'checked' : ''}> Active (in service)
         </label>
       </div>
-      <div class="form-row"><label>Firearm Pool ${tip('Check all firearms that can use this magazine. Magazines shared between guns (e.g. Apollo + Erebus) should have both checked.')}</label>
-        <div style="margin-top:6px">
-          ${DB.firearms.map(fw => `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)">
-            <input type="checkbox" class="mg-fw-check" value="${fw.id}" ${(mg.firearmIds || []).includes(fw.id) ? 'checked' : ''} id="mgfw-${fw.id}">
-            <label for="mgfw-${fw.id}" style="font-weight:normal;text-transform:none;cursor:pointer;margin:0">${escapeHtml(fw.name)}</label>
-          </div>`).join('')}
-        </div>
-        <div class="help-text">Check all guns that can use this magazine.</div>
+      <div class="form-row">
+        <label>Firearm Pool ${tip('Check all firearms that can use this magazine. Magazines shared between guns (e.g. Apollo + Erebus) should have both checked.')}</label>
+        <table style="width:100%;margin-top:6px;border-collapse:collapse">
+          ${DB.firearms.map(fw => `<tr style="border-bottom:1px solid var(--border)">
+            <td style="width:32px;padding:8px 0">
+              <input type="checkbox" class="mg-fw-check" value="${fw.id}" ${(mg.firearmIds || []).includes(fw.id) ? 'checked' : ''}>
+            </td>
+            <td style="padding:8px 0;font-size:13px;cursor:pointer" onclick="this.previousElementSibling.querySelector('input').click()">${escapeHtml(fw.name)}</td>
+          </tr>`).join('')}
+        </table>
+        <div class="help-text" style="margin-top:6px">Check all guns that can use this magazine.</div>
       </div>
       <div class="form-grid-2">
         <div class="form-row"><label>Total Rounds (lifetime)</label>
