@@ -1525,6 +1525,23 @@ const SECTION_HELP = {
     Set the start date and replacement interval for magazine spring reminders. The Dashboard alert is driven by this setting.`
 };
 
+function filterHelpSections(keyword) {
+  const kw = keyword.trim().toLowerCase();
+  const sections = document.querySelectorAll('.help-section');
+  let visibleCount = 0;
+  sections.forEach(s => {
+    const text = s.getAttribute('data-search') || '';
+    const match = !kw || text.includes(kw);
+    s.style.display = match ? '' : 'none';
+    if (match) {
+      visibleCount++;
+      if (kw) s.setAttribute('open', ''); // auto-expand matching sections
+    }
+  });
+  const noResults = document.getElementById('help-no-results');
+  if (noResults) noResults.style.display = (kw && visibleCount === 0) ? 'block' : 'none';
+}
+
 function toggleSectionHelp(section, btn) {
   const panelId = 'help-panel-' + section;
   let panel = document.getElementById(panelId);
@@ -5782,7 +5799,9 @@ function renderHelp() {
 
   /** Helper: render a collapsible section */
   function helpSection(icon, title, content) {
-    return `<details style="margin-bottom:10px" open>
+    // Strip HTML tags for search indexing
+    const searchText = (title + ' ' + content.replace(/<[^>]+>/g, ' ')).toLowerCase();
+    return `<details class="help-section" data-search="${searchText.replace(/"/g,'&quot;')}" style="margin-bottom:10px" open>
       <summary style="font-size:15px;font-weight:600">${icon} ${escapeHtml(title)}</summary>
       <div style="padding:12px 0 4px 16px;font-size:13px;color:var(--text-dim);line-height:1.8">${content}</div>
     </details>`;
@@ -5798,6 +5817,15 @@ function renderHelp() {
       </div>
     </div>
     ${sectionHelpPanel('help')}
+    <!-- Help search bar -->
+    <div style="margin-bottom:16px;display:flex;gap:10px;align-items:center">
+      <div style="flex:1;position:relative">
+        <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-dim)">&#128269;</span>
+        <input type="search" id="help-search" placeholder="Search help topics… (e.g. magazine, backup, drill)" oninput="filterHelpSections(this.value)" style="width:100%;padding:8px 12px 8px 32px;background:var(--panel-2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px">
+      </div>
+      <button class="btn secondary" onclick="document.getElementById('help-search').value='';filterHelpSections('')" style="white-space:nowrap">&#10005; Clear</button>
+    </div>
+    <div id="help-no-results" style="display:none;text-align:center;padding:24px;color:var(--text-dim)">No help topics match your search.</div>
     <div class="card">
       ${helpSection('&#9678;', 'Getting Started', `
         <strong style="color:var(--text)">First time?</strong> Your four firearms are already loaded. Here's the recommended setup order:
