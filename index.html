@@ -1858,16 +1858,14 @@ function openMagazineModal(id) {
   openModal(`
     <div class="modal-header"><h3>${id ? 'Edit' : 'Add'} Magazine</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
     <div class="modal-body">
-      <div class="form-grid-2">
-        <div class="form-row"><label>Label</label>
-          <input id="mg-label" value="${escapeHtml(mg.label)}" placeholder="e.g. A1, S3, E2">
-          <div class="help-text">Match what's on the physical mag (paint pen or label).</div>
-        </div>
-        <div class="form-row"><label>Active</label>
-          <label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-weight:normal;text-transform:none">
-            <input type="checkbox" id="mg-active" ${mg.active !== false ? 'checked' : ''}> In service (uncheck to retire)
-          </label>
-        </div>
+      <div class="form-row"><label>Label</label>
+        <input id="mg-label" value="${escapeHtml(mg.label)}" placeholder="e.g. A1, S3, E2">
+        <div class="help-text">Match what's on the physical mag (paint pen or label).</div>
+      </div>
+      <div class="form-row">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:normal;text-transform:none;cursor:pointer">
+          <input type="checkbox" id="mg-active" ${mg.active !== false ? 'checked' : ''}> Active (in service)
+        </label>
       </div>
       <div class="form-row"><label>Firearm Pool ${tip('Check all firearms that can use this magazine. Magazines shared between guns (e.g. Apollo + Erebus) should have both checked.')}</label>
         <div style="margin-top:6px">
