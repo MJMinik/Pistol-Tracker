@@ -4257,27 +4257,76 @@ function renderCompetition() {
   });
 }
 
-function renderMatchesPane() {
-  const matches = [...(DB.matches || [])].sort((a, b) => b.date.localeCompare(a.date));
-  if (!matches.length) return `<div class="card"><div class="empty"><div class="icon">&#9819;</div>No matches logged yet.<br><br><button class="btn" onclick="openMatchModal()">Log first match</button></div></div>`;
+if (!window._matchFilter) window._matchFilter = { dateFrom: '', dateTo: '', firearmId: '', matchType: '', keyword: '' };
+function updateMatchFilter(key, val) { window._matchFilter[key] = val; document.getElementById('pane-matches').innerHTML = renderMatchesPane(); }
+function clearMatchFilter() { window._matchFilter = { dateFrom: '', dateTo: '', firearmId: '', matchType: '', keyword: '' }; document.getElementById('pane-matches').innerHTML = renderMatchesPane(); }
 
-  // Cost rollup
+function renderMatchesPane() {
+  const allMatches = [...(DB.matches || [])].sort((a, b) => b.date.localeCompare(a.date));
+  const mf = window._matchFilter;
+  const matches = allMatches.filter(m => {
+    if (mf.dateFrom && m.date < mf.dateFrom) return false;
+    if (mf.dateTo && m.date > mf.dateTo) return false;
+    if (mf.firearmId && m.firearmId !== mf.firearmId) return false;
+    if (mf.matchType && m.matchType !== mf.matchType) return false;
+    if (mf.keyword) {
+      const kw = mf.keyword.toLowerCase();
+      const hay = [m.name, m.location, m.division, m.matchType, m.notes].join(' ').toLowerCase();
+      if (!hay.includes(kw)) return false;
+    }
+    return true;
+  });
+  const hasFilter = mf.dateFrom || mf.dateTo || mf.firearmId || mf.matchType || mf.keyword;
+  if (!allMatches.length) return `<div class="card"><div class="empty"><div class="icon">&#9819;</div>No matches logged yet.<br><br><button class="btn" onclick="openMatchModal()">Log first match</button></div></div>`;
+
+  // Cost rollup (always from allMatches for accurate totals)
   const thisYear = new Date().getFullYear();
-  const ytdCost = matches.filter(m => new Date(m.date).getFullYear() === thisYear)
+  const ytdCost = allMatches.filter(m => new Date(m.date).getFullYear() === thisYear)
                           .reduce((s, m) => s + (parseFloat(m.cost) || 0), 0);
-  const totalCost = matches.reduce((s, m) => s + (parseFloat(m.cost) || 0), 0);
-  const avgCost = (() => {
-    const withCost = matches.filter(m => m.cost != null && m.cost !== '');
-    return withCost.length ? totalCost / withCost.length : 0;
-  })();
+  const totalCost = allMatches.reduce((s, m) => s + (parseFloat(m.cost) || 0), 0);
   const avgFinishPct = (() => {
-    const withPct = matches.filter(m => m.matchPercentage != null);
+    const withPct = allMatches.filter(m => m.matchPercentage != null);
     return withPct.length ? withPct.reduce((s,m)=>s+m.matchPercentage,0) / withPct.length : null;
   })();
 
   return `
+    <!-- Filter bar -->
+    <div class="card" style="margin-bottom:16px;padding:14px 16px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end">
+        <div>
+          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">From</label>
+          <input type="date" value="${mf.dateFrom}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMatchFilter('dateFrom',this.value)">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">To</label>
+          <input type="date" value="${mf.dateTo}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMatchFilter('dateTo',this.value)">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">Firearm</label>
+          <select style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateMatchFilter('firearmId',this.value)">
+            <option value="">All firearms</option>
+            ${DB.firearms.map(fw => `<option value="${fw.id}" ${mf.firearmId===fw.id?'selected':''}>${escapeHtml(fw.name)}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">Match Type</label>
+          <select style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateMatchFilter('matchType',this.value)">
+            <option value="">All types</option>
+            ${['USPSA','IDPA','Three-Gun','Steel Challenge','Sporting Clays','Other'].map(t => `<option value="${t}" ${mf.matchType===t?'selected':''}>${t}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">Search</label>
+          <input type="search" placeholder="Name, location, division…" value="${escapeHtml(mf.keyword)}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMatchFilter('keyword',this.value)">
+        </div>
+        <div style="display:flex;align-items:flex-end">
+          ${hasFilter ? `<button class="btn small secondary" onclick="clearMatchFilter()" style="width:100%">&#10005; Clear</button>` : '<div></div>'}
+        </div>
+      </div>
+      ${hasFilter ? `<div style="margin-top:8px;font-size:12px;color:var(--text-dim)">Showing ${matches.length} of ${allMatches.length} match${allMatches.length!==1?'es':''}</div>` : ''}
+    </div>
     <div class="grid grid-4" style="margin-bottom:16px">
-      <div class="stat"><div class="label">Matches Logged</div><div class="value">${matches.length}</div></div>
+      <div class="stat"><div class="label">Matches Logged</div><div class="value">${allMatches.length}</div></div>
       <div class="stat"><div class="label">Spent ${thisYear}</div><div class="value accent">$${ytdCost.toFixed(2)}</div></div>
       <div class="stat"><div class="label">Total Spent</div><div class="value">$${totalCost.toFixed(2)}</div></div>
       <div class="stat"><div class="label">Avg Match %</div><div class="value">${avgFinishPct != null ? avgFinishPct.toFixed(1) + '%' : '—'}</div></div>
@@ -4300,7 +4349,7 @@ function renderMatchesPane() {
       </div>`;
     })()}
 
-    ${matches.map(m => matchCard(m)).join('')}
+    ${matches.length ? matches.map(m => matchCard(m)).join('') : `<div class="card"><div class="empty"><div class="icon">&#9819;</div>No matches match the current filters.<br><br><button class="btn secondary" onclick="clearMatchFilter()">Clear Filters</button></div></div>`}
   `;
 }
 
@@ -5727,19 +5776,41 @@ function allMalfunctions() {
   return list.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
 }
 
+if (!window._malfFilter) window._malfFilter = { dateFrom: '', dateTo: '', firearmId: '', type: '', keyword: '' };
+function updateMalfFilter(key, val) { window._malfFilter[key] = val; renderMalfunctions(); }
+function clearMalfFilter() { window._malfFilter = { dateFrom: '', dateTo: '', firearmId: '', type: '', keyword: '' }; renderMalfunctions(); }
+function applyMalfFilter(list) {
+  const f = window._malfFilter;
+  return list.filter(m => {
+    if (f.dateFrom && m.date < f.dateFrom) return false;
+    if (f.dateTo && m.date > f.dateTo) return false;
+    if (f.firearmId && m.firearmId !== f.firearmId) return false;
+    if (f.type && m.type !== f.type) return false;
+    if (f.keyword) {
+      const kw = f.keyword.toLowerCase();
+      const hay = [m.type, m.resolution, m.notes, m.magazine, getFirearm(m.firearmId)?.name].join(' ').toLowerCase();
+      if (!hay.includes(kw)) return false;
+    }
+    return true;
+  });
+}
+
 function renderMalfunctions() {
   const v = document.getElementById('view-malfunctions');
   const all = allMalfunctions();
-  // Aggregations
+  const f = window._malfFilter;
+  const filtered = applyMalfFilter(all);
+  const hasFilter = f.dateFrom || f.dateTo || f.firearmId || f.type || f.keyword;
+  // Aggregations (on filtered set)
   const byType = {};
   const byFirearm = {};
   const byAmmo = {};
-  for (const m of all) {
+  for (const m of filtered) {
     byType[m.type] = (byType[m.type] || 0) + 1;
     byFirearm[m.firearmId] = (byFirearm[m.firearmId] || 0) + 1;
     if (m.ammoId) byAmmo[m.ammoId] = (byAmmo[m.ammoId] || 0) + 1;
   }
-  const totalRounds = DB.firearms.reduce((s, f) => s + firearmRoundCount(f.id), 0);
+  const totalRounds = DB.firearms.reduce((s, fw) => s + firearmRoundCount(fw.id), 0);
   const rate = totalRounds > 0 ? (all.length / totalRounds * 1000).toFixed(2) : '—';
 
   v.innerHTML = `
@@ -5748,6 +5819,41 @@ function renderMalfunctions() {
       <button class="btn" onclick="openStandaloneMalfunctionModal()">+ Log Malfunction</button>
     </div>
     ${sectionHelpPanel('malfunctions')}
+    <!-- Filter bar -->
+    <div class="card" style="margin-bottom:16px;padding:14px 16px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end">
+        <div>
+          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">From</label>
+          <input type="date" value="${f.dateFrom}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMalfFilter('dateFrom',this.value)">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">To</label>
+          <input type="date" value="${f.dateTo}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMalfFilter('dateTo',this.value)">
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">Firearm</label>
+          <select style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateMalfFilter('firearmId',this.value)">
+            <option value="">All firearms</option>
+            ${DB.firearms.map(fw => `<option value="${fw.id}" ${f.firearmId===fw.id?'selected':''}>${escapeHtml(fw.name)}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">Type</label>
+          <select style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateMalfFilter('type',this.value)">
+            <option value="">All types</option>
+            ${['Failure to Feed','Failure to Eject','Failure to Extract','Stovepipe','Double Feed','Failure to Return to Battery','Light Strike','Mag Issue','Slide Lock (early)','Other'].map(t => `<option value="${t}" ${f.type===t?'selected':''}>${t}</option>`).join('')}
+          </select>
+        </div>
+        <div>
+          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">Search</label>
+          <input type="search" placeholder="Type, notes, resolution…" value="${escapeHtml(f.keyword)}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMalfFilter('keyword',this.value)">
+        </div>
+        <div style="display:flex;align-items:flex-end">
+          ${hasFilter ? `<button class="btn small secondary" onclick="clearMalfFilter()" style="width:100%">&#10005; Clear</button>` : '<div></div>'}
+        </div>
+      </div>
+      ${hasFilter ? `<div style="margin-top:8px;font-size:12px;color:var(--text-dim)">Showing ${filtered.length} of ${all.length} malfunction${all.length!==1?'s':''}</div>` : ''}
+    </div>
     <div class="grid grid-4" style="margin-bottom:16px">
       <div class="stat"><div class="label">Total Logged</div><div class="value">${all.length}</div></div>
       <div class="stat"><div class="label">Per 1,000 Rounds</div><div class="value accent">${rate}</div></div>
@@ -5823,9 +5929,9 @@ function renderMalfunctions() {
 
     <div class="card">
       <h3>Full Malfunction Log</h3>
-      ${all.length ? `<table>
+      ${filtered.length ? `<table>
         <thead><tr><th>Date</th><th>Firearm</th><th>Type</th><th>Mag</th><th>Round Count</th><th>Resolution</th><th>Ammo</th><th>Notes</th><th></th></tr></thead>
-        <tbody>${all.map(m => {
+        <tbody>${filtered.map(m => {
           const f = getFirearm(m.firearmId);
           const a = getAmmo(m.ammoId);
           const mg = m.magId ? (DB.magazines||[]).find(x=>x.id===m.magId) : null;
@@ -5841,7 +5947,7 @@ function renderMalfunctions() {
             <td class="row-actions">${m.source !== 'session' ? `<button class="btn small danger" onclick="deleteMalfunction('${m.id}')">Delete</button>` : '<span class="text-dim" style="font-size:11px">in session</span>'}</td>
           </tr>`;
         }).join('')}</tbody>
-      </table>` : `<div class="empty"><div class="icon">&#9888;</div>No malfunctions logged. That's a good thing!<br><br><div class="text-dim" style="font-size:12px">Log them inside sessions or as standalone entries.</div></div>`}
+      </table>` : `<div class="empty"><div class="icon">&#9888;</div>${hasFilter ? 'No malfunctions match the current filters.' : "No malfunctions logged. That's a good thing!"}<br><br>${hasFilter ? `<button class="btn secondary" onclick="clearMalfFilter()">Clear Filters</button>` : '<div class="text-dim" style="font-size:12px">Log them inside sessions or as standalone entries.</div>'}</div>`}
     </div>
     ${recentlyDeletedCard('malfunction')}
   `;
