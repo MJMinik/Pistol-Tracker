@@ -1869,14 +1869,14 @@ function openMagazineModal(id) {
           </label>
         </div>
       </div>
-      <div class="form-row"><label>Firearm Pool</label>
-        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px">
-          ${DB.firearms.map(fw => `<label style="display:flex;align-items:center;gap:6px;font-weight:normal;text-transform:none;cursor:pointer">
+      <div class="form-row"><label>Firearm Pool ${tip('Check all firearms that can use this magazine. Magazines shared between guns (e.g. Apollo + Erebus) should have both checked.')}</label>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-top:6px">
+          ${DB.firearms.map(fw => `<label style="display:flex;align-items:center;gap:8px;font-weight:normal;text-transform:none;cursor:pointer;padding:6px 8px;background:var(--panel-2);border:1px solid var(--border);border-radius:6px">
             <input type="checkbox" class="mg-fw-check" value="${fw.id}" ${(mg.firearmIds || []).includes(fw.id) ? 'checked' : ''}>
             ${escapeHtml(fw.name)}
           </label>`).join('')}
         </div>
-        <div class="help-text">Check all guns that can use this magazine (e.g. Apollo + Erebus share a pool).</div>
+        <div class="help-text">Check all guns that can use this magazine.</div>
       </div>
       <div class="form-grid-2">
         <div class="form-row"><label>Total Rounds (lifetime)</label>
@@ -2028,6 +2028,23 @@ function firearmCard(f) {
         Last recoil spring: <strong style="color:var(--text)">${(() => { const lr = lastMaintenance(f.id, 'recoil_spring'); return lr ? formatDate(lr.date) : 'Never'; })()}</strong>
       </div>
       ${f.notes ? `<hr><div style="font-size:12px;color:var(--text-dim)">${escapeHtml(f.notes)}</div>` : ''}
+      ${(() => {
+        const isAtlas = (f.manufacturer || '').toLowerCase().includes('atlas');
+        const hasSchedule = f.maintenanceSchedule;
+        if (!isAtlas) {
+          return `<div style="margin-top:10px;padding:8px 10px;background:var(--panel-2);border-radius:6px;border:1px solid var(--border);font-size:12px">
+            <span style="color:var(--text-dim)">&#9881; Maintenance Schedule: </span>
+            ${hasSchedule
+              ? `<span style="color:var(--success)">Configured</span>
+                 <span style="color:var(--text-dim)"> &middot; Field strip every ${hasSchedule.fieldStripSessions} session(s) &middot; Deep clean every ${hasSchedule.deepCleanRounds ? hasSchedule.deepCleanRounds.toLocaleString() + ' rds' : '—'}</span>
+                 <button class="btn small secondary" style="margin-left:8px;padding:2px 8px" onclick="openMaintenanceScheduleModal('${f.id}')">Edit</button>`
+              : `<span style="color:var(--warn)">Not configured</span>
+                 <button class="btn small secondary" style="margin-left:8px;padding:2px 8px" onclick="openMaintenanceScheduleModal('${f.id}')">Set Up Schedule</button>`
+            }
+          </div>`;
+        }
+        return '';
+      })()}
       <div class="row-actions" style="margin-top:14px">
         <button class="btn small secondary" onclick="openFirearmModal('${f.id}')">Edit</button>
         <button class="btn small secondary" onclick="openMaintenanceModal(null,'${f.id}')">+ Log Maintenance</button>
@@ -2093,8 +2110,75 @@ function saveFirearm(id) {
     notes: document.getElementById('fa-notes').value.trim()
   };
   if (!data.name) { alert('Name required'); return; }
+  const isNew = !id;
   if (id) Object.assign(getFirearm(id), data);
   else DB.firearms.push({ id: uid('fa'), ...data });
+  saveDB(); closeModal(); renderFirearms();
+  // Prompt for custom maintenance schedule if this is a new non-Atlas firearm
+  if (isNew && !data.manufacturer.toLowerCase().includes('atlas')) {
+    const newFirearm = DB.firearms.find(f => f.name === data.name);
+    if (newFirearm) setTimeout(() => openMaintenanceScheduleModal(newFirearm.id), 300);
+  }
+}
+
+function openMaintenanceScheduleModal(firearmId) {
+  const f = getFirearm(firearmId);
+  if (!f) return;
+  const s = f.maintenanceSchedule || {};
+  openModal(`
+    <div class="modal-header">
+      <h3>Maintenance Schedule — ${escapeHtml(f.name)}</h3>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div class="alert info" style="margin-bottom:16px">
+        &#9432; This is optional. Set intervals that match your manufacturer's recommendations. Leave any field blank to skip tracking that item.
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label>Field Strip Interval (sessions) ${tip('How many live-fire sessions between field strip & cleans. E.g. 1 = after every session.')}</label>
+          <input id="ms-fieldstrip" type="number" min="1" value="${s.fieldStripSessions || 1}" placeholder="1">
+        </div>
+        <div class="form-row">
+          <label>Deep Clean Interval (rounds) ${tip('Cumulative rounds before a deep clean is recommended. E.g. 5000 for many production pistols.')}</label>
+          <input id="ms-deepclean" type="number" min="100" step="500" value="${s.deepCleanRounds || ''}" placeholder="e.g. 5000">
+        </div>
+      </div>
+      <div class="form-grid-2">
+        <div class="form-row">
+          <label>Recoil Spring Interval (rounds) ${tip('Rounds between recoil spring replacements. Check your owner\'s manual. Common range: 3,000–10,000.')}</label>
+          <input id="ms-recoilspring" type="number" min="500" step="500" value="${s.recoilSpringRounds || f.recoilSpringInterval || ''}" placeholder="e.g. 5000">
+        </div>
+        <div class="form-row">
+          <label>Annual Inspection ${tip('Toggle whether to track annual inspection reminders for this firearm.')}</label>
+          <label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-weight:normal;text-transform:none">
+            <input type="checkbox" id="ms-annual" ${s.trackAnnual !== false ? 'checked' : ''}> Track annual inspection reminders
+          </label>
+        </div>
+      </div>
+      <div class="form-row" style="margin-top:4px">
+        <label>Manufacturer Notes (optional)</label>
+        <textarea id="ms-notes" rows="2" placeholder="e.g. Glock recommends field strip after every session, replace recoil spring every 5,000 rounds">${escapeHtml(s.notes || '')}</textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeModal()">Skip for Now</button>
+      <button class="btn" onclick="saveMaintenanceSchedule('${firearmId}')">Save Schedule</button>
+    </div>
+  `);
+}
+
+function saveMaintenanceSchedule(firearmId) {
+  const f = getFirearm(firearmId);
+  if (!f) return;
+  const fieldStripSessions = parseInt(document.getElementById('ms-fieldstrip').value) || 1;
+  const deepCleanRounds = parseInt(document.getElementById('ms-deepclean').value) || null;
+  const recoilSpringRounds = parseInt(document.getElementById('ms-recoilspring').value) || null;
+  const trackAnnual = document.getElementById('ms-annual').checked;
+  const notes = document.getElementById('ms-notes').value.trim();
+  f.maintenanceSchedule = { fieldStripSessions, deepCleanRounds, recoilSpringRounds, trackAnnual, notes };
+  // Also update the recoil spring interval on the firearm itself
+  if (recoilSpringRounds) f.recoilSpringInterval = recoilSpringRounds;
   saveDB(); closeModal(); renderFirearms();
 }
 function deleteFirearm(id) {
