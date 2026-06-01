@@ -35,7 +35,9 @@
 <body>
 
 <h1>🎯 Pistol Tracker — Test Suite</h1>
-<p class="subtitle">Automated checks for core app logic. Open this file in the same browser as the app so it can read your real data from localStorage.</p>
+<p class="subtitle">Automated checks for core app logic. Open this file in the same browser as the app so it can read your real data from localStorage.<br>
+<span id="run-time" style="color:#58a6ff"></span></p>
+<script>document.getElementById('run-time').textContent = 'Run at: ' + new Date().toLocaleString();</script>
 
 <div id="no-data-warning" style="display:none" class="no-data">
   <strong>⚠️ No app data found in localStorage.</strong>
