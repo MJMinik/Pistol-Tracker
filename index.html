@@ -2048,7 +2048,31 @@ function firearmCard(f) {
       <div class="row-actions" style="margin-top:14px">
         <button class="btn small secondary" onclick="openFirearmModal('${f.id}')">Edit</button>
         <button class="btn small secondary" onclick="openMaintenanceModal(null,'${f.id}')">+ Log Maintenance</button>
+        <button class="btn small secondary" onclick="toggleInsurancePanel('${f.id}', this)">&#128274; Insurance</button>
         <button class="btn small danger" onclick="deleteFirearm('${f.id}')">Delete</button>
+      </div>
+      <!-- Insurance panel (collapsed by default) -->
+      <div id="ins-panel-${f.id}" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:10px">&#128274; Insurance Documentation</div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+          <span style="font-size:12px;color:var(--text-dim);white-space:nowrap">Serial Number:</span>
+          <span id="ins-sn-display-${f.id}" style="font-size:13px;font-family:monospace;color:var(--text);cursor:pointer" onclick="editSerialNumber('${f.id}')" title="Click to edit">${f.serialNumber ? escapeHtml(f.serialNumber) : '<span style="color:var(--text-dim);font-style:italic">Not recorded — click to add</span>'}</span>
+        </div>
+        <div style="margin-bottom:10px">
+          <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Photos (firearm + serial number)</div>
+          <div id="ins-photos-${f.id}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+            ${(f.insurancePhotos || []).map((photo, i) => `
+              <div style="position:relative">
+                <img src="${photo}" style="width:80px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer" onclick="viewInsurancePhoto('${f.id}',${i})">
+                <button onclick="deleteInsurancePhoto('${f.id}',${i})" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--danger);border:none;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">&times;</button>
+              </div>
+            `).join('')}
+            <label style="width:80px;height:60px;border:1px dashed var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim);font-size:20px" title="Add photo">
+              +<input type="file" accept="image/*" style="display:none" onchange="addInsurancePhoto('${f.id}',this)">
+            </label>
+          </div>
+        </div>
+        <button class="btn small secondary" onclick="printInsuranceRecord('${f.id}')">&#128438; Print Insurance Record</button>
       </div>
     </div>
   `;
@@ -2067,6 +2091,7 @@ function openFirearmModal(id) {
         <div class="form-row"><label>Caliber</label><input id="fa-caliber" value="${escapeHtml(f.caliber)}"></div>
         <div class="form-row"><label>Date Acquired</label><input id="fa-date" type="date" value="${f.dateAcquired || ''}"></div>
       </div>
+      <div class="form-row"><label>Serial Number ${tip('Record for insurance purposes. Stored privately in your browser — never transmitted anywhere.')}</label><input id="fa-serial" value="${escapeHtml(f.serialNumber || '')}" placeholder="e.g. US12345678"></div>
       <div class="form-grid-3">
         <div class="form-row"><label>Starting Round Count ${tip('Enter rounds already fired before you started tracking. This offsets the cumulative total so your round count is accurate.')}</label>
           <input id="fa-start" type="number" min="0" value="${f.startingRoundCount || 0}">
@@ -2107,6 +2132,7 @@ function saveFirearm(id) {
     barrelName: document.getElementById('fa-barrel-name').value.trim(),
     barrelInstallDate: document.getElementById('fa-barrel-date').value,
     barrelStartRounds: parseInt(document.getElementById('fa-barrel-start').value) || 0,
+    serialNumber: document.getElementById('fa-serial').value.trim(),
     notes: document.getElementById('fa-notes').value.trim()
   };
   if (!data.name) { alert('Name required'); return; }
@@ -2185,6 +2211,114 @@ function deleteFirearm(id) {
   if (!confirm('Delete this firearm? Sessions linked to it will keep historical record but lose firearm reference.')) return;
   DB.firearms = DB.firearms.filter(f => f.id !== id);
   saveDB(); renderFirearms();
+}
+
+/* ============================================================
+   INSURANCE DOCUMENTATION
+   ============================================================ */
+function toggleInsurancePanel(firearmId, btn) {
+  const panel = document.getElementById('ins-panel-' + firearmId);
+  if (!panel) return;
+  const isOpen = panel.style.display !== 'none';
+  panel.style.display = isOpen ? 'none' : 'block';
+  btn.style.background = isOpen ? '' : 'var(--accent)';
+  btn.style.color = isOpen ? '' : '#fff';
+}
+
+function editSerialNumber(firearmId) {
+  const f = getFirearm(firearmId);
+  if (!f) return;
+  const current = f.serialNumber || '';
+  const val = prompt('Enter serial number:', current);
+  if (val === null) return; // cancelled
+  f.serialNumber = val.trim();
+  saveDB();
+  const display = document.getElementById('ins-sn-display-' + firearmId);
+  if (display) display.innerHTML = f.serialNumber
+    ? escapeHtml(f.serialNumber)
+    : '<span style="color:var(--text-dim);font-style:italic">Not recorded — click to add</span>';
+}
+
+function addInsurancePhoto(firearmId, input) {
+  const f = getFirearm(firearmId);
+  if (!f) return;
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    if (!f.insurancePhotos) f.insurancePhotos = [];
+    f.insurancePhotos.push(e.target.result);
+    saveDB();
+    // Re-render just the photos area
+    const container = document.getElementById('ins-photos-' + firearmId);
+    if (container) container.innerHTML = buildInsurancePhotosHTML(f);
+  };
+  reader.readAsDataURL(file);
+}
+
+function buildInsurancePhotosHTML(f) {
+  return (f.insurancePhotos || []).map((photo, i) => `
+    <div style="position:relative">
+      <img src="${photo}" style="width:80px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer" onclick="viewInsurancePhoto('${f.id}',${i})">
+      <button onclick="deleteInsurancePhoto('${f.id}',${i})" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--danger);border:none;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">&times;</button>
+    </div>
+  `).join('') + `
+    <label style="width:80px;height:60px;border:1px dashed var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim);font-size:20px" title="Add photo">
+      +<input type="file" accept="image/*" style="display:none" onchange="addInsurancePhoto('${f.id}',this)">
+    </label>`;
+}
+
+function deleteInsurancePhoto(firearmId, index) {
+  const f = getFirearm(firearmId);
+  if (!f || !f.insurancePhotos) return;
+  if (!confirm('Remove this photo?')) return;
+  f.insurancePhotos.splice(index, 1);
+  saveDB();
+  const container = document.getElementById('ins-photos-' + firearmId);
+  if (container) container.innerHTML = buildInsurancePhotosHTML(f);
+}
+
+function viewInsurancePhoto(firearmId, index) {
+  const f = getFirearm(firearmId);
+  if (!f || !f.insurancePhotos) return;
+  const photo = f.insurancePhotos[index];
+  const lb = document.getElementById('lightbox');
+  const lbImg = document.getElementById('lightbox-img');
+  if (lb && lbImg) { lbImg.src = photo; lb.style.display = 'flex'; }
+}
+
+function printInsuranceRecord(firearmId) {
+  const f = getFirearm(firearmId);
+  if (!f) return;
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>Insurance Record — ${escapeHtml(f.name)}</title>
+  <style>
+    body { font-family: Georgia, serif; max-width: 700px; margin: 40px auto; padding: 0 20px; color: #111; }
+    h1 { font-size: 24px; margin-bottom: 4px; }
+    .sub { color: #555; font-size: 14px; margin-bottom: 24px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
+    td { padding: 8px 12px; border-bottom: 1px solid #ddd; font-size: 14px; }
+    td:first-child { font-weight: bold; color: #555; width: 180px; }
+    .photos { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+    .photos img { width: 200px; height: 150px; object-fit: cover; border: 1px solid #ccc; border-radius: 4px; }
+    .footer { margin-top: 40px; font-size: 11px; color: #aaa; border-top: 1px solid #ddd; padding-top: 10px; }
+    @media print { button { display: none; } }
+  </style></head><body>
+  <h1>${escapeHtml(f.name)}</h1>
+  <div class="sub">Insurance Documentation Record — Printed ${new Date().toLocaleDateString()}</div>
+  <table>
+    <tr><td>Manufacturer</td><td>${escapeHtml(f.manufacturer || '—')}</td></tr>
+    <tr><td>Model</td><td>${escapeHtml(f.model || '—')}</td></tr>
+    <tr><td>Caliber</td><td>${escapeHtml(f.caliber || '—')}</td></tr>
+    <tr><td>Serial Number</td><td><strong style="font-family:monospace;font-size:16px">${escapeHtml(f.serialNumber || 'NOT RECORDED')}</strong></td></tr>
+    <tr><td>Date Acquired</td><td>${f.dateAcquired ? new Date(f.dateAcquired).toLocaleDateString() : '—'}</td></tr>
+    <tr><td>Notes</td><td>${escapeHtml(f.notes || '—')}</td></tr>
+  </table>
+  ${(f.insurancePhotos || []).length ? `<h3>Photos</h3><div class="photos">${(f.insurancePhotos || []).map(p => `<img src="${p}">`).join('')}</div>` : '<p style="color:#999;font-style:italic">No photos on file.</p>'}
+  <div class="footer">Generated by Pistol Tracker — https://mjminik.github.io/Pistol-Tracker/</div>
+  <br><button onclick="window.print()">🖨 Print</button>
+  </body></html>`);
+  win.document.close();
 }
 
 /* ============================================================
