@@ -94,6 +94,44 @@
   .btn.small { padding: 5px 10px; font-size: 12px; }
   .btn.success { background: var(--success); }
 
+  /* Tooltips */
+  .tip {
+    position: relative; display: inline-flex; align-items: center;
+    justify-content: center; width: 16px; height: 16px;
+    border-radius: 50%; background: var(--panel-2);
+    border: 1px solid var(--border); color: var(--text-dim);
+    font-size: 10px; font-weight: 700; cursor: default;
+    vertical-align: middle; margin-left: 4px; flex-shrink: 0;
+    line-height: 1;
+  }
+  .tip::after {
+    content: attr(data-tip);
+    position: absolute; bottom: calc(100% + 8px); left: 50%;
+    transform: translateX(-50%);
+    background: #1a2028; color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px; padding: 7px 10px;
+    font-size: 12px; font-weight: 400; line-height: 1.5;
+    white-space: normal; width: 220px; text-align: left;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    pointer-events: none; z-index: 200;
+    opacity: 0; transition: opacity 0.15s;
+  }
+  .tip::before {
+    content: ''; position: absolute; bottom: calc(100% + 2px);
+    left: 50%; transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--border);
+    pointer-events: none; z-index: 200;
+    opacity: 0; transition: opacity 0.15s;
+  }
+  /* Desktop: show on hover */
+  @media (hover: hover) {
+    .tip:hover::after, .tip:hover::before { opacity: 1; }
+  }
+  /* Touch: show when .tip-open class is added by JS */
+  .tip.tip-open::after, .tip.tip-open::before { opacity: 1; }
+
   /* Contextual help */
   .help-btn {
     display: inline-flex; align-items: center; justify-content: center;
@@ -1504,6 +1542,25 @@ function sectionHelpPanel(section) {
   return `<div id="help-panel-${section}" class="section-help-panel">${SECTION_HELP[section] || ''}</div>`;
 }
 
+// Tooltip tap-to-reveal for touch devices
+// On touch screens, tapping a .tip toggles it open; tapping anywhere else closes all.
+document.addEventListener('click', function(e) {
+  const tip = e.target.closest('.tip');
+  if (tip) {
+    e.stopPropagation();
+    const isOpen = tip.classList.contains('tip-open');
+    document.querySelectorAll('.tip.tip-open').forEach(t => t.classList.remove('tip-open'));
+    if (!isOpen) tip.classList.add('tip-open');
+  } else {
+    document.querySelectorAll('.tip.tip-open').forEach(t => t.classList.remove('tip-open'));
+  }
+});
+
+// Helper: create a tooltip icon
+function tip(text) {
+  return `<span class="tip" data-tip="${text.replace(/"/g, '&quot;')}">ⓘ</span>`;
+}
+
 function renderView(name) {
   const fns = {
     dashboard: renderDashboard, firearms: renderFirearms, optics: renderOptics, ammo: renderAmmo,
@@ -1927,20 +1984,20 @@ function firearmCard(f) {
       <hr>
       <div class="grid grid-3">
         <div>
-          <div class="text-dim" style="font-size:11px;text-transform:uppercase">Live-Fire Rounds</div>
+          <div class="text-dim" style="font-size:11px;text-transform:uppercase">Live-Fire Rounds ${tip('Total rounds fired since tracking started, including the starting round count. Dry-fire rounds shown separately below.')}</div>
           <div style="font-size:20px;font-weight:600;color:var(--accent)">${live.toLocaleString()}</div>
           ${dryRoundsCalc > 0 ? `<div style="font-size:11px;color:var(--text-dim)">${dryRoundsCalc.toLocaleString()} dry-fire</div>` : ''}
         </div>
         <div>
-          <div class="text-dim" style="font-size:11px;text-transform:uppercase">Sessions</div>
+          <div class="text-dim" style="font-size:11px;text-transform:uppercase">Sessions ${tip('Total live-fire sessions logged for this firearm, including multi-firearm sessions.')}</div>
           <div style="font-size:20px;font-weight:600">${sessionsCount}</div>
           ${drySessionsCount > 0 ? `<div style="font-size:11px;color:var(--text-dim)">${drySessionsCount} dry-fire</div>` : ''}
         </div>
-        <div><div class="text-dim" style="font-size:11px;text-transform:uppercase">Since Deep Clean</div><div style="font-size:20px;font-weight:600">${st.roundsSinceDeepClean.toLocaleString()}</div></div>
+        <div><div class="text-dim" style="font-size:11px;text-transform:uppercase">Since Deep Clean ${tip('Rounds fired since the last recorded deep clean. Deep clean is recommended every 10,000 rounds per Atlas guidance.')}</div><div style="font-size:20px;font-weight:600">${st.roundsSinceDeepClean.toLocaleString()}</div></div>
       </div>
       <div style="margin-top:12px">
         <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim)">
-          <span>Deep clean progress</span><span>${st.roundsSinceDeepClean.toLocaleString()} / ${DEEP_CLEAN_INTERVAL.toLocaleString()}</span>
+          <span>Deep clean progress ${tip('Progress toward the 10,000-round deep clean interval. Bar turns yellow at 90% and red at 100%.')}</span><span>${st.roundsSinceDeepClean.toLocaleString()} / ${DEEP_CLEAN_INTERVAL.toLocaleString()}</span>
         </div>
         <div class="progress"><div class="progress-fill ${fillClass}" style="width:${st.deepCleanProgress}%"></div></div>
       </div>
@@ -1994,17 +2051,14 @@ function openFirearmModal(id) {
         <div class="form-row"><label>Date Acquired</label><input id="fa-date" type="date" value="${f.dateAcquired || ''}"></div>
       </div>
       <div class="form-grid-3">
-        <div class="form-row"><label>Starting Round Count</label>
+        <div class="form-row"><label>Starting Round Count ${tip('Enter rounds already fired before you started tracking. This offsets the cumulative total so your round count is accurate.')}</label>
           <input id="fa-start" type="number" min="0" value="${f.startingRoundCount || 0}">
-          <div class="help-text">Set if rounds existed before tracking.</div>
         </div>
-        <div class="form-row"><label>Recoil Spring Interval (rounds)</label>
+        <div class="form-row"><label>Recoil Spring Interval ${tip('How many rounds before the recoil spring should be replaced. Atlas default is 5,000. Check your manual — some configurations run 7,500.')}</label>
           <input id="fa-recoil" type="number" min="500" step="500" value="${f.recoilSpringInterval || 5000}">
-          <div class="help-text">Typical: 5,000-7,500 rounds.</div>
         </div>
-        <div class="form-row"><label>Spring Weight</label>
+        <div class="form-row"><label>Spring Weight ${tip('The weight (in lbs) of the currently installed recoil spring. Common Atlas weights: 9, 11, or 13 lb depending on load and comp setup.')}</label>
           <input id="fa-recoil-weight" value="${escapeHtml(f.recoilSpringWeight || '')}" placeholder="e.g. 9 lb, 11 lb, 13 lb">
-          <div class="help-text">Current installed weight (lb).</div>
         </div>
       </div>
       <hr>
@@ -2172,11 +2226,11 @@ function openOpticModal(id) {
         <div class="form-row"><label>Dot / Reticle Size</label><input id="op-dot" value="${escapeHtml(o.dotSize||'')}" placeholder="e.g. 2.5 MOA"></div>
       </div>
       <div class="form-grid-2">
-        <div class="form-row"><label>Zero Distance</label><input id="op-zero" value="${escapeHtml(o.zeroDist||'')}" placeholder="e.g. 25 yds, 15 yds"></div>
-        <div class="form-row"><label>Mount / Co-Witness Height</label><input id="op-mount" value="${escapeHtml(o.mountHeight||'')}" placeholder="e.g. 1/3 co-witness"></div>
+        <div class="form-row"><label>Zero Distance ${tip('The distance at which you zeroed this optic, e.g. 25 yds. Useful reference when re-zeroing after a battery change or mount removal.')}</label><input id="op-zero" value="${escapeHtml(o.zeroDist||'')}" placeholder="e.g. 25 yds, 15 yds"></div>
+        <div class="form-row"><label>Mount / Co-Witness Height ${tip('How the dot aligns with your iron sights. Common options: lower 1/3 co-witness, absolute co-witness, or suppressor height.')}</label><input id="op-mount" value="${escapeHtml(o.mountHeight||'')}" placeholder="e.g. 1/3 co-witness"></div>
       </div>
-      <div class="form-row"><label>Torque Spec (mount)</label><input id="op-torque" value="${escapeHtml(o.torqueSpec||'')}" placeholder="e.g. 15 in-lbs"></div>
-      <div class="form-row"><label>Settings Snapshot</label><textarea id="op-settings" rows="3" placeholder="Brightness level, mode, any custom notes about your sight settings...">${escapeHtml(o.settingsSnapshot||'')}</textarea></div>
+      <div class="form-row"><label>Torque Spec ${tip('The mount manufacturer\'s recommended torque for the screws, e.g. 15 in-lbs. Record it so you can re-mount correctly after cleaning.')}</label><input id="op-torque" value="${escapeHtml(o.torqueSpec||'')}" placeholder="e.g. 15 in-lbs"></div>
+      <div class="form-row"><label>Settings Snapshot ${tip('Record your current brightness setting, mode, or any custom adjustments. Useful after a battery change to restore your preferred settings quickly.')}</label><textarea id="op-settings" rows="3" placeholder="Brightness level, mode, any custom notes about your sight settings...">${escapeHtml(o.settingsSnapshot||'')}</textarea></div>
       <div class="form-row"><label>Notes</label><textarea id="op-notes" rows="2" placeholder="Any additional notes...">${escapeHtml(o.notes||'')}</textarea></div>
     </div>
     <div class="modal-footer"><button class="btn" onclick="saveOptic('${id||''}')">Save</button></div>
@@ -2349,8 +2403,8 @@ function openAmmoModal(id) {
         </div>
       </div>
       <div class="form-grid-2">
-        <div class="form-row"><label>Quantity in Inventory</label><input id="am-qty" type="number" min="0" value="${a.quantity || 0}"></div>
-        <div class="form-row"><label>Cost per round (optional)</label><input id="am-cost" type="number" step="0.001" value="${a.costPerRound || ''}" placeholder="0.30"></div>
+        <div class="form-row"><label>Quantity in Inventory ${tip('Current rounds on hand. This decrements automatically each time you log a session using this ammo.')}</label><input id="am-qty" type="number" min="0" value="${a.quantity || 0}"></div>
+        <div class="form-row"><label>Cost per round ${tip('Enter to unlock automatic cost tracking (e.g. 0.285 for 28.5 cents/round). Used in the Costs section to calculate session and total spend.')}</label><input id="am-cost" type="number" step="0.001" value="${a.costPerRound || ''}" placeholder="0.30"></div>
       </div>
       <div class="form-row"><label>Notes</label><textarea id="am-notes">${escapeHtml(a.notes)}</textarea></div>
     </div>
@@ -2949,47 +3003,43 @@ function openSessionModal(id) {
       <div id="se-mag-section" data-prev-mag-ids="${(s.magIds||[]).join(',')}"></div>
       <div class="form-grid-2">
         <div class="form-row"><label>Location</label><input id="se-location" value="${escapeHtml(s.location)}" placeholder="e.g. Local Range, USPSA Match"></div>
-        <div class="form-row"><label>Range Fee ($)</label><input id="se-rangefee" type="number" min="0" step="0.01" value="${s.rangeFee || ''}" placeholder="0.00"><div class="help-text">Optional: lane fee or range entry cost for this session.</div></div>
+        <div class="form-row"><label>Range Fee ($) ${tip('Optional lane or entry fee. Flows automatically into the Range Fees bucket in the Costs section.')}</label><input id="se-rangefee" type="number" min="0" step="0.01" value="${s.rangeFee || ''}" placeholder="0.00"></div>
       </div>
       <div class="form-grid-2">
-        <div class="form-row"><label>Distances Practiced</label><input id="se-dist" value="${escapeHtml(s.distances)}" placeholder="e.g. 7yd, 15yd, 25yd"></div>
-        <div class="form-row"><label>Holster (optional)</label><input id="se-holster" value="${escapeHtml(s.holster||'')}" placeholder="e.g. Safariland 5197, BOSS hanger"><div class="help-text">Holster used this session.</div></div>
+        <div class="form-row"><label>Distances Practiced ${tip('Comma-separated distances, e.g. 7yd, 15yd, 25yd. Shown on the session card for reference.')}</label><input id="se-dist" value="${escapeHtml(s.distances)}" placeholder="e.g. 7yd, 15yd, 25yd"></div>
+        <div class="form-row"><label>Holster ${tip('Optional. Record which holster you used. Shown on the session card and included in print reports.')}</label><input id="se-holster" value="${escapeHtml(s.holster||'')}" placeholder="e.g. Safariland 5197, BOSS hanger"></div>
       </div>
 
       <hr>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <strong>Ammunition Used</strong>
+        <strong>Ammunition Used ${tip('Select ammo SKU and enter rounds fired. Inventory decrements on save. Costs are calculated using FIFO pricing.')}</strong>
         <button class="btn small secondary" onclick="addAmmoRow()">+ Add</button>
       </div>
       <div id="se-ammo-rows"></div>
-      <div class="help-text">Total rounds auto-sum from ammo lines. Inventory will decrement on save.</div>
 
       <hr>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <strong>Drills Practiced</strong>
+        <strong>Drills Practiced ${tip('Add drills with optional time and/or score. Scores automatically create or update Personal Records in the Progress section.')}</strong>
         <div style="display:flex;gap:8px;align-items:center">
           <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-dim)"><input id="se-no-holster" type="checkbox" onchange="toggleNoHolster(this.checked)"> No-holster only</label>
           <button class="btn small secondary" onclick="addDrillRow()">+ Add</button>
         </div>
       </div>
       <div id="se-drill-rows"></div>
-      <div class="help-text">Drill list filters by session type (dry-fire shows only dry-compatible drills). Add time and/or score to track Personal Records over time.</div>
 
       <hr>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <strong>Malfunctions</strong>
+        <strong>Malfunctions ${tip('Log any stoppages during this session. Aggregated in the Malfunctions section to identify patterns by type, firearm, and magazine.')}</strong>
         <button class="btn small secondary" onclick="addMalfunctionRow()">+ Add</button>
       </div>
       <div id="se-malf-rows"></div>
-      <div class="help-text">Log any stoppages or issues that happened during this session. Patterns are aggregated in the Malfunctions tab.</div>
 
       <hr>
-      <strong>Self-Assessment for this session</strong>
-      <div class="help-text">Quick gut check (1-10) — fuels your progress trend without pulling out a calculator.</div>
+      <strong>Self-Assessment ${tip('Quick gut check on a 1–10 scale. These three scores feed the trend charts in Progress → Trends over time.')}</strong>
       <div class="form-grid-3" style="margin-top:8px">
-        <div class="form-row"><label>Focus</label><div class="skill-rating"><input id="se-focus" type="range" min="1" max="10" value="${s.selfRating.focus}"><span class="val" id="se-focus-val">${s.selfRating.focus}</span></div></div>
-        <div class="form-row"><label>Fundamentals</label><div class="skill-rating"><input id="se-fund" type="range" min="1" max="10" value="${s.selfRating.fundamentals}"><span class="val" id="se-fund-val">${s.selfRating.fundamentals}</span></div></div>
-        <div class="form-row"><label>Satisfaction</label><div class="skill-rating"><input id="se-sat" type="range" min="1" max="10" value="${s.selfRating.satisfaction}"><span class="val" id="se-sat-val">${s.selfRating.satisfaction}</span></div></div>
+        <div class="form-row"><label>Focus ${tip('How well did you concentrate today? 1 = distracted, 10 = fully locked in.')}</label><div class="skill-rating"><input id="se-focus" type="range" min="1" max="10" value="${s.selfRating.focus}"><span class="val" id="se-focus-val">${s.selfRating.focus}</span></div></div>
+        <div class="form-row"><label>Fundamentals ${tip('How clean was your technique — grip, trigger press, sight picture? 1 = sloppy, 10 = textbook.')}</label><div class="skill-rating"><input id="se-fund" type="range" min="1" max="10" value="${s.selfRating.fundamentals}"><span class="val" id="se-fund-val">${s.selfRating.fundamentals}</span></div></div>
+        <div class="form-row"><label>Satisfaction ${tip('Overall how happy are you with this session? 1 = frustrating, 10 = excellent.')}</label><div class="skill-rating"><input id="se-sat" type="range" min="1" max="10" value="${s.selfRating.satisfaction}"><span class="val" id="se-sat-val">${s.selfRating.satisfaction}</span></div></div>
       </div>
 
       <hr>
@@ -4545,8 +4595,8 @@ function openMatchModal(id) {
       <hr>
       <strong>Final Results (fill in after match posts)</strong>
       <div class="form-grid-2" style="margin-top:8px">
-        <div class="form-row"><label>Match Percentage</label><input id="mt-matchpct" type="number" step="0.01" value="${m.matchPercentage}" placeholder="e.g. 78.45"></div>
-        <div class="form-row"><label>Division Percentage</label><input id="mt-divpct" type="number" step="0.01" value="${m.divisionPercentage}" placeholder="e.g. 82.30"></div>
+        <div class="form-row"><label>Match Percentage ${tip('Your score as a percentage of the match winner\'s score. Found on your PractiScore results page after the match posts.')}</label><input id="mt-matchpct" type="number" step="0.01" value="${m.matchPercentage}" placeholder="e.g. 78.45"></div>
+        <div class="form-row"><label>Division Percentage ${tip('Your score as a percentage of the division winner\'s score. May differ from match % if the division winner isn\'t the match winner.')}</label><input id="mt-divpct" type="number" step="0.01" value="${m.divisionPercentage}" placeholder="e.g. 82.30"></div>
       </div>
       <div class="form-grid-4">
         <div class="form-row"><label>Overall Finish</label><input id="mt-finOver" type="number" min="1" value="${m.finishOverall}"></div>
@@ -4793,10 +4843,10 @@ function openClassifierModal(id) {
       <div class="form-grid-4">
         <div class="form-row"><label>Points</label><input id="cl-points" type="number" step="0.1" value="${c.points}" oninput="recalcClassifier()"></div>
         <div class="form-row"><label>Time (sec)</label><input id="cl-time" type="number" step="0.01" value="${c.time}" oninput="recalcClassifier()"></div>
-        <div class="form-row"><label>Your HF (auto)</label><input id="cl-hf" readonly value="${c.hitFactor != null && c.hitFactor !== '' ? Number(c.hitFactor).toFixed(4) : ''}" style="background:var(--panel-2)"></div>
-        <div class="form-row"><label>High HF (HHF)</label>
+        <div class="form-row"><label>Your HF (auto) ${tip('Hit Factor = Points ÷ Time. Calculated automatically when you enter points and time. Higher is better.')}</label><input id="cl-hf" readonly value="${c.hitFactor != null && c.hitFactor !== '' ? Number(c.hitFactor).toFixed(4) : ''}" style="background:var(--panel-2)"></div>
+        <div class="form-row"><label>High HF (HHF) ${tip('The High Hit Factor for this classifier in your division. Look this up on the USPSA website — it changes as top scores are submitted. Your % = (Your HF ÷ HHF) × 100.')}</label>
           <input id="cl-hhf" type="number" step="0.0001" value="${c.highHitFactor}" oninput="recalcClassifier()" placeholder="from USPSA">
-          <div class="help-text">HHF varies by division and changes over time. <a id="cl-hhf-link" href="https://uspsa.org/classifiers" target="_blank" rel="noopener" style="color:var(--accent)">Look up on USPSA &#8599;</a></div>
+          <div class="help-text"><a id="cl-hhf-link" href="https://uspsa.org/classifiers" target="_blank" rel="noopener" style="color:var(--accent)">Look up on USPSA &#8599;</a></div>
         </div>
       </div>
       <div class="form-row"><label>Your Percentage (auto)</label>
