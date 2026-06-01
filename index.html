@@ -6378,8 +6378,15 @@ function importJSON(evt) {
   const reader = new FileReader();
   reader.onload = e => {
     try {
-      const parsed = JSON.parse(e.target.result);
+      let parsed = JSON.parse(e.target.result);
       if (!confirm('This will overwrite all current data. Continue?')) return;
+      // Run migrations on imported data before saving
+      if (!parsed.settings) parsed.settings = {};
+      if (!Array.isArray(parsed.settings.migrationsRun)) parsed.settings.migrationsRun = [];
+      for (const key of Object.keys(SEED)) {
+        if (parsed[key] === undefined) parsed[key] = JSON.parse(JSON.stringify(SEED[key]));
+      }
+      parsed.settings.version = '1.8';
       DB = parsed;
       DB._lastModified = Date.now(); // stamp NOW so this device is always newer than any sync file after import
       saveDB();
