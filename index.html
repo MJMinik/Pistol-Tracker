@@ -809,6 +809,27 @@ function runOneTimeMigrations(db) {
     }
     mark(KEY);
   }
+
+  // 2026-06: Reassign orphaned ammo SKU references to Blazer Brass.
+  // After ammo consolidation, sessions still reference deleted SKU IDs.
+  const KEY2 = 'reassign-orphaned-ammo-skus-to-blazer-2026-06';
+  if (!did(KEY2)) {
+    const validIds = new Set((db.ammunition || []).map(a => a.id));
+    const blazer = (db.ammunition || []).find(a => a.brand && a.brand.toLowerCase().includes('blazer'));
+    if (blazer) {
+      let fixed = 0;
+      for (const s of (db.sessions || [])) {
+        for (const u of (s.ammoUsage || [])) {
+          if (u.ammoId && !validIds.has(u.ammoId)) {
+            u.ammoId = blazer.id;
+            fixed++;
+          }
+        }
+      }
+      console.log(`Migration ${KEY2}: reassigned ${fixed} orphaned ammo references → Blazer Brass`);
+    }
+    mark(KEY2);
+  }
 }
 /* ============================================================
    TRASH / SOFT-DELETE
