@@ -732,6 +732,8 @@ function classifierDefByCode(code) {
   return CLASSIFIER_DATABASE.find(x => x.code === norm) || null;
 }
 
+const TRASH_TTL_DAYS = 30; // defined here so loadDB/purgeOldTrash can use it
+
 let DB = loadDB();
 
 function loadDB() {
@@ -834,7 +836,6 @@ function runOneTimeMigrations(db) {
 /* ============================================================
    TRASH / SOFT-DELETE
    ============================================================ */
-const TRASH_TTL_DAYS = 30;
 
 function purgeOldTrash(db) {
   if (!Array.isArray(db.trash)) { db.trash = []; return; }
