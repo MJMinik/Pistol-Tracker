@@ -3271,24 +3271,24 @@ function renderSessions() {
   const filtered = applySessionFilter(allSessions);
   const hasFilter = f.dateFrom || f.dateTo || f.firearmId || f.type || f.keyword;
 
-  // Build field-strip-needed list: each firearm with one or more sessions after their last field strip
-  const fsNeeded = [];
+  // Build comprehensive maintenance items list across all firearms, in priority order
+  const maintItems = [];
   for (const fw of DB.firearms) {
     const st = maintenanceStatus(fw.id);
-    if (st.fieldStripDue && st.sessionsSinceFieldStrip > 0) {
-      fsNeeded.push({ firearm: fw, count: st.sessionsSinceFieldStrip, lastFS: st.lastFieldStrip });
-    }
+    const rs = recoilSpringStatus(fw.id);
+    if (st.deepCleanDue)    maintItems.push({ level:'danger', firearm:fw, label:`Deep clean overdue (${st.roundsSinceDeepClean.toLocaleString()} rounds)`, mtype:'deep_clean' });
+    if (rs && rs.due)       maintItems.push({ level:'danger', firearm:fw, label:`Recoil spring overdue (${rs.sinceReplace.toLocaleString()} / ${rs.interval.toLocaleString()} rounds)`, mtype:'recoil_spring' });
+    if (st.annualOverdue)   maintItems.push({ level:'warn',   firearm:fw, label:'Annual inspection overdue', mtype:'annual_inspection' });
+    if (st.deepCleanWarning)maintItems.push({ level:'warn',   firearm:fw, label:`Deep clean approaching (${st.roundsSinceDeepClean.toLocaleString()} / ${DEEP_CLEAN_INTERVAL.toLocaleString()} rounds)`, mtype:'deep_clean' });
+    if (rs && rs.warning)   maintItems.push({ level:'warn',   firearm:fw, label:`Recoil spring approaching (${rs.sinceReplace.toLocaleString()} / ${rs.interval.toLocaleString()} rounds)`, mtype:'recoil_spring' });
+    if (st.fieldStripDue)   maintItems.push({ level:'warn',   firearm:fw, label:`Field strip pending (${st.sessionsSinceFieldStrip} session${st.sessionsSinceFieldStrip!==1?'s':''} since last clean)`, mtype:'field_strip' });
   }
-  // Identify the firearm of the most recent session for the prominent button
-  const latestSession = allSessions[0];
-  const latestFirearmId = latestSession ? latestSession.firearmId : (DB.firearms[0] && DB.firearms[0].id);
-  const latestFirearm = latestFirearmId ? getFirearm(latestFirearmId) : null;
 
   v.innerHTML = `
     <div class="view-header">
       <div><h2>Range Sessions ${sectionHelpBtn('sessions')}</h2><div class="sub">Practice and competition log</div></div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${latestFirearm ? `<button class="btn secondary" onclick="quickFieldStrip('${latestFirearm.id}')" title="Log field strip & clean for ${escapeHtml(latestFirearm.name)}">&#9881; Field Strip ${escapeHtml(latestFirearm.name)}</button>` : ''}
+        ${maintItems.length ? `<button class="btn secondary" onclick="document.getElementById('maint-alert-bar').scrollIntoView({behavior:'smooth'})" title="View maintenance items due">&#9881; ${maintItems.length} Maintenance Item${maintItems.length!==1?'s':''} Due</button>` : ''}
         <button class="btn secondary" onclick="printSessionRange()" title="Print all sessions matching current filters">&#128438; Print Report</button>
         <button class="btn secondary" onclick="openSessionModal('','plan')" title="Plan an upcoming range trip or class">&#128203; Plan Session</button>
         <button class="btn" onclick="openSessionModal()">+ Log Session</button>
@@ -3334,11 +3334,19 @@ function renderSessions() {
       ${hasFilter ? `<div style="margin-top:8px;font-size:12px;color:var(--text-dim)">Showing ${filtered.length} of ${allSessions.length} session${allSessions.length!==1?'s':''}</div>` : ''}
     </div>
 
-    ${fsNeeded.length ? `<div class="alert warn" style="flex-direction:column;align-items:stretch">
-      <div style="display:flex;align-items:center;gap:10px"><strong style="font-size:13px">&#9888; Field strip pending</strong><span style="color:var(--text-dim);font-size:12px">Atlas guidance: clean after every session.</span></div>
-      <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
-        ${fsNeeded.map(n => `<button class="btn small secondary" onclick="quickFieldStrip('${n.firearm.id}')">Log field strip: ${escapeHtml(n.firearm.name)} (${n.count} session${n.count!==1?'s':''} pending)</button>`).join('')}
+    ${maintItems.length ? `<div id="maint-alert-bar" class="alert warn" style="flex-direction:column;align-items:stretch;cursor:pointer" onclick="openMaintAction('${maintItems[0].firearm.id}','${maintItems[0].mtype}')">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <strong style="font-size:13px">&#9888; ${maintItems.length} Maintenance Item${maintItems.length!==1?'s':''} Due</strong>
+        <span style="color:var(--text-dim);font-size:12px">Click any item to log it.</span>
       </div>
+      ${maintItems.map(item => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-top:1px solid rgba(255,255,255,0.08);gap:8px">
+          <div style="font-size:13px">
+            <span style="color:${item.level==='danger'?'var(--danger)':'var(--warn)'}">&#9679;</span>
+            <strong>${escapeHtml(item.firearm.name)}</strong>: ${item.label}
+          </div>
+          <button class="btn small secondary" style="flex-shrink:0" onclick="event.stopPropagation();openMaintAction('${item.firearm.id}','${item.mtype}')">Log</button>
+        </div>`).join('')}
     </div>` : ''}
     ${filtered.length ? filtered.map(s => sessionCard(s)).join('') : `<div class="empty"><div class="icon">&#9650;</div>${hasFilter ? 'No sessions match the current filters.' : 'No sessions yet.'}<br><br>${hasFilter ? `<button class="btn secondary" onclick="clearSessionFilter()">Clear Filters</button>` : `<button class="btn" onclick="openSessionModal()">Log first session</button>`}</div>`}
     ${recentlyDeletedCard('session')}
@@ -3347,11 +3355,16 @@ function renderSessions() {
 
 /* Quick field-strip logger - opens the maintenance modal pre-filled */
 function quickFieldStrip(firearmId) {
+  openMaintAction(firearmId, 'field_strip');
+}
+
+/* General maintenance action opener - pre-fills modal with firearm and type */
+function openMaintAction(firearmId, mtype) {
   openMaintenanceModal(null, firearmId);
   setTimeout(() => {
     const sel = document.getElementById('ma-type');
     if (sel) {
-      sel.value = 'field_strip';
+      sel.value = mtype;
       sel.dispatchEvent(new Event('change'));
     }
   }, 0);
