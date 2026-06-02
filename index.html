@@ -2058,7 +2058,10 @@ function renderDashboard() {
         <h2>Dashboard ${sectionHelpBtn('dashboard')}</h2>
         <div class="sub">${formatDate(new Date())} &middot; Training since January 2025</div>
       </div>
-      <button class="btn" onclick="openSessionModal()">+ Log Session</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn secondary" onclick="openSessionModal('','plan')" title="Plan an upcoming range trip or class">&#128203; Plan Session</button>
+        <button class="btn" onclick="openSessionModal()">+ Log Session</button>
+      </div>
     </div>
     ${sectionHelpPanel('dashboard')}
     ${backupAlertHtml}
@@ -3287,6 +3290,7 @@ function renderSessions() {
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         ${latestFirearm ? `<button class="btn secondary" onclick="quickFieldStrip('${latestFirearm.id}')" title="Log field strip & clean for ${escapeHtml(latestFirearm.name)}">&#9881; Field Strip ${escapeHtml(latestFirearm.name)}</button>` : ''}
         <button class="btn secondary" onclick="printSessionRange()" title="Print all sessions matching current filters">&#128438; Print Report</button>
+        <button class="btn secondary" onclick="openSessionModal('','plan')" title="Plan an upcoming range trip or class">&#128203; Plan Session</button>
         <button class="btn" onclick="openSessionModal()">+ Log Session</button>
       </div>
     </div>
@@ -3600,18 +3604,22 @@ function buildPrintDocument(sessions) {
     <style>${styles}</style></head><body>${sessionBlocks}</body></html>`;
 }
 
-function openSessionModal(id) {
+function openSessionModal(id, mode) {
+  const planned = mode === 'plan';
   const s = id ? DB.sessions.find(x => x.id === id) : {
     date: todayISO(), type: 'practice', firearmId: DB.firearms[0]?.id || '',
     location:'', distances:'', notes:'', totalRounds:0, rangeFee: null,
     ammoUsage:[], drills:[], targetImages:[],
-    selfRating: { focus: 5, fundamentals: 5, satisfaction: 5 }
+    selfRating: { focus: 5, fundamentals: 5, satisfaction: 5 },
+    planned: planned
   };
   if (!DB.firearms.length) { alert('Add at least one firearm first.'); return; }
   if (!s.selfRating) s.selfRating = { focus: 5, fundamentals: 5, satisfaction: 5 };
 
+  const modalTitle = id ? 'Edit Session' : (planned ? '📋 Plan Session' : 'Log Session');
+
   openModal(`
-    <div class="modal-header"><h3>${id?'Edit':'Log'} Session</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-header"><h3>${modalTitle}</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
     <div class="modal-body" style="max-height:70vh;overflow-y:auto">
       <div class="form-grid-3">
         <div class="form-row"><label>Date</label><input id="se-date" type="date" value="${s.date}"></div>
