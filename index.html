@@ -1038,6 +1038,10 @@ function restoreFromTrash(trashId) {
 
 function permanentlyDelete(trashId) {
   if (!confirm('Permanently delete this item? This cannot be undone.')) return;
+  const entry = (DB.trash || []).find(x => x.id === trashId);
+  if (entry && entry.type === 'session') {
+    for (const imgId of (entry.data.targetImages || [])) deleteImage(imgId);
+  }
   DB.trash = (DB.trash || []).filter(x => x.id !== trashId);
   saveDB();
   // Re-render whichever view is currently showing
@@ -1113,9 +1117,168 @@ function saveDB() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
     if (typeof queueAutoSync === 'function') queueAutoSync();
   } catch (e) {
-    alert('Could not save data. localStorage may be full. Consider exporting and clearing target images.');
+    alert('Could not save data. localStorage may be full. Try Settings → Download JSON Backup then clear some browser data.');
     console.error(e);
   }
+}
+
+/* ============================================================
+   IMAGE STORE — IndexedDB
+   Target images and insurance photos live here, NOT in
+   localStorage. Each image gets a unique ID; the session or
+   firearm record stores just that ID string.
+   window._imgCache is populated at startup by initImageDB()
+   so all rendering stays synchronous.
+   ============================================================ */
+const IMAGE_DB_NAME  = 'pistolTrackerImages';
+const IMAGE_STORE_NM = 'images';
+let   _imgDB = null;
+window._imgCache = {}; // { id → dataUrl }
+
+function openImageDB() {
+  return new Promise((resolve, reject) => {
+    if (_imgDB) { resolve(_imgDB); return; }
+    const req = indexedDB.open(IMAGE_DB_NAME, 1);
+    req.onupgradeneeded = e => {
+      e.target.result.createObjectStore(IMAGE_STORE_NM, { keyPath: 'id' });
+    };
+    req.onsuccess = e => { _imgDB = e.target.result; resolve(_imgDB); };
+    req.onerror   = e => reject(e.target.error);
+  });
+}
+
+async function saveImage(id, dataUrl) {
+  const db = await openImageDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(IMAGE_STORE_NM, 'readwrite');
+    tx.objectStore(IMAGE_STORE_NM).put({ id, data: dataUrl });
+    tx.oncomplete = () => { window._imgCache[id] = dataUrl; resolve(); };
+    tx.onerror    = e => reject(e.target.error);
+  });
+}
+
+async function deleteImage(id) {
+  if (!id || id.startsWith('data:')) return; // skip legacy base64 strings
+  delete window._imgCache[id];
+  try {
+    const db = await openImageDB();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(IMAGE_STORE_NM, 'readwrite');
+      tx.objectStore(IMAGE_STORE_NM).delete(id);
+      tx.oncomplete = resolve;
+      tx.onerror    = e => reject(e.target.error);
+    });
+  } catch(e) { console.warn('deleteImage failed', e); }
+}
+
+async function loadAllImagesToCache() {
+  const db = await openImageDB();
+  return new Promise((resolve, reject) => {
+    const tx  = db.transaction(IMAGE_STORE_NM, 'readonly');
+    const req = tx.objectStore(IMAGE_STORE_NM).getAll();
+    req.onsuccess = e => {
+      window._imgCache = {};
+      for (const rec of e.target.result) window._imgCache[rec.id] = rec.data;
+      resolve();
+    };
+    req.onerror = e => reject(e.target.error);
+  });
+}
+
+/** Resolve an image ID (or legacy base64 string) to a displayable src URL. */
+function imgSrc(idOrUrl) {
+  if (!idOrUrl) return '';
+  if (idOrUrl.startsWith('data:')) return idOrUrl; // legacy — still works
+  return window._imgCache[idOrUrl] || '';
+}
+
+/**
+ * Build a full export object with all images inlined as base64.
+ * Used by exportJSON, exportSyncFile, and writeAutoSync so backups
+ * are complete and self-contained for any device.
+ */
+function buildExportData() {
+  const out = JSON.parse(JSON.stringify(DB));
+  for (const s of out.sessions || []) {
+    if (s.targetImages) s.targetImages = s.targetImages.map(id => imgSrc(id) || id);
+  }
+  for (const f of out.firearms || []) {
+    if (f.insurancePhotos) f.insurancePhotos = f.insurancePhotos.map(id => imgSrc(id) || id);
+  }
+  return out;
+}
+
+/**
+ * Move any inline base64 images in an imported data object into IndexedDB,
+ * replacing them with IDs in-place. Returns a Promise.
+ */
+async function restoreImagesFromImport(parsed) {
+  for (const s of (parsed.sessions || [])) {
+    if (!s.targetImages) continue;
+    for (let i = 0; i < s.targetImages.length; i++) {
+      const v = s.targetImages[i];
+      if (v && v.startsWith('data:')) {
+        const imgId = uid('img');
+        await saveImage(imgId, v);
+        s.targetImages[i] = imgId;
+      }
+    }
+  }
+  for (const f of (parsed.firearms || [])) {
+    if (!f.insurancePhotos) continue;
+    for (let i = 0; i < f.insurancePhotos.length; i++) {
+      const v = f.insurancePhotos[i];
+      if (v && v.startsWith('data:')) {
+        const imgId = uid('img');
+        await saveImage(imgId, v);
+        f.insurancePhotos[i] = imgId;
+      }
+    }
+  }
+}
+
+/**
+ * Open IndexedDB, run one-time migration (base64 → IndexedDB), load cache.
+ * Called at startup before the first render.
+ */
+async function initImageDB() {
+  await openImageDB();
+  const KEY = 'images-to-indexeddb-2026-06';
+  if (!DB.settings.migrationsRun.includes(KEY)) {
+    let moved = 0;
+    for (const s of DB.sessions || []) {
+      if (!s.targetImages) continue;
+      for (let i = 0; i < s.targetImages.length; i++) {
+        const v = s.targetImages[i];
+        if (v && v.startsWith('data:')) {
+          const imgId = uid('img');
+          await saveImage(imgId, v);
+          s.targetImages[i] = imgId;
+          moved++;
+        }
+      }
+    }
+    for (const f of DB.firearms || []) {
+      if (!f.insurancePhotos) continue;
+      for (let i = 0; i < f.insurancePhotos.length; i++) {
+        const v = f.insurancePhotos[i];
+        if (v && v.startsWith('data:')) {
+          const imgId = uid('img');
+          await saveImage(imgId, v);
+          f.insurancePhotos[i] = imgId;
+          moved++;
+        }
+      }
+    }
+    if (moved > 0) {
+      console.log(`[ImageDB] Migrated ${moved} base64 images → IndexedDB`);
+      saveDB();
+    }
+    DB.settings.migrationsRun.push(KEY);
+    saveDB();
+  }
+  await loadAllImagesToCache();
+  console.log(`[ImageDB] Cache ready: ${Object.keys(window._imgCache).length} images`);
 }
 function uid(prefix = 'id') {
   return prefix + '-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7);
@@ -2291,9 +2454,9 @@ function firearmCard(f) {
         <div style="margin-bottom:10px">
           <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Photos (firearm + serial number)</div>
           <div id="ins-photos-${f.id}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-            ${(f.insurancePhotos || []).map((photo, i) => `
+            ${(f.insurancePhotos || []).map((id, i) => `
               <div style="position:relative">
-                <img src="${photo}" style="width:80px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer" onclick="viewInsurancePhoto('${f.id}',${i})">
+                <img src="${imgSrc(id)}" style="width:80px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer" onclick="viewInsurancePhoto('${f.id}',${i})">
                 <button onclick="deleteInsurancePhoto('${f.id}',${i})" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--danger);border:none;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">&times;</button>
               </div>
             `).join('')}
@@ -2439,6 +2602,8 @@ function saveMaintenanceSchedule(firearmId) {
 }
 function deleteFirearm(id) {
   if (!confirm('Delete this firearm? Sessions linked to it will keep historical record but lose firearm reference.')) return;
+  const f = getFirearm(id);
+  if (f) for (const imgId of (f.insurancePhotos || [])) deleteImage(imgId);
   DB.firearms = DB.firearms.filter(f => f.id !== id);
   saveDB(); renderFirearms();
 }
@@ -2475,9 +2640,11 @@ function addInsurancePhoto(firearmId, input) {
   const file = input.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = async e => {
     if (!f.insurancePhotos) f.insurancePhotos = [];
-    f.insurancePhotos.push(e.target.result);
+    const imgId = uid('img');
+    await saveImage(imgId, e.target.result);
+    f.insurancePhotos.push(imgId);
     saveDB();
     // Re-render just the photos area
     const container = document.getElementById('ins-photos-' + firearmId);
@@ -2487,9 +2654,9 @@ function addInsurancePhoto(firearmId, input) {
 }
 
 function buildInsurancePhotosHTML(f) {
-  return (f.insurancePhotos || []).map((photo, i) => `
+  return (f.insurancePhotos || []).map((id, i) => `
     <div style="position:relative">
-      <img src="${photo}" style="width:80px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer" onclick="viewInsurancePhoto('${f.id}',${i})">
+      <img src="${imgSrc(id)}" style="width:80px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer" onclick="viewInsurancePhoto('${f.id}',${i})">
       <button onclick="deleteInsurancePhoto('${f.id}',${i})" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--danger);border:none;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">&times;</button>
     </div>
   `).join('') + `
@@ -2502,6 +2669,8 @@ function deleteInsurancePhoto(firearmId, index) {
   const f = getFirearm(firearmId);
   if (!f || !f.insurancePhotos) return;
   if (!confirm('Remove this photo?')) return;
+  const id = f.insurancePhotos[index];
+  deleteImage(id); // async fire-and-forget
   f.insurancePhotos.splice(index, 1);
   saveDB();
   const container = document.getElementById('ins-photos-' + firearmId);
@@ -2511,7 +2680,7 @@ function deleteInsurancePhoto(firearmId, index) {
 function viewInsurancePhoto(firearmId, index) {
   const f = getFirearm(firearmId);
   if (!f || !f.insurancePhotos) return;
-  const photo = f.insurancePhotos[index];
+  const photo = imgSrc(f.insurancePhotos[index]);
   const lb = document.getElementById('lightbox');
   const lbImg = document.getElementById('lightbox-img');
   if (lb && lbImg) { lbImg.src = photo; lb.style.display = 'flex'; }
@@ -2544,7 +2713,7 @@ function printInsuranceRecord(firearmId) {
     <tr><td>Date Acquired</td><td>${f.dateAcquired ? new Date(f.dateAcquired).toLocaleDateString() : '—'}</td></tr>
     <tr><td>Notes</td><td>${escapeHtml(f.notes || '—')}</td></tr>
   </table>
-  ${(f.insurancePhotos || []).length ? `<h3>Photos</h3><div class="photos">${(f.insurancePhotos || []).map(p => `<img src="${p}">`).join('')}</div>` : '<p style="color:#999;font-style:italic">No photos on file.</p>'}
+  ${(f.insurancePhotos || []).length ? `<h3>Photos</h3><div class="photos">${(f.insurancePhotos || []).map(id => `<img src="${imgSrc(id)}">`).join('')}</div>` : '<p style="color:#999;font-style:italic">No photos on file.</p>'}
   <div class="footer">Generated by Pistol Tracker — https://mjminik.github.io/Pistol-Tracker/</div>
   <br><button onclick="window.print()" style="margin-top:16px;padding:10px 20px;font-size:14px;cursor:pointer">Print</button>
   </body></html>`);
@@ -3243,7 +3412,7 @@ function sessionCard(s) {
           <button class="btn small secondary" onclick="cancelInlineNote('${s.id}')">Cancel</button>
         </div>
       </div>
-      ${(s.targetImages && s.targetImages.length) ? `<div class="image-gallery">${s.targetImages.map((img, idx) => `<div class="image-thumb" style="background-image:url('${img}')" onclick="showLightbox('${img}','${s.id}',${idx})" title="Click to view · Annotate button appears in viewer"></div>`).join('')}</div>` : ''}
+      ${(s.targetImages && s.targetImages.length) ? `<div class="image-gallery">${s.targetImages.map((id, idx) => `<div class="image-thumb" style="background-image:url('${imgSrc(id)}')" onclick="showLightbox('${id}','${s.id}',${idx})" title="Click to view · Annotate button appears in viewer"></div>`).join('')}</div>` : ''}
       <div class="row-actions" style="margin-top:14px">
         <button class="btn small secondary" onclick="openSessionModal('${s.id}')">Edit</button>
         <button class="btn small secondary" onclick="printSession('${s.id}')">&#128438; Print</button>
@@ -3365,7 +3534,7 @@ function buildPrintDocument(sessions) {
     const imagesHtml = (s.targetImages && s.targetImages.length) ? `
       <div class="section">
         <div class="section-title">Target Images</div>
-        <div class="images">${s.targetImages.map(img => `<img src="${img}" alt="Target">`).join('')}</div>
+        <div class="images">${s.targetImages.map(id => `<img src="${imgSrc(id)}" alt="Target">`).join('')}</div>
       </div>` : '';
 
     // Costs
@@ -3742,13 +3911,18 @@ function updateDrillRow(i, key, val) {
 
 function renderSessionImages() {
   const c = document.getElementById('se-img-gallery');
-  c.innerHTML = (window._tempSession.targetImages || []).map((img, i) => `
-    <div class="image-thumb" style="background-image:url('${img}')">
+  c.innerHTML = (window._tempSession.targetImages || []).map((id, i) => `
+    <div class="image-thumb" style="background-image:url('${imgSrc(id)}')">
       <button class="remove" onclick="removeSessionImage(${i})">&times;</button>
     </div>
   `).join('');
 }
-function removeSessionImage(i) { window._tempSession.targetImages.splice(i, 1); renderSessionImages(); }
+function removeSessionImage(i) {
+  const id = (window._tempSession.targetImages || [])[i];
+  window._tempSession.targetImages.splice(i, 1);
+  deleteImage(id); // async fire-and-forget; only deletes if not yet saved to a session
+  renderSessionImages();
+}
 function handleImageUpload(evt) {
   const files = evt.target.files;
   if (!files || !files.length) return;
@@ -3756,7 +3930,7 @@ function handleImageUpload(evt) {
     const reader = new FileReader();
     reader.onload = e => {
       const img = new Image();
-      img.onload = () => {
+      img.onload = async () => {
         const canvas = document.createElement('canvas');
         const maxW = 1000;
         const ratio = Math.min(1, maxW / img.width);
@@ -3764,8 +3938,10 @@ function handleImageUpload(evt) {
         canvas.height = img.height * ratio;
         canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
         const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        const imgId = uid('img');
+        await saveImage(imgId, dataUrl);
         if (!window._tempSession.targetImages) window._tempSession.targetImages = [];
-        window._tempSession.targetImages.push(dataUrl);
+        window._tempSession.targetImages.push(imgId);
         renderSessionImages();
       };
       img.src = e.target.result;
@@ -3774,7 +3950,8 @@ function handleImageUpload(evt) {
   }
   evt.target.value = '';
 }
-function showLightbox(src, sessionId, imgIndex) {
+function showLightbox(idOrUrl, sessionId, imgIndex) {
+  const src = imgSrc(idOrUrl) || idOrUrl; // resolve ID → dataUrl (fallback keeps legacy urls working)
   const img = document.getElementById('lightbox-img');
   img.src = src;
   img.dataset.sessionId = sessionId || '';
@@ -3948,14 +4125,19 @@ function saveAnnotation() {
     ctx.stroke();
   });
   const dataUrl = out.toDataURL('image/jpeg', 0.9);
-  // Save back to the session
+  // Save back to the session via IndexedDB
   if (_annotateSessionId) {
     const s = DB.sessions.find(x => x.id === _annotateSessionId);
     if (s && s.targetImages && _annotateImgIndex != null) {
-      s.targetImages[_annotateImgIndex] = dataUrl;
-      saveDB();
-      renderSessions();
-      showToast('Annotated image saved.');
+      const existingId = s.targetImages[_annotateImgIndex];
+      // Determine the ID to save under (reuse existing ID, or create one for legacy base64)
+      const imgId = (existingId && !existingId.startsWith('data:')) ? existingId : uid('img');
+      saveImage(imgId, dataUrl).then(() => {
+        if (s.targetImages[_annotateImgIndex] !== imgId) s.targetImages[_annotateImgIndex] = imgId;
+        saveDB();
+        renderSessions();
+        showToast('Annotated image saved.');
+      });
     }
   }
   closeAnnotateTool();
@@ -6938,11 +7120,12 @@ function removeDrill(i) {
   DB.drillLibrary.splice(i, 1);
   saveDB(); renderSettings();
 }
-function exportJSON() {
+async function exportJSON() {
   DB.settings.lastBackupDate = todayISO();
   DB.settings.backupSnoozedUntil = null;
   saveDB();
-  const blob = new Blob([JSON.stringify(DB, null, 2)], { type: 'application/json' });
+  const exportData = buildExportData(); // inlines all images from IndexedDB cache
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = `pistol-tracker-backup-${todayISO()}.json`;
@@ -7072,8 +7255,9 @@ async function disconnectAutoSync() {
 async function writeAutoSync() {
   if (!autoSyncHandle || !autoSyncStatus.connected) return;
   try {
+    const exportData = buildExportData(); // include images in sync file
     const writable = await autoSyncHandle.createWritable();
-    await writable.write(JSON.stringify(DB, null, 2));
+    await writable.write(JSON.stringify(exportData, null, 2));
     await writable.close();
     autoSyncStatus.lastWrite = new Date();
     autoSyncStatus.lastError = '';
@@ -7150,10 +7334,11 @@ function autoSyncLastWriteLabel() {
 /* ============================================================
    iCLOUD SYNC  (fixed filename, overwrites same file each time)
    ============================================================ */
-function exportSyncFile() {
+async function exportSyncFile() {
   DB.settings.lastSyncExportDate = todayISO();
   saveDB();
-  const blob = new Blob([JSON.stringify(DB, null, 2)], { type: 'application/json' });
+  const exportData = buildExportData();
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -7169,7 +7354,7 @@ function importSyncFile(evt) {
   const file = evt.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = async e => {
     try {
       const parsed = JSON.parse(e.target.result);
       if (!parsed.sessions || !parsed.firearms) {
@@ -7177,11 +7362,14 @@ function importSyncFile(evt) {
         return;
       }
       if (!confirm('Import sync file? Your current data will be replaced with the imported data.')) return;
+      // Move any inline base64 images into IndexedDB
+      await restoreImagesFromImport(parsed);
       if (!parsed.settings) parsed.settings = {};
       parsed.settings.lastSyncImportDate = todayISO();
       DB = parsed;
-      DB._lastModified = Date.now(); // stamp NOW — ensures this device is always newer than any sync file after import
+      DB._lastModified = Date.now();
       saveDB();
+      await loadAllImagesToCache();
       renderSettings();
       alert('Sync complete — your data is now up to date.');
     } catch (err) {
@@ -7221,10 +7409,12 @@ function importJSON(evt) {
   const file = evt.target.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = async e => {
     try {
       let parsed = JSON.parse(e.target.result);
       if (!confirm('This will overwrite all current data. Continue?')) return;
+      // Move any inline base64 images into IndexedDB
+      await restoreImagesFromImport(parsed);
       // Run migrations on imported data before saving
       if (!parsed.settings) parsed.settings = {};
       if (!Array.isArray(parsed.settings.migrationsRun)) parsed.settings.migrationsRun = [];
@@ -7233,8 +7423,9 @@ function importJSON(evt) {
       }
       parsed.settings.version = '1.8';
       DB = parsed;
-      DB._lastModified = Date.now(); // stamp NOW so this device is always newer than any sync file after import
+      DB._lastModified = Date.now();
       saveDB();
+      await loadAllImagesToCache(); // refresh cache with newly imported images
       renderSettings();
       alert('Import complete.');
     } catch (err) {
@@ -7408,6 +7599,10 @@ function resetAll() {
   if (!confirm('Reset ALL data? This cannot be undone.')) return;
   if (!confirm('Last chance. Really reset everything?')) return;
   localStorage.removeItem(STORAGE_KEY);
+  // Also wipe IndexedDB images
+  indexedDB.deleteDatabase(IMAGE_DB_NAME);
+  _imgDB = null;
+  window._imgCache = {};
   DB = JSON.parse(JSON.stringify(SEED));
   saveDB();
   renderSettings();
@@ -7697,7 +7892,7 @@ function showTourStep() {
 function tourNav(dir) { _tourStep = Math.max(0, Math.min(TOUR_STEPS.length - 1, _tourStep + dir)); showTourStep(); }
 
 saveDB();
-renderView('dashboard');
+initImageDB().then(() => renderView('dashboard'));
 
 // Try to restore auto-sync from previous session and pull remote if newer
 if (typeof tryLoadFromAutoSync === 'function') {
