@@ -575,7 +575,7 @@
       <a data-view="sessions"><span class="icon">&#9650;</span> Sessions</a>
       <a data-view="progress"><span class="icon">&#9733;</span> Progress</a>
       <a data-view="competition"><span class="icon">&#9819;</span> Competition</a>
-      <a data-view="costs"><span class="icon">&#9654;</span> Costs</a>
+      <a data-view="costs"><span class="icon">&#9654;</span> Costs & Purchases</a>
       <a data-view="malfunctions"><span class="icon">&#9888;</span> Malfunctions</a>
       <a data-view="maintenance"><span class="icon">&#9881;</span> Maintenance</a>
       <a data-view="reference"><span class="icon">&#9432;</span> Atlas Reference</a>
@@ -1643,7 +1643,7 @@ const SECTION_HELP = {
     <h4>Overview</h4>
     The Ammunition page tracks your inventory. Rounds are automatically deducted when you save a session.
     <h4>Adding Ammo</h4>
-    Click <strong>+ Add Ammo</strong>. Enter brand, caliber, grain, bullet type, current quantity, and an optional cost per round for automatic cost tracking in the Costs section.
+    Click <strong>+ Add Ammo</strong>. Enter brand, caliber, grain, bullet type, current quantity, and an optional cost per round for automatic cost tracking in the Costs & Purchases section.
     <h4>Cost Per Round</h4>
     Enter a cost per round (e.g. 0.285) to unlock automatic ammo cost calculations. Each session will show its ammo cost and the Costs page will track totals.
     <h4>Low Ammo Alert</h4>
@@ -1693,7 +1693,7 @@ const SECTION_HELP = {
     <h4>Classification</h4>
     Shows your estimated USPSA classification using the official "best 4 of last 8 classifiers" formula. This is an estimate — official numbers come from the USPSA member portal.`,
 
-  costs: `
+  costs: /* Costs & Purchases */ `
     <h4>Overview</h4>
     The Costs section automatically tracks what you're spending on training — ammo, range fees, match fees, and gear purchases.
     <h4>Ammo Costs</h4>
@@ -3038,7 +3038,7 @@ function openAmmoModal(id) {
       </div>
       <div class="form-grid-2">
         <div class="form-row"><label>Quantity in Inventory ${tip('Current rounds on hand. This decrements automatically each time you log a session using this ammo.')}</label><input id="am-qty" type="number" min="0" value="${a.quantity || 0}"></div>
-        <div class="form-row"><label>Cost per round ${tip('Enter to unlock automatic cost tracking (e.g. 0.285 for 28.5 cents/round). Used in the Costs section to calculate session and total spend.')}</label><input id="am-cost" type="number" step="0.001" value="${a.costPerRound || ''}" placeholder="0.30"></div>
+        <div class="form-row"><label>Cost per round ${tip('Enter to unlock automatic cost tracking (e.g. 0.285 for 28.5 cents/round). Used in the Costs & Purchases section to calculate session and total spend.')}</label><input id="am-cost" type="number" step="0.001" value="${a.costPerRound || ''}" placeholder="0.30"></div>
       </div>
       <div class="form-row"><label>Notes</label><textarea id="am-notes">${escapeHtml(a.notes)}</textarea></div>
     </div>
@@ -3637,7 +3637,7 @@ function openSessionModal(id) {
       <div id="se-mag-section" data-prev-mag-ids="${(s.magIds||[]).join(',')}"></div>
       <div class="form-grid-2">
         <div class="form-row"><label>Location</label><input id="se-location" value="${escapeHtml(s.location)}" placeholder="e.g. Local Range, USPSA Match"></div>
-        <div class="form-row"><label>Range Fee ($) ${tip('Optional lane or entry fee. Flows automatically into the Range Fees bucket in the Costs section.')}</label><input id="se-rangefee" type="number" min="0" step="0.01" value="${s.rangeFee || ''}" placeholder="0.00"></div>
+        <div class="form-row"><label>Range Fee ($) ${tip('Optional lane or entry fee. Flows automatically into the Range Fees bucket in the Costs & Purchases section.')}</label><input id="se-rangefee" type="number" min="0" step="0.01" value="${s.rangeFee || ''}" placeholder="0.00"></div>
       </div>
       <div class="form-grid-2">
         <div class="form-row"><label>Distances Practiced ${tip('Comma-separated distances, e.g. 7yd, 15yd, 25yd. Shown on the session card for reference.')}</label><input id="se-dist" value="${escapeHtml(s.distances)}" placeholder="e.g. 7yd, 15yd, 25yd"></div>
@@ -5829,7 +5829,7 @@ function renderCosts() {
 
   v.innerHTML = `
     <div class="view-header">
-      <div><h2>Costs ${sectionHelpBtn('costs')}</h2><div class="sub">Ammo, match fees, range fees, and gear expenses</div></div>
+      <div><h2>Costs & Purchases ${sectionHelpBtn('costs')}</h2><div class="sub">Ammo, match fees, range fees, and gear expenses</div></div>
       <button class="btn" onclick="openPurchaseModal()">+ Add Purchase</button>
     </div>
     ${sectionHelpPanel('costs')}
@@ -6252,7 +6252,7 @@ function renderHelp() {
 
       ${helpSection('&#9679;', 'Ammunition', `
         <strong style="color:var(--text)">Inventory</strong> is decremented automatically each time you save a session. If you delete a session, rounds are returned to inventory.<br><br>
-        <strong style="color:var(--text)">Cost per round</strong> — enter this (e.g. <code>0.285</code>) to unlock automatic ammo cost calculations in the Costs section.<br><br>
+        <strong style="color:var(--text)">Cost per round</strong> — enter this (e.g. <code>0.285</code>) to unlock automatic ammo cost calculations in the Costs & Purchases section.<br><br>
         <strong style="color:var(--text)">Low ammo alert</strong> — a Dashboard warning appears when any ammo SKU drops to 50 rounds or below.
       `)}
 
@@ -6275,13 +6275,13 @@ function renderHelp() {
 
       ${helpSection('&#9819;', 'Competition', `
         <strong style="color:var(--text)">Matches tab</strong> — log each USPSA, IDPA, or steel match. Enter stage-level points, time, and stage % (% of stage winner). Hit Factor is calculated automatically.<br><br>
-        <strong style="color:var(--text)">Rounds Fired</strong> — optional field on matches. Enter this to include match rounds in your all-in cost-per-round calculation in the Costs section. <em>Do not also log these rounds as a session or they will be double-counted.</em><br><br>
+        <strong style="color:var(--text)">Rounds Fired</strong> — optional field on matches. Enter this to include match rounds in your all-in cost-per-round calculation in the Costs & Purchases section. <em>Do not also log these rounds as a session or they will be double-counted.</em><br><br>
         <strong style="color:var(--text)">Classifiers tab</strong> — log each USPSA classifier. Enter your points, time, and the division's High Hit Factor (HHF) from the USPSA classifier portal. Your percentage and equivalent class are calculated automatically.<br><br>
         <strong style="color:var(--text)">Classification tab</strong> — shows your estimated USPSA classification per division using the official "best 4 of last 8 classifiers" formula. This is an estimate — your official number comes from your USPSA member portal.<br><br>
         <strong style="color:var(--text)">Stage Performance chart</strong> — appears once you have match data with stage percentages. Green dots = stages above your match average; red = below.
       `)}
 
-      ${helpSection('&#9654;', 'Costs', `
+      ${helpSection('&#9654;', 'Costs & Purchases', `
         <strong style="color:var(--text)">Four cost sources are tracked:</strong><br>
         <ol style="padding-left:20px;margin-top:4px">
           <li><strong>Ammo</strong> — auto-calculated from sessions (rounds fired × cost/round). Set cost/round on each ammo record in the Ammunition section.</li>
@@ -8346,7 +8346,7 @@ const FULL_TOUR_STEPS = [
   },
   {
     view: 'costs',
-    title: 'Costs',
+    title: 'Costs & Purchases',
     icon: '▶',
     body: 'The Dashboard tab shows a 13-month stacked bar chart, a category donut chart, year-to-date breakdown, and per-firearm spending. The Log tab shows ammo cost by session and your full purchase history. All costs are calculated automatically from session and match data.',
     tips: ['Ammo costs use FIFO pricing — each session consumes from the oldest purchase lot first.', 'Per-firearm spending attributes ammo + range fees from sessions and match fees from matches.', 'Log purchases with category "Range Fee" and they automatically route to the Range Fees bucket.']
