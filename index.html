@@ -3620,7 +3620,7 @@ function openSessionModal(id, mode) {
 
   openModal(`
     <div class="modal-header"><h3>${modalTitle}</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
-    <div class="modal-body" style="max-height:70vh;overflow-y:auto">
+    <div class="modal-body" style="max-height:70vh;overflow-y:auto;overflow-x:hidden">
       <div class="form-grid-3">
         <div class="form-row"><label>Date</label><input id="se-date" type="date" value="${s.date}"></div>
         <div class="form-row"><label>Type</label>
@@ -3635,8 +3635,8 @@ function openSessionModal(id, mode) {
           <select id="se-firearm" onchange="updateSessionMagSection()" >${DB.firearms.map(f => `<option value="${f.id}" ${s.firearmId===f.id?'selected':''}>${escapeHtml(f.name)}</option>`).join('')}</select>
         </div>
       </div>
-      <div class="form-row" style="margin-top:-4px">
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
+      <div class="form-row" style="margin-top:-4px;overflow:hidden">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;flex-wrap:wrap">
           <input type="checkbox" id="se-multi-fw" ${(s.firearmSplits && s.firearmSplits.length)?'checked':''} onchange="toggleMultiFirearm(this.checked)">
           <span style="font-size:13px">Multiple firearms used this session</span>
         </label>
@@ -3736,7 +3736,10 @@ function updateSessionMagSection() {
   const firearmId = document.getElementById('se-firearm').value;
   const poolMags = getPoolMags(firearmId);
   const prevIds = (sec.dataset.prevMagIds || '').split(',').filter(Boolean);
-  if (!poolMags.length) { sec.innerHTML = ''; return; }
+  if (!poolMags.length) {
+    sec.innerHTML = '<div style="font-size:12px;color:var(--text-dim);margin-top:6px">No magazines set up for this firearm — add them in Firearms → Magazines.</div>';
+    return;
+  }
   sec.innerHTML = `<div style="margin-top:6px;margin-bottom:2px">
     <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Magazines Used (optional)</div>
     <div style="display:flex;flex-wrap:wrap;gap:10px">
