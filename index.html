@@ -3929,8 +3929,8 @@ function updateDrillRow(i, key, val) {
 function renderSessionImages() {
   const c = document.getElementById('se-img-gallery');
   c.innerHTML = (window._tempSession.targetImages || []).map((id, i) => `
-    <div class="image-thumb" style="background-image:url('${imgSrc(id)}')">
-      <button class="remove" onclick="removeSessionImage(${i})">&times;</button>
+    <div class="image-thumb" style="background-image:url('${imgSrc(id)}');cursor:pointer" onclick="showLightbox('${id}')" title="Click to preview">
+      <button class="remove" onclick="event.stopPropagation();removeSessionImage(${i})">&times;</button>
     </div>
   `).join('');
 }
