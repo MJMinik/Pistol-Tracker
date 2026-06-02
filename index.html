@@ -3872,7 +3872,7 @@ function renderAmmoRows() {
           <option value="__untracked__" ${u.ammoId==='__untracked__'?'selected':''}>Untracked / Range Purchase</option>
           ${DB.ammunition.map(a => `<option value="${a.id}" ${u.ammoId===a.id?'selected':''}>${escapeHtml(a.brand)} ${escapeHtml(a.caliber)} ${escapeHtml(a.grain)}gr ${escapeHtml(a.bulletType)} &mdash; ${(a.quantity||0).toLocaleString()} in can</option>`).join('')}
         </select>
-        ${unselected ? `<div style="font-size:12px;color:var(--accent);margin-top:4px">⚠️ Select an ammo type or choose Untracked / Range Purchase.</div>` : ''}
+        ${unselected ? `<div style="font-size:12px;color:var(--accent);margin-top:4px;text-align:right">⚠️ Select an ammo type or choose Untracked / Range Purchase.</div>` : ''}
       </div>
       <div class="form-row"><label>Rounds</label>
         <input type="number" min="0" value="${u.rounds||0}" onchange="updateAmmoRow(${i},'rounds',parseInt(this.value)||0);renderAmmoRows()">
