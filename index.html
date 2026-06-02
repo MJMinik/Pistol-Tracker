@@ -3862,20 +3862,24 @@ function removeMalfunctionRow(i) { window._tempSession.malfunctions.splice(i, 1)
 function updateMalfunctionRow(i, key, val) { window._tempSession.malfunctions[i][key] = val; }
 function renderAmmoRows() {
   const c = document.getElementById('se-ammo-rows');
-  c.innerHTML = window._tempSession.ammoUsage.map((u, i) => `
+  c.innerHTML = window._tempSession.ammoUsage.map((u, i) => {
+    const unselected = !u.ammoId && (u.rounds > 0);
+    return `
     <div class="form-grid-3" style="align-items:end">
       <div class="form-row"><label>Ammunition</label>
-        <select onchange="updateAmmoRow(${i},'ammoId',this.value)">
+        <select onchange="updateAmmoRow(${i},'ammoId',this.value)" style="${unselected?'border-color:var(--accent)':''}">
           <option value="">— Select ammo —</option>
+          <option value="__untracked__" ${u.ammoId==='__untracked__'?'selected':''}>Untracked / Range Purchase</option>
           ${DB.ammunition.map(a => `<option value="${a.id}" ${u.ammoId===a.id?'selected':''}>${escapeHtml(a.brand)} ${escapeHtml(a.caliber)} ${escapeHtml(a.grain)}gr ${escapeHtml(a.bulletType)} &mdash; ${(a.quantity||0).toLocaleString()} in can</option>`).join('')}
         </select>
+        ${unselected ? `<div style="font-size:12px;color:var(--accent);margin-top:4px">⚠️ Select an ammo type or choose Untracked / Range Purchase.</div>` : ''}
       </div>
       <div class="form-row"><label>Rounds</label>
-        <input type="number" min="0" value="${u.rounds||0}" onchange="updateAmmoRow(${i},'rounds',parseInt(this.value)||0)">
+        <input type="number" min="0" value="${u.rounds||0}" onchange="updateAmmoRow(${i},'rounds',parseInt(this.value)||0);renderAmmoRows()">
       </div>
       <div class="form-row"><button class="btn small danger" onclick="removeAmmoRow(${i})">Remove</button></div>
     </div>
-  `).join('');
+  `; }).join('');
   recalcTotal();
 }
 function addAmmoRow() { window._tempSession.ammoUsage.push({ ammoId:'', rounds:0 }); renderAmmoRows(); }
@@ -4216,6 +4220,13 @@ function saveSession(id) {
     fundamentals: parseInt(document.getElementById('se-fund').value),
     satisfaction: parseInt(document.getElementById('se-sat').value)
   };
+  // Block save if any ammo row has rounds but no SKU selected
+  const unselectedAmmo = t.ammoUsage.filter(u => !u.ammoId && u.rounds > 0);
+  if (unselectedAmmo.length) {
+    renderAmmoRows(); // re-render to show inline warnings
+    showToast('Please select an ammo type or choose Untracked / Range Purchase for all ammo rows.');
+    return;
+  }
   t.ammoUsage = t.ammoUsage.filter(u => u.ammoId && u.rounds > 0);
   t.drills = t.drills.filter(d => d.name);
   t.malfunctions = (t.malfunctions || []).filter(m => m.type);
