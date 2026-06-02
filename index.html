@@ -4291,9 +4291,18 @@ function saveSession(id) {
     if (isLatest && needsFS) {
       const f = getFirearm(t.firearmId);
       setTimeout(() => {
-        if (confirm(`Session saved. Log a field strip & clean for ${f ? f.name : 'this firearm'} now?\n\n(Atlas guidance: clean after every live-fire range session.)`)) {
-          quickFieldStrip(t.firearmId);
-        }
+        const fName = escapeHtml(f ? f.name : 'this firearm');
+        openModal(`
+          <div class="modal-header"><h3>&#9881; Field Strip Reminder</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+          <div class="modal-body" style="text-align:center;padding:24px 20px">
+            <div style="font-size:15px;margin-bottom:8px">Log a field strip &amp; clean for <strong>${fName}</strong>?</div>
+            <div style="font-size:13px;color:var(--text-dim)">Atlas guidance: clean after every live-fire range session.</div>
+          </div>
+          <div class="modal-footer" style="justify-content:center;gap:12px">
+            <button class="btn secondary" onclick="closeModal()">Not Now</button>
+            <button class="btn" onclick="closeModal();openMaintAction('${t.firearmId}','field_strip')">Log Field Strip</button>
+          </div>
+        `);
       }, 100);
     }
   }
