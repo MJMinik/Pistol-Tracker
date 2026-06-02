@@ -329,6 +329,21 @@
   }
   .lightbox.show { display: flex; }
   .lightbox img { max-width: 90vw; max-height: 90vh; }
+  .lightbox-close {
+    position: fixed; top: 16px; right: 16px;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: rgba(255,255,255,0.15); border: none;
+    color: #fff; font-size: 22px; line-height: 1;
+    cursor: pointer; z-index: 10002;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .lightbox-close:hover { background: rgba(255,255,255,0.3); }
+  .lightbox-hint {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    color: rgba(255,255,255,0.4); font-size: 12px;
+    pointer-events: none; letter-spacing: 0.5px; white-space: nowrap;
+  }
 
   hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
 
@@ -594,8 +609,10 @@
   <div class="modal" id="modal"></div>
 </div>
 
-<div class="lightbox" id="lightbox" onclick="this.classList.remove('show')">
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <img id="lightbox-img" alt="">
+  <button class="lightbox-close" id="lightbox-close-btn" onclick="closeLightbox()" title="Close">&times;</button>
+  <div class="lightbox-hint">Tap anywhere &middot; swipe down to close</div>
 </div>
 
 <script>
@@ -2683,7 +2700,7 @@ function viewInsurancePhoto(firearmId, index) {
   const photo = imgSrc(f.insurancePhotos[index]);
   const lb = document.getElementById('lightbox');
   const lbImg = document.getElementById('lightbox-img');
-  if (lb && lbImg) { lbImg.src = photo; lb.style.display = 'flex'; }
+  if (lb && lbImg) { lbImg.src = photo; lb.classList.add('show'); }
 }
 
 function printInsuranceRecord(firearmId) {
@@ -3950,6 +3967,12 @@ function handleImageUpload(evt) {
   }
   evt.target.value = '';
 }
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('show');
+  const annBtn = document.getElementById('lightbox-annotate-btn');
+  if (annBtn) annBtn.style.display = 'none';
+}
+
 function showLightbox(idOrUrl, sessionId, imgIndex) {
   const src = imgSrc(idOrUrl) || idOrUrl; // resolve ID → dataUrl (fallback keeps legacy urls working)
   const img = document.getElementById('lightbox-img');
@@ -3957,19 +3980,29 @@ function showLightbox(idOrUrl, sessionId, imgIndex) {
   img.dataset.sessionId = sessionId || '';
   img.dataset.imgIndex = imgIndex != null ? imgIndex : '';
   document.getElementById('lightbox').classList.add('show');
-  // Show annotate button if session context is available
+  // Show annotate button (top-left) if session context is available
   let annBtn = document.getElementById('lightbox-annotate-btn');
   if (!annBtn) {
     annBtn = document.createElement('button');
     annBtn.id = 'lightbox-annotate-btn';
     annBtn.className = 'btn small secondary';
-    annBtn.style.cssText = 'position:fixed;top:16px;right:80px;z-index:10001';
+    annBtn.style.cssText = 'position:fixed;top:16px;left:16px;z-index:10002';
     annBtn.innerHTML = '&#9999; Annotate';
     annBtn.addEventListener('click', e => { e.stopPropagation(); openAnnotateTool(img.src, img.dataset.sessionId, parseInt(img.dataset.imgIndex)); });
     document.body.appendChild(annBtn);
   }
   annBtn.style.display = (sessionId != null && imgIndex != null) ? 'inline-flex' : 'none';
 }
+
+// Swipe down to close lightbox (mobile)
+(function() {
+  let _lbTouchStartY = 0;
+  const lb = document.getElementById('lightbox');
+  lb.addEventListener('touchstart', e => { _lbTouchStartY = e.touches[0].clientY; }, { passive: true });
+  lb.addEventListener('touchend', e => {
+    if (e.changedTouches[0].clientY - _lbTouchStartY > 80) closeLightbox();
+  }, { passive: true });
+})();
 
 /* ============================================================
    PHOTO ANNOTATION TOOL
