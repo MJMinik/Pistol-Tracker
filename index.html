@@ -6886,7 +6886,7 @@ function saveMaintenance(id) {
   } else {
     DB.maintenance.push({ id: uid('ma'), ...data });
   }
-  saveDB(); closeModal(); renderMaintenance();
+  saveDB(); closeModal(); renderMaintenance(); renderSessions();
 }
 function deleteMaintenance(id) {
   if (!confirm('Move this maintenance record to Recently Deleted?')) return;
