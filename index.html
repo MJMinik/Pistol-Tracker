@@ -3737,7 +3737,7 @@ function updateSessionMagSection() {
   const poolMags = getPoolMags(firearmId);
   const prevIds = (sec.dataset.prevMagIds || '').split(',').filter(Boolean);
   if (!poolMags.length) {
-    sec.innerHTML = '<div style="font-size:12px;color:var(--text-dim);margin-top:6px">No magazines set up for this firearm — add them in Firearms → Magazines.</div>';
+    sec.innerHTML = '<div style="font-size:13px;color:var(--accent);margin-top:6px;margin-bottom:16px">⚠️ No magazines set up for this firearm — add them in Firearms → Magazines.</div>';
     return;
   }
   sec.innerHTML = `<div style="margin-top:6px;margin-bottom:2px">
