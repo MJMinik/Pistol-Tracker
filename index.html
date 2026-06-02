@@ -2145,8 +2145,10 @@ function recentSessionsTable() {
   return `<table>
     <thead><tr><th>Date</th><th>Firearm</th><th>Rounds</th><th>Location</th></tr></thead>
     <tbody>${recent.map(s => {
-      const f = getFirearm(s.firearmId);
-      return `<tr><td>${formatDate(s.date)}</td><td>${escapeHtml(f ? f.name : '—')}</td><td>${s.totalRounds || 0}</td><td>${escapeHtml(s.location || '—')}</td></tr>`;
+      const firearmLabel = (s.firearmSplits && s.firearmSplits.length)
+        ? s.firearmSplits.map(sp => { const fw = getFirearm(sp.firearmId); return fw ? fw.name : '—'; }).join(', ')
+        : (getFirearm(s.firearmId) ? getFirearm(s.firearmId).name : '—');
+      return `<tr><td>${formatDate(s.date)}</td><td>${escapeHtml(firearmLabel)}</td><td>${s.totalRounds || 0}</td><td>${escapeHtml(s.location || '—')}</td></tr>`;
     }).join('')}</tbody></table>`;
 }
 function topPRs() {
