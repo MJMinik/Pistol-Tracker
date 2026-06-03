@@ -185,11 +185,11 @@ test('Data Integrity', 'All session dates are valid format (YYYY-MM-DD)', () => 
   return detail('All dates valid');
 });
 
-test('Data Integrity', 'No future-dated sessions', () => {
+test('Data Integrity', 'No future-dated logged sessions', () => {
   if (!DB) return skip('No data');
   const today = new Date().toISOString().split('T')[0];
-  const future = DB.sessions.filter(s => s.date > today);
-  assert(future.length === 0, `${future.length} session(s) have future dates`);
+  const future = DB.sessions.filter(s => !s.planned && s.date > today);
+  assert(future.length === 0, `${future.length} logged session(s) have future dates`);
   return detail('No future dates found');
 });
 

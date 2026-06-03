@@ -202,6 +202,9 @@
     border-radius: 8px; padding: 20px; margin-bottom: 16px;
     box-shadow: var(--shadow);
   }
+  .card-planned {
+    border-left: 3px solid #58a6ff !important;
+  }
   .card h3 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 12px; }
 
   .grid { display: grid; gap: 16px; }
@@ -2986,7 +2989,7 @@ function deletePart(id) {
 function renderAmmo() {
   const v = document.getElementById('view-ammo');
   const total = DB.ammunition.reduce((s, a) => s + (a.quantity || 0), 0);
-  const used = DB.sessions.reduce((s, sess) => s + (sess.ammoUsage || []).reduce((x, u) => x + (u.rounds || 0), 0), 0);
+  const used = DB.sessions.filter(sess => !sess.planned).reduce((s, sess) => s + (sess.ammoUsage || []).reduce((x, u) => x + (u.rounds || 0), 0), 0);
   v.innerHTML = `
     <div class="view-header">
       <div><h2>Ammunition ${sectionHelpBtn('ammunition')}</h2><div class="sub">Inventory and consumption &mdash; one row per ammo can</div></div>
@@ -3424,9 +3427,8 @@ function sessionCard(s) {
     return `<span class="chip">${escapeHtml(d.name)}${d.distance ? ' &middot; ' + escapeHtml(d.distance) : ''}${scoreText && scoreText !== '—' ? ' &middot; <strong style="color:var(--accent)">' + scoreText + '</strong>' : ''}</span>`;
   }).join('');
   const isPlanned = !!s.planned;
-  const cardStyle = isPlanned ? 'box-shadow:inset 3px 0 0 #58a6ff,var(--shadow);' : '';
   return `
-    <div class="card" style="${cardStyle}">
+    <div class="card${isPlanned ? ' card-planned' : ''}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
           <div style="font-size:16px;font-weight:600">${formatDate(s.date)} ${isPlanned ? '<span class="badge" style="background:rgba(88,166,255,0.15);color:#58a6ff;border:1px solid rgba(88,166,255,0.3)">PLANNED</span>' : `<span class="badge ${s.type==='competition'?'info':'neutral'}">${escapeHtml(s.type||'practice')}</span>`}</div>
