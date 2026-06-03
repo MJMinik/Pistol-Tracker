@@ -1321,6 +1321,7 @@ function firearmRoundCount(firearmId) {
   if (!fa) return 0;
   let total = fa.startingRoundCount || 0;
   for (const s of DB.sessions) {
+    if (s.planned) continue; // planned sessions don't count until converted
     if (s.firearmSplits && s.firearmSplits.length) {
       const split = s.firearmSplits.find(sp => sp.firearmId === firearmId);
       if (split) total += (split.rounds || 0);
@@ -1334,13 +1335,14 @@ function firearmRoundCount(firearmId) {
   }
   return total;
 }
-// Live-fire only (excludes dry_fire sessions) — used for display stats and charts
+// Live-fire only (excludes dry_fire and planned sessions) — used for display stats and charts
 function liveFireRoundCount(firearmId) {
   const fa = getFirearm(firearmId);
   if (!fa) return 0;
   let total = fa.startingRoundCount || 0;
   for (const s of DB.sessions) {
     if (s.type === 'dry_fire') continue;
+    if (s.planned) continue;
     if (s.firearmSplits && s.firearmSplits.length) {
       const split = s.firearmSplits.find(sp => sp.firearmId === firearmId);
       if (split) total += (split.rounds || 0);
@@ -3276,7 +3278,13 @@ function clearSessionFilter() {
 
 function renderSessions() {
   const v = document.getElementById('view-sessions');
-  const allSessions = [...DB.sessions].sort((a, b) => b.date.localeCompare(a.date));
+  // Planned sessions always sort to the top; within planned, sort by date ascending (soonest first)
+  const allSessions = [...DB.sessions].sort((a, b) => {
+    if (a.planned && !b.planned) return -1;
+    if (!a.planned && b.planned) return 1;
+    if (a.planned && b.planned) return a.date.localeCompare(b.date);
+    return b.date.localeCompare(a.date);
+  });
   const f = window._sessionFilter;
   const filtered = applySessionFilter(allSessions);
   const hasFilter = f.dateFrom || f.dateTo || f.firearmId || f.type || f.keyword;
@@ -3412,16 +3420,18 @@ function sessionCard(s) {
     const scoreText = formatDrillScore({time:d.time, score:d.score, maxScore:d.maxScore}, scoring);
     return `<span class="chip">${escapeHtml(d.name)}${d.distance ? ' &middot; ' + escapeHtml(d.distance) : ''}${scoreText && scoreText !== '—' ? ' &middot; <strong style="color:var(--accent)">' + scoreText + '</strong>' : ''}</span>`;
   }).join('');
+  const isPlanned = !!s.planned;
+  const cardStyle = isPlanned ? 'border-left:3px solid #58a6ff;' : '';
   return `
-    <div class="card">
+    <div class="card" style="${cardStyle}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
-          <div style="font-size:16px;font-weight:600">${formatDate(s.date)} <span class="badge ${s.type==='competition'?'info':'neutral'}">${escapeHtml(s.type||'practice')}</span></div>
+          <div style="font-size:16px;font-weight:600">${formatDate(s.date)} ${isPlanned ? '<span class="badge" style="background:rgba(88,166,255,0.15);color:#58a6ff;border:1px solid rgba(88,166,255,0.3)">PLANNED</span>' : `<span class="badge ${s.type==='competition'?'info':'neutral'}">${escapeHtml(s.type||'practice')}</span>`}</div>
           <div class="text-dim" style="font-size:12px;margin-top:2px">${(s.firearmSplits && s.firearmSplits.length) ? firearmDisplay + ' &middot; ' : escapeHtml(f ? f.name : '—') + ' &middot; '}${escapeHtml(s.location || 'Location not set')}</div>
         </div>
         <div style="text-align:right">
-          <div style="font-size:24px;font-weight:600;color:var(--accent)">${(s.totalRounds||0).toLocaleString()}</div>
-          <div class="text-dim" style="font-size:11px">rounds</div>
+          <div style="font-size:24px;font-weight:600;color:${isPlanned ? '#58a6ff' : 'var(--accent)'}">~${(s.totalRounds||0).toLocaleString()}</div>
+          <div class="text-dim" style="font-size:11px">${isPlanned ? 'planned rds' : 'rounds'}</div>
         </div>
       </div>
       ${ammoLines.length ? `<hr><div style="font-size:13px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap"><div><strong style="color:var(--text-dim)">Ammo:</strong> ${ammoLines.join(' &middot; ')}</div>${(() => {
@@ -3458,12 +3468,29 @@ function sessionCard(s) {
       </div>
       ${(s.targetImages && s.targetImages.length) ? `<div class="image-gallery">${s.targetImages.map((id, idx) => `<div class="image-thumb" style="background-image:url('${imgSrc(id)}')" onclick="showLightbox('${id}','${s.id}',${idx})" title="Click to view · Annotate button appears in viewer"></div>`).join('')}</div>` : ''}
       <div class="row-actions" style="margin-top:14px">
-        <button class="btn small secondary" onclick="openSessionModal('${s.id}')">Edit</button>
-        <button class="btn small secondary" onclick="printSession('${s.id}')">&#128438; Print</button>
-        <button class="btn small danger" onclick="deleteSession('${s.id}')">Delete</button>
+        ${isPlanned ? `
+          <button class="btn small" style="background:#58a6ff;border-color:#58a6ff" onclick="convertPlannedSession('${s.id}')">&#10003; Convert to Logged</button>
+          <button class="btn small secondary" onclick="openSessionModal('${s.id}')">Edit Plan</button>
+          <button class="btn small danger" onclick="deleteSession('${s.id}')">Delete</button>
+        ` : `
+          <button class="btn small secondary" onclick="openSessionModal('${s.id}')">Edit</button>
+          <button class="btn small secondary" onclick="printSession('${s.id}')">&#128438; Print</button>
+          <button class="btn small danger" onclick="deleteSession('${s.id}')">Delete</button>
+        `}
       </div>
     </div>
   `;
+}
+function convertPlannedSession(id) {
+  const plan = DB.sessions.find(x => x.id === id);
+  if (!plan) return;
+  // Open a Log Session modal pre-filled with the plan's data (new session, no id)
+  // We deep-copy the plan and clear the planned flag and id so it saves as a new logged session
+  const prefill = JSON.parse(JSON.stringify(plan));
+  prefill.planned = false;
+  delete prefill.id;
+  // Open the modal using the standard session modal, injecting prefill data
+  openSessionModal('', 'convert', prefill, id);
 }
 /* ============================================================
    PRINT SESSION REPORT
@@ -3627,19 +3654,25 @@ function buildPrintDocument(sessions) {
     <style>${styles}</style></head><body>${sessionBlocks}</body></html>`;
 }
 
-function openSessionModal(id, mode) {
+function openSessionModal(id, mode, prefillData, sourcePlanId) {
   const planned = mode === 'plan';
-  const s = id ? DB.sessions.find(x => x.id === id) : {
-    date: todayISO(), type: 'practice', firearmId: DB.firearms[0]?.id || '',
-    location:'', distances:'', notes:'', totalRounds:0, rangeFee: null,
-    ammoUsage:[], drills:[], targetImages:[],
-    selfRating: { focus: 5, fundamentals: 5, satisfaction: 5 },
-    planned: planned
-  };
+  const converting = mode === 'convert';
+  const s = id ? DB.sessions.find(x => x.id === id)
+    : prefillData ? prefillData
+    : {
+        date: todayISO(), type: 'practice', firearmId: DB.firearms[0]?.id || '',
+        location:'', distances:'', notes:'', totalRounds:0, rangeFee: null,
+        ammoUsage:[], drills:[], targetImages:[],
+        selfRating: { focus: 5, fundamentals: 5, satisfaction: 5 },
+        planned: planned
+      };
   if (!DB.firearms.length) { alert('Add at least one firearm first.'); return; }
   if (!s.selfRating) s.selfRating = { focus: 5, fundamentals: 5, satisfaction: 5 };
 
-  const modalTitle = id ? 'Edit Session' : (planned ? '📋 Plan Session' : 'Log Session');
+  const modalTitle = converting ? '📋 Log Session (from plan)'
+    : id ? (s.planned ? '📋 Edit Plan' : 'Edit Session')
+    : (planned ? '📋 Plan Session' : 'Log Session');
+  const saveLabel = converting ? 'Log Session' : 'Save';
 
   openModal(`
     <div class="modal-header"><h3>${modalTitle}</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
@@ -3719,7 +3752,7 @@ function openSessionModal(id, mode) {
     </div>
     <div class="modal-footer">
       <button class="btn secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn" onclick="saveSession('${id || ''}')">Save</button>
+      <button class="btn" onclick="saveSession('${id || ''}', '${sourcePlanId || ''}')">${saveLabel}</button>
     </div>
   `, () => {
     window._tempSession = JSON.parse(JSON.stringify(s));
@@ -4213,7 +4246,7 @@ function saveAnnotation() {
   }
   closeAnnotateTool();
 }
-function saveSession(id) {
+function saveSession(id, sourcePlanId) {
   const t = window._tempSession;
   t.date = document.getElementById('se-date').value;
   t.type = document.getElementById('se-type').value;
@@ -4264,34 +4297,43 @@ function saveSession(id) {
   let prevAmmo = [];
   let prevMagIds = [];
   let prevTotalRounds = 0;
+  let prevWasPlanned = false;
   if (id) {
     const existing = DB.sessions.find(x => x.id === id);
     prevAmmo = existing ? existing.ammoUsage || [] : [];
     prevMagIds = existing ? existing.magIds || [] : [];
     prevTotalRounds = existing ? existing.totalRounds || 0 : 0;
+    prevWasPlanned = existing ? !!existing.planned : false;
   }
-  for (const u of prevAmmo) {
-    const a = getAmmo(u.ammoId);
-    if (a) a.quantity = (a.quantity || 0) + u.rounds;
-  }
-  for (const u of t.ammoUsage) {
-    const a = getAmmo(u.ammoId);
-    if (a) a.quantity = Math.max(0, (a.quantity || 0) - u.rounds);
-  }
-  // Undo previous mag round attribution
-  if (prevMagIds.length) {
-    const prevPerMag = Math.round(prevTotalRounds / prevMagIds.length);
-    for (const magId of prevMagIds) {
-      const mg = (DB.magazines || []).find(x => x.id === magId);
-      if (mg) mg.totalRounds = Math.max(0, (mg.totalRounds || 0) - prevPerMag);
+  // Planned sessions do not affect ammo inventory or magazine round counts.
+  // Only apply side effects for real (logged) sessions.
+  if (!t.planned) {
+    // If editing a previously logged session, restore its ammo first
+    if (!prevWasPlanned) {
+      for (const u of prevAmmo) {
+        const a = getAmmo(u.ammoId);
+        if (a) a.quantity = (a.quantity || 0) + u.rounds;
+      }
     }
-  }
-  // Apply new mag round attribution
-  if (selectedMagIds.length && t.totalRounds > 0) {
-    const perMag = Math.round(t.totalRounds / selectedMagIds.length);
-    for (const magId of selectedMagIds) {
-      const mg = (DB.magazines || []).find(x => x.id === magId);
-      if (mg) mg.totalRounds = (mg.totalRounds || 0) + perMag;
+    for (const u of t.ammoUsage) {
+      const a = getAmmo(u.ammoId);
+      if (a) a.quantity = Math.max(0, (a.quantity || 0) - u.rounds);
+    }
+    // Undo previous mag round attribution
+    if (!prevWasPlanned && prevMagIds.length) {
+      const prevPerMag = Math.round(prevTotalRounds / prevMagIds.length);
+      for (const magId of prevMagIds) {
+        const mg = (DB.magazines || []).find(x => x.id === magId);
+        if (mg) mg.totalRounds = Math.max(0, (mg.totalRounds || 0) - prevPerMag);
+      }
+    }
+    // Apply new mag round attribution
+    if (selectedMagIds.length && t.totalRounds > 0) {
+      const perMag = Math.round(t.totalRounds / selectedMagIds.length);
+      for (const magId of selectedMagIds) {
+        const mg = (DB.magazines || []).find(x => x.id === magId);
+        if (mg) mg.totalRounds = (mg.totalRounds || 0) + perMag;
+      }
     }
   }
 
@@ -4301,10 +4343,14 @@ function saveSession(id) {
   } else {
     DB.sessions.push({ id: uid('se'), ...t });
   }
+  // If converting from a plan, soft-delete the original planned session
+  if (sourcePlanId) {
+    softDelete('session', sourcePlanId);
+  }
   saveDB(); closeModal(); renderSessions();
   // Offer field strip log if this session is the latest live-fire session and a field strip is now pending.
   // Dry-fire sessions never trigger the field-strip prompt.
-  if (!id && t.type !== 'dry_fire') {
+  if (!id && t.type !== 'dry_fire' && !t.planned) {
     const latestForFirearm = [...DB.sessions].filter(x => x.firearmId === t.firearmId).sort((a,b)=>b.date.localeCompare(a.date))[0];
     const isLatest = latestForFirearm && latestForFirearm.id !== id && latestForFirearm.date === t.date;
     const lastFS = lastMaintenance(t.firearmId, 'field_strip');
