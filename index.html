@@ -986,17 +986,20 @@ function softDelete(type, id) {
   if (type === 'session') {
     item = DB.sessions.find(x => x.id === id);
     if (!item) return;
-    // Return ammo to inventory
-    for (const u of (item.ammoUsage || [])) {
-      const a = getAmmo(u.ammoId);
-      if (a) a.quantity = (a.quantity || 0) + u.rounds;
-    }
-    // Reverse mag round attribution
-    if (item.magIds && item.magIds.length && item.totalRounds > 0) {
-      const perMag = Math.round(item.totalRounds / item.magIds.length);
-      for (const magId of item.magIds) {
-        const mg = (DB.magazines || []).find(x => x.id === magId);
-        if (mg) mg.totalRounds = Math.max(0, (mg.totalRounds || 0) - perMag);
+    // Planned sessions never affected inventory — skip reversal
+    if (!item.planned) {
+      // Return ammo to inventory
+      for (const u of (item.ammoUsage || [])) {
+        const a = getAmmo(u.ammoId);
+        if (a) a.quantity = (a.quantity || 0) + u.rounds;
+      }
+      // Reverse mag round attribution
+      if (item.magIds && item.magIds.length && item.totalRounds > 0) {
+        const perMag = Math.round(item.totalRounds / item.magIds.length);
+        for (const magId of item.magIds) {
+          const mg = (DB.magazines || []).find(x => x.id === magId);
+          if (mg) mg.totalRounds = Math.max(0, (mg.totalRounds || 0) - perMag);
+        }
       }
     }
     DB.sessions = DB.sessions.filter(x => x.id !== id);
@@ -3421,7 +3424,7 @@ function sessionCard(s) {
     return `<span class="chip">${escapeHtml(d.name)}${d.distance ? ' &middot; ' + escapeHtml(d.distance) : ''}${scoreText && scoreText !== '—' ? ' &middot; <strong style="color:var(--accent)">' + scoreText + '</strong>' : ''}</span>`;
   }).join('');
   const isPlanned = !!s.planned;
-  const cardStyle = isPlanned ? 'border-left:3px solid #58a6ff;' : '';
+  const cardStyle = isPlanned ? 'box-shadow:inset 3px 0 0 #58a6ff,var(--shadow);' : '';
   return `
     <div class="card" style="${cardStyle}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
@@ -3484,12 +3487,15 @@ function sessionCard(s) {
 function convertPlannedSession(id) {
   const plan = DB.sessions.find(x => x.id === id);
   if (!plan) return;
-  // Open a Log Session modal pre-filled with the plan's data (new session, no id)
-  // We deep-copy the plan and clear the planned flag and id so it saves as a new logged session
   const prefill = JSON.parse(JSON.stringify(plan));
   prefill.planned = false;
   delete prefill.id;
-  // Open the modal using the standard session modal, injecting prefill data
+  // Recalculate totalRounds from splits if multi-firearm, so the modal shows the correct total
+  if (prefill.multiFirearm && prefill.firearmSplits && prefill.firearmSplits.length) {
+    const splitsTotal = prefill.firearmSplits.reduce((s, sp) => s + (sp.rounds || 0), 0);
+    prefill.totalRounds = splitsTotal;
+    if (prefill.ammoUsage.length === 1) prefill.ammoUsage[0].rounds = splitsTotal;
+  }
   openSessionModal('', 'convert', prefill, id);
 }
 /* ============================================================
@@ -4278,6 +4284,16 @@ function saveSession(id, sourcePlanId) {
     if (t.firearmSplits.length) {
       t.firearmId = t.firearmSplits[0].firearmId; // primary for backward compat
       t.totalRounds = t.firearmSplits.reduce((s, sp) => s + (sp.rounds || 0), 0);
+      // Firearm splits are authoritative — sync ammo rows to match the splits total.
+      // If there's one ammo row, update its rounds. If multiple, scale proportionally.
+      if (t.ammoUsage.length === 1) {
+        t.ammoUsage[0].rounds = t.totalRounds;
+      } else if (t.ammoUsage.length > 1) {
+        const ammoTotal = t.ammoUsage.reduce((s, u) => s + u.rounds, 0);
+        if (ammoTotal > 0) {
+          t.ammoUsage.forEach(u => { u.rounds = Math.round(u.rounds / ammoTotal * t.totalRounds); });
+        }
+      }
     } else {
       t.firearmSplits = [];
       t.totalRounds = t.ammoUsage.reduce((s, u) => s + u.rounds, 0);
