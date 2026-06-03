@@ -203,7 +203,8 @@
     box-shadow: var(--shadow);
   }
   .card-planned {
-    border-left: 3px solid #58a6ff !important;
+    border-top: 3px solid #58a6ff !important;
+    background: rgba(88,166,255,0.06) !important;
   }
   .card h3 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 12px; }
 
@@ -1120,18 +1121,21 @@ function recentlyDeletedCard(type) {
       </td>
     </tr>`;
   }).join('');
-  return `<details style="margin-top:16px">
-    <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-dim);padding:10px 16px;background:var(--card-bg);border:1px solid var(--border);border-radius:8px">
+  const uid = 'rdc-' + type;
+  return `<div style="margin-bottom:16px">
+    <button onclick="const b=document.getElementById('${uid}');b.style.display=b.style.display==='none'?'block':'none'" style="width:100%;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-dim);padding:10px 16px;background:var(--panel);border:1px solid var(--border);border-radius:8px;cursor:pointer;text-align:left">
       <span style="font-size:16px">🗑</span>
-      <span>Recently Deleted (${items.length}) — items auto-purge after ${TRASH_TTL_DAYS} days</span>
-    </summary>
-    <div class="card" style="margin-top:4px;border-top-left-radius:0;border-top-right-radius:0">
-      <table>
-        <thead><tr><th>Item</th><th>Expires</th><th></th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
+      <span>Recently Deleted (${items.length}) — tap to expand &middot; auto-purge after ${TRASH_TTL_DAYS} days</span>
+    </button>
+    <div id="${uid}" style="display:none">
+      <div class="card" style="margin-top:4px">
+        <table>
+          <thead><tr><th>Item</th><th>Expires</th><th></th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
     </div>
-  </details>`;
+  </div>`;
 }
 
 function saveDB() {
@@ -2067,7 +2071,7 @@ function renderDashboard() {
         <div class="sub">${formatDate(new Date())} &middot; Training since January 2025</div>
       </div>
       <div style="display:flex;gap:8px">
-        <button class="btn secondary" onclick="openSessionModal('','plan')" title="Plan an upcoming range trip or class">&#128203; Plan Session</button>
+        <button class="btn" style="background:#58a6ff;border-color:#58a6ff" onclick="openSessionModal('','plan')" title="Plan an upcoming range trip or class">&#128203; Plan Session</button>
         <button class="btn" onclick="openSessionModal()">+ Log Session</button>
       </div>
     </div>
@@ -3314,7 +3318,7 @@ function renderSessions() {
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         ${maintItems.length ? `<button class="btn secondary" onclick="document.getElementById('maint-alert-bar').scrollIntoView({behavior:'smooth'})" title="View maintenance items due">&#9881; ${maintItems.length} Maintenance Item${maintItems.length!==1?'s':''} Due</button>` : ''}
         <button class="btn secondary" onclick="printSessionRange()" title="Print all sessions matching current filters">&#128438; Print Report</button>
-        <button class="btn secondary" onclick="openSessionModal('','plan')" title="Plan an upcoming range trip or class">&#128203; Plan Session</button>
+        <button class="btn" style="background:#58a6ff;border-color:#58a6ff" onclick="openSessionModal('','plan')" title="Plan an upcoming range trip or class">&#128203; Plan Session</button>
         <button class="btn" onclick="openSessionModal()">+ Log Session</button>
       </div>
     </div>
@@ -3372,8 +3376,8 @@ function renderSessions() {
           <button class="btn small secondary" style="flex-shrink:0" onclick="event.stopPropagation();openMaintAction('${item.firearm.id}','${item.mtype}')">Log</button>
         </div>`).join('')}
     </div>` : ''}
-    ${filtered.length ? filtered.map(s => sessionCard(s)).join('') : `<div class="empty"><div class="icon">&#9650;</div>${hasFilter ? 'No sessions match the current filters.' : 'No sessions yet.'}<br><br>${hasFilter ? `<button class="btn secondary" onclick="clearSessionFilter()">Clear Filters</button>` : `<button class="btn" onclick="openSessionModal()">Log first session</button>`}</div>`}
     ${recentlyDeletedCard('session')}
+    ${filtered.length ? filtered.map(s => sessionCard(s)).join('') : `<div class="empty"><div class="icon">&#9650;</div>${hasFilter ? 'No sessions match the current filters.' : 'No sessions yet.'}<br><br>${hasFilter ? `<button class="btn secondary" onclick="clearSessionFilter()">Clear Filters</button>` : `<button class="btn" onclick="openSessionModal()">Log first session</button>`}</div>`}
   `;
 }
 
