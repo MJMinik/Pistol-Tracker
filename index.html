@@ -3069,7 +3069,15 @@ function saveAmmo(id) {
   saveDB(); closeModal(); renderAmmo();
 }
 function deleteAmmo(id) {
-  if (!confirm('Delete this ammunition record?')) return;
+  const sessionRefs = DB.sessions.filter(s => (s.ammoUsage || []).some(u => u.ammoId === id));
+  const purchaseRefs = (DB.purchases || []).filter(p => p.ammoId === id);
+  let msg = 'Delete this ammunition record?';
+  if (sessionRefs.length > 0) {
+    msg = `This ammo SKU is referenced by ${sessionRefs.length} session${sessionRefs.length > 1 ? 's' : ''}. Those sessions will show "ammo deleted" after removal.\n\nDelete anyway?`;
+  } else if (purchaseRefs.length > 0) {
+    msg = `This ammo SKU is linked to ${purchaseRefs.length} purchase record${purchaseRefs.length > 1 ? 's' : ''}. Delete anyway?`;
+  }
+  if (!confirm(msg)) return;
   DB.ammunition = DB.ammunition.filter(a => a.id !== id);
   saveDB(); renderAmmo();
 }
