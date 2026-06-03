@@ -202,10 +202,6 @@
     border-radius: 8px; padding: 20px; margin-bottom: 16px;
     box-shadow: var(--shadow);
   }
-  .card-planned {
-    border-top: 3px solid #58a6ff !important;
-    background: rgba(88,166,255,0.06) !important;
-  }
   .card h3 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 12px; }
 
   .grid { display: grid; gap: 16px; }
@@ -3309,7 +3305,7 @@ function renderSessions() {
     if (st.annualOverdue)   maintItems.push({ level:'warn',   firearm:fw, label:'Annual inspection overdue', mtype:'annual_inspection' });
     if (st.deepCleanWarning)maintItems.push({ level:'warn',   firearm:fw, label:`Deep clean approaching (${st.roundsSinceDeepClean.toLocaleString()} / ${DEEP_CLEAN_INTERVAL.toLocaleString()} rounds)`, mtype:'deep_clean' });
     if (rs && rs.warning)   maintItems.push({ level:'warn',   firearm:fw, label:`Recoil spring approaching (${rs.sinceReplace.toLocaleString()} / ${rs.interval.toLocaleString()} rounds)`, mtype:'recoil_spring' });
-    if (st.fieldStripDue)   maintItems.push({ level:'warn',   firearm:fw, label:`Field strip pending (${st.sessionsSinceFieldStrip} session${st.sessionsSinceFieldStrip!==1?'s':''} since last clean)`, mtype:'field_strip' });
+    if (st.fieldStripDue)   maintItems.push({ level: st.sessionsSinceFieldStrip > 1 ? 'warn' : 'info', firearm:fw, label:`Field strip pending (${st.sessionsSinceFieldStrip} session${st.sessionsSinceFieldStrip!==1?'s':''} since last clean)`, mtype:'field_strip' });
   }
 
   v.innerHTML = `
@@ -3362,7 +3358,7 @@ function renderSessions() {
       ${hasFilter ? `<div style="margin-top:8px;font-size:12px;color:var(--text-dim)">Showing ${filtered.length} of ${allSessions.length} session${allSessions.length!==1?'s':''}</div>` : ''}
     </div>
 
-    ${maintItems.length ? `<div id="maint-alert-bar" class="alert warn" style="flex-direction:column;align-items:stretch;cursor:pointer" onclick="openMaintAction('${maintItems[0].firearm.id}','${maintItems[0].mtype}')">
+    ${maintItems.length ? `<div id="maint-alert-bar" class="alert ${maintItems.some(i=>i.level==='danger')?'danger':maintItems.some(i=>i.level==='warn')?'warn':'info'}" style="flex-direction:column;align-items:stretch;cursor:pointer" onclick="openMaintAction('${maintItems[0].firearm.id}','${maintItems[0].mtype}')">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
         <strong style="font-size:13px">&#9888; ${maintItems.length} Maintenance Item${maintItems.length!==1?'s':''} Due</strong>
         <span style="color:var(--text-dim);font-size:12px">Click any item to log it.</span>
@@ -3432,7 +3428,7 @@ function sessionCard(s) {
   }).join('');
   const isPlanned = !!s.planned;
   return `
-    <div class="card${isPlanned ? ' card-planned' : ''}">
+    <div class="card">${isPlanned ? `<div style="background:#58a6ff;margin:-20px -20px 14px -20px;padding:6px 16px;border-radius:6px 6px 0 0;font-size:11px;font-weight:700;letter-spacing:1px;color:#fff">&#128203; PLANNED SESSION</div>` : ''}
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
           <div style="font-size:16px;font-weight:600">${formatDate(s.date)} ${isPlanned ? '<span class="badge" style="background:rgba(88,166,255,0.15);color:#58a6ff;border:1px solid rgba(88,166,255,0.3)">PLANNED</span>' : `<span class="badge ${s.type==='competition'?'info':'neutral'}">${escapeHtml(s.type||'practice')}</span>`}</div>
