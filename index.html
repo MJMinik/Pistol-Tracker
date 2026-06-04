@@ -580,7 +580,7 @@
       <a data-view="maintenance"><span class="icon">&#9881;</span> Maintenance</a>
       <a data-view="reference"><span class="icon">&#9432;</span> Atlas Reference</a>
       <a data-view="help"><span class="icon">&#9432;</span> Help</a>
-      <a data-view="settings"><span class="icon">&#9776;</span> Settings</a>
+      <a data-view="settings"><span class="icon">&#9776;</span> Settings &amp; Data</a>
     </nav>
     <div class="sidebar-footer">
       v1.8 &middot; <a href="#" id="export-data" style="color:var(--accent)">Export Data</a>
@@ -7076,7 +7076,7 @@ function renderSettings() {
   const lastExport = DB.settings.lastSyncExportDate;
   const lastImport = DB.settings.lastSyncImportDate;
   v.innerHTML = `
-    <div class="view-header"><div><h2>Settings ${sectionHelpBtn('settings')}</h2><div class="sub">iCloud sync, data export, drill library</div></div></div>
+    <div class="view-header"><div><h2>Settings &amp; Data ${sectionHelpBtn('settings')}</h2><div class="sub">iCloud sync, data export, drill library</div></div></div>
     ${sectionHelpPanel('settings')}
     <!-- iCloud Sync card -->
     <div class="card" style="border-color:var(--accent)">
