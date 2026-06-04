@@ -203,6 +203,8 @@
     box-shadow: var(--shadow);
   }
   .card h3 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 12px; }
+  #se-total::-webkit-outer-spin-button, #se-total::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  #se-total { -moz-appearance: textfield; }
 
   .grid { display: grid; gap: 16px; }
   .grid-4 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
@@ -3432,8 +3434,8 @@ function sessionCard(s) {
     <div class="card">${isPlanned ? `<div style="background:#58a6ff;margin:-20px -20px 14px -20px;padding:6px 16px;border-radius:6px 6px 0 0;font-size:11px;font-weight:700;letter-spacing:1px;color:#fff">&#128203; PLANNED SESSION</div>` : ''}
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
-          <div style="font-size:16px;font-weight:600">${formatDate(s.date)} ${isPlanned ? '<span class="badge" style="background:rgba(88,166,255,0.15);color:#58a6ff;border:1px solid rgba(88,166,255,0.3)">PLANNED</span>' : `<span class="badge ${s.type==='competition'?'info':'neutral'}">${escapeHtml(s.type||'practice')}</span>`}</div>
-          <div class="text-dim" style="font-size:12px;margin-top:2px">${(s.firearmSplits && s.firearmSplits.length) ? firearmDisplay + ' &middot; ' : escapeHtml(f ? f.name : '—') + ' &middot; '}${escapeHtml(s.location || 'Location not set')}</div>
+          <div style="font-size:16px;font-weight:600">${formatDate(s.date)} <span class="badge ${isPlanned ? '' : (s.type==='competition'?'info':'neutral')}" ${isPlanned ? 'style="background:rgba(88,166,255,0.15);color:#58a6ff;border:1px solid rgba(88,166,255,0.3)"' : ''}>${isPlanned ? escapeHtml(s.type||'practice') : escapeHtml(s.type||'practice')}</span></div>
+          <div class="text-dim" style="font-size:12px;margin-top:6px">${(s.firearmSplits && s.firearmSplits.length) ? firearmDisplay + ' &middot; ' : escapeHtml(f ? f.name : '—') + ' &middot; '}${escapeHtml(s.location || 'Location not set')}</div>
         </div>
         <div style="text-align:right">
           <div style="font-size:24px;font-weight:600;color:${isPlanned ? '#58a6ff' : 'var(--accent)'}">~${(s.totalRounds||0).toLocaleString()}</div>
@@ -4121,7 +4123,7 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
           <select id="se-firearm" onchange="updateSessionMagSection()" >${DB.firearms.map(f => `<option value="${f.id}" ${s.firearmId===f.id?'selected':''}>${escapeHtml(f.name)}</option>`).join('')}</select>
         </div>
       </div>
-      <div class="form-row" style="margin-top:-4px;overflow:hidden">
+      <div class="form-row" style="margin-top:-4px">
         <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
           <input type="checkbox" id="se-multi-fw" ${(s.firearmSplits && s.firearmSplits.length)?'checked':''} onchange="toggleMultiFirearm(this.checked)">
           <span style="font-size:13px">Multiple firearms used this session</span>
@@ -4131,7 +4133,7 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
       <div id="se-mag-section" data-prev-mag-ids="${(s.magIds||[]).join(',')}"></div>
       <div class="form-grid-2">
         <div class="form-row"><label>Location</label><input id="se-location" value="${escapeHtml(s.location)}" placeholder="e.g. Local Range, USPSA Match"></div>
-        <div class="form-row"><label>Range Fee ($) ${tip('Optional lane or entry fee. Flows automatically into the Range Fees bucket in the Costs & Purchases section.')}</label><input id="se-rangefee" type="number" min="0" step="0.01" value="${s.rangeFee || ''}" placeholder="0.00"></div>
+        <div class="form-row"><label id="se-rangefee-label">${s.type==='class'?'Class Fee ($)':'Range Fee ($)'} ${tip('Lane fee, class tuition, or match entry fee. Automatically flows into the Range Fees bucket in Costs & Purchases. Pre-paid class fees can be entered when planning — they appear in Costs immediately and are removed if the plan is deleted.')}</label><input id="se-rangefee" type="number" min="0" step="0.01" value="${s.rangeFee || ''}" placeholder="0.00"></div>
       </div>
       <div class="form-grid-2">
         <div class="form-row"><label>Distances Practiced ${tip('Comma-separated distances, e.g. 7yd, 15yd, 25yd. Shown on the session card for reference.')}</label><input id="se-dist" value="${escapeHtml(s.distances)}" placeholder="e.g. 7yd, 15yd, 25yd"></div>
@@ -4196,7 +4198,7 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
       ` : ''}
       <div class="form-row"><label>Notes</label><textarea id="se-notes" rows="4">${escapeHtml(s.notes)}</textarea></div>
 
-      <div class="form-row"><label>Total Rounds (auto)</label><input id="se-total" type="number" readonly value="${s.totalRounds||0}" style="background:var(--panel-2);-webkit-appearance:none;-moz-appearance:textfield"></div>
+      <div class="form-row"><label>Total Rounds (auto)</label><input id="se-total" type="number" readonly value="${s.totalRounds||0}" style="background:var(--panel-2)"></div>
     </div>
     <div class="modal-footer">
       <button class="btn secondary" onclick="closeModal()">Cancel</button>
@@ -4229,8 +4231,15 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
       const lbl = document.getElementById('se-'+k+'-val');
       if (inp && lbl) inp.addEventListener('input', () => lbl.textContent = inp.value);
     });
-    // Re-render drill list when session type changes
-    document.getElementById('se-type').addEventListener('change', renderDrillRows);
+    // Re-render drill list when session type changes; also update range fee label
+    document.getElementById('se-type').addEventListener('change', function() {
+      renderDrillRows();
+      const lbl = document.getElementById('se-rangefee-label');
+      if (lbl) {
+        const isClass = this.value === 'class';
+        lbl.childNodes[0].textContent = isClass ? 'Class Fee ($) ' : 'Range Fee ($) ';
+      }
+    });
   });
 }
 function toggleNoHolster(val) {
@@ -4915,8 +4924,9 @@ function cancelInlineMatchPct(id) {
 }
 function deleteSession(id) {
   const s = DB.sessions.find(x => x.id === id);
+  const rangeFeeNote = s && s.planned && parseFloat(s.rangeFee) > 0 ? ` Any range/class fee ($${parseFloat(s.rangeFee).toFixed(2)}) will be removed from your Costs.` : '';
   const msg = s && s.planned
-    ? 'Delete this planned session? No inventory changes will be made.'
+    ? `Delete this planned session? No ammunition inventory changes will be made.${rangeFeeNote}`
     : 'Move this session to Recently Deleted? Ammo will be returned to inventory.';
   if (!confirm(msg)) return;
   softDelete('session', id);
