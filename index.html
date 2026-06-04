@@ -1394,7 +1394,8 @@ function maintenanceStatus(firearmId) {
   const sessionsAfter = DB.sessions.filter(s =>
     s.firearmId === firearmId &&
     s.date > lastFSDate &&
-    s.type !== 'dry_fire'
+    s.type !== 'dry_fire' &&
+    !s.planned
   ).length;
   let annualOverdue = false;
   if (annual) {
@@ -3675,104 +3676,182 @@ function openChecklistModal(sessionId) {
   const s = DB.sessions.find(x => x.id === sessionId);
   if (!s) return;
   if (!s.checklist) s.checklist = { nightMode: false, tacticalMode: false, items: {} };
-  const cl = s.checklist;
+  if (!s.checklist.items) s.checklist.items = {};
   if (!DB.settings.checklistCustomItems) DB.settings.checklistCustomItems = { essentials:[], night:[], tactical:[] };
+  const cl = s.checklist;
   const custom = DB.settings.checklistCustomItems;
 
-  function renderChecklist() {
-    function sectionHtml(cat, title, icon, items, enabled) {
-      const customItems = custom[cat] || [];
-      const allItems = [...items, ...customItems];
-      const toggleId = `cl-toggle-${cat}`;
-      const isToggleable = cat !== 'essentials';
-      return `
-        <div style="margin-bottom:20px">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-            <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim)">${icon} ${title}</div>
-            ${isToggleable ? `<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
-              <input type="checkbox" id="${toggleId}" ${enabled?'checked':''} onchange="toggleChecklistMode('${sessionId}','${cat}',this.checked)">
-              Include
-            </label>` : ''}
-          </div>
-          ${(!isToggleable || enabled) ? `
-            <div style="display:flex;flex-direction:column;gap:6px">
-              ${allItems.map(item => `
-                <label style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--panel-2);border-radius:6px;cursor:pointer;font-size:13px">
-                  <input type="checkbox" ${cl.items[item.id]?'checked':''} onchange="toggleChecklistItem('${sessionId}','${item.id}',this.checked)" style="width:16px;height:16px;flex-shrink:0">
-                  ${escapeHtml(item.label)}
-                </label>`).join('')}
-            </div>
-            <div style="margin-top:8px;display:flex;gap:6px">
-              <input id="cl-new-${cat}" type="text" placeholder="Add custom item…" style="flex:1;font-size:13px;padding:6px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text)">
-              <button class="btn small secondary" onclick="addChecklistCustomItem('${sessionId}','${cat}')">+ Add</button>
-            </div>
-          ` : `<div style="font-size:12px;color:var(--text-dim);padding:6px 0">Toggle "Include" above to add ${title.toLowerCase()} items.</div>`}
-        </div>`;
-    }
-
-    const allItems = getChecklistItems(cl);
-    const checked = allItems.filter(i => cl.items[i.id]).length;
-    const total = allItems.length;
-    const pct = total > 0 ? Math.round(checked/total*100) : 0;
-    const color = checked === total && total > 0 ? '#3fb950' : '#58a6ff';
-
+  function itemRow(item) {
+    const state = cl.items[item.id] || {};
     return `
-      <div class="modal-header">
-        <h3>&#9745; Session Checklist</h3>
-        <button class="modal-close" onclick="closeModal()">&times;</button>
-      </div>
-      <div class="modal-body" style="max-height:70vh;overflow-y:auto">
-        <div style="margin-bottom:16px;padding:10px 14px;background:var(--panel-2);border-radius:8px;display:flex;align-items:center;gap:12px">
-          <div style="flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden">
-            <div style="width:${pct}%;height:100%;background:${color};border-radius:4px;transition:width 0.3s"></div>
-          </div>
-          <div style="font-size:13px;font-weight:600;color:${color};white-space:nowrap">${checked} / ${total} ready</div>
-        </div>
-        ${sectionHtml('essentials','Range Essentials','🎯', DEFAULT_CHECKLIST_ITEMS.essentials, true)}
-        ${sectionHtml('night','Night Session','🔦', DEFAULT_CHECKLIST_ITEMS.night, cl.nightMode)}
-        ${sectionHtml('tactical','Tactical','🪖', DEFAULT_CHECKLIST_ITEMS.tactical, cl.tacticalMode)}
-      </div>
-      <div class="modal-footer">
-        <button class="btn" onclick="closeModal()">Done</button>
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--panel-2);border-radius:6px;margin-bottom:4px">
+        <label style="display:flex;align-items:center;gap:8px;flex:1;cursor:pointer;font-size:13px">
+          <input type="checkbox" ${state.take?'checked':''} onchange="setDbChecklistTake('${sessionId}','${item.id}',this.checked)" style="width:16px;height:16px;flex-shrink:0">
+          ${escapeHtml(item.label)}
+        </label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-dim);cursor:pointer;white-space:nowrap;${!state.take?'opacity:0.35;pointer-events:none':''}">
+          <input type="checkbox" ${state.packed?'checked':''} ${!state.take?'disabled':''} onchange="setDbChecklistPacked('${sessionId}','${item.id}',this.checked)" style="width:14px;height:14px">
+          Packed
+        </label>
       </div>`;
   }
 
-  openModal(renderChecklist());
+  function sectionHtml(cat, title, icon, defaultItems, enabled) {
+    const allItems = [...defaultItems, ...(custom[cat]||[])];
+    const isToggleable = cat !== 'essentials';
+    return `
+      <div style="margin-bottom:16px">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:${isToggleable?'4px':'8px'}">${icon} ${title}</div>
+        ${isToggleable ? `
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-bottom:${enabled?'10px':'4px'};padding-left:4px">
+            <input type="checkbox" ${enabled?'checked':''} onchange="setDbChecklistMode('${sessionId}','${cat}',this.checked)" style="width:15px;height:15px">
+            Include ${title.toLowerCase()} items in this session
+          </label>
+        ` : ''}
+        ${(!isToggleable || enabled) ? `
+          <div>${allItems.map(item => itemRow(item)).join('')}</div>
+          <div style="display:flex;gap:6px;margin-top:8px;align-items:center">
+            <input id="cl-new-${cat}" type="text" placeholder="Add a gear item — saves to all future sessions" style="flex:1;font-size:12px;padding:5px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text)">
+            <button class="btn small secondary" onclick="addDbChecklistItem('${sessionId}','${cat}')">+ Add</button>
+          </div>
+        ` : ''}
+      </div>`;
+  }
+
+  function progressBar() {
+    const allItems = getChecklistItems(cl);
+    const toTake = allItems.filter(i => (cl.items[i.id]||{}).take).length;
+    const packed = allItems.filter(i => (cl.items[i.id]||{}).packed).length;
+    if (!toTake) return '';
+    const pct = Math.round(packed/toTake*100);
+    const color = packed === toTake ? '#3fb950' : '#58a6ff';
+    const text = packed === toTake ? `✓ All packed (${packed}/${toTake})` : `${packed} / ${toTake} packed`;
+    return `<div style="margin-bottom:12px;padding:8px 12px;background:var(--panel-2);border-radius:8px;display:flex;align-items:center;gap:10px">
+      <div style="flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+        <div style="width:${pct}%;height:100%;background:${color};border-radius:3px;transition:width 0.3s"></div>
+      </div>
+      <div style="font-size:12px;font-weight:600;color:${color};white-space:nowrap">${text}</div>
+    </div>`;
+  }
+
+  openModal(`
+    <div class="modal-header">
+      <h3>&#9745; Session Checklist</h3>
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+    </div>
+    <div class="modal-body" style="max-height:70vh;overflow-y:auto">
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Check items you plan to bring, then mark each as packed when ready.</div>
+      ${progressBar()}
+      ${sectionHtml('essentials','Range Essentials','🎯', DEFAULT_CHECKLIST_ITEMS.essentials, true)}
+      ${sectionHtml('night','Night Session','🔦', DEFAULT_CHECKLIST_ITEMS.night, cl.nightMode)}
+      ${sectionHtml('tactical','Tactical','🪖', DEFAULT_CHECKLIST_ITEMS.tactical, cl.tacticalMode)}
+    </div>
+    <div class="modal-footer" style="gap:8px">
+      <button class="btn secondary" onclick="printChecklist('${sessionId}');closeModal()">&#128438; Print</button>
+      <button class="btn" onclick="closeModal()">Done</button>
+    </div>`);
 }
 
-function toggleChecklistItem(sessionId, itemId, checked) {
+function setDbChecklistTake(sessionId, itemId, checked) {
   const s = DB.sessions.find(x => x.id === sessionId);
-  if (!s || !s.checklist) return;
-  s.checklist.items[itemId] = checked;
-  saveDB();
-  // Update progress line on card without full re-render
-  renderSessions();
+  if (!s?.checklist) return;
+  if (!s.checklist.items[itemId]) s.checklist.items[itemId] = {};
+  s.checklist.items[itemId].take = checked;
+  if (!checked) s.checklist.items[itemId].packed = false;
+  saveDB(); renderSessions(); openChecklistModal(sessionId);
 }
 
-function toggleChecklistMode(sessionId, cat, enabled) {
+function setDbChecklistPacked(sessionId, itemId, checked) {
   const s = DB.sessions.find(x => x.id === sessionId);
-  if (!s || !s.checklist) return;
+  if (!s?.checklist) return;
+  if (!s.checklist.items[itemId]) s.checklist.items[itemId] = {};
+  s.checklist.items[itemId].packed = checked;
+  saveDB(); renderSessions(); openChecklistModal(sessionId);
+}
+
+function setDbChecklistMode(sessionId, cat, enabled) {
+  const s = DB.sessions.find(x => x.id === sessionId);
+  if (!s?.checklist) return;
   if (cat === 'night') s.checklist.nightMode = enabled;
   if (cat === 'tactical') s.checklist.tacticalMode = enabled;
-  // Clear checked state for items in this category when disabling
   if (!enabled) {
     const items = [...DEFAULT_CHECKLIST_ITEMS[cat], ...((DB.settings.checklistCustomItems||{})[cat]||[])];
     items.forEach(i => delete s.checklist.items[i.id]);
   }
-  saveDB();
-  // Re-render the modal in place
-  openChecklistModal(sessionId);
+  saveDB(); openChecklistModal(sessionId);
 }
 
-function addChecklistCustomItem(sessionId, cat) {
+function addDbChecklistItem(sessionId, cat) {
   const input = document.getElementById(`cl-new-${cat}`);
   const label = input ? input.value.trim() : '';
   if (!label) return;
   if (!DB.settings.checklistCustomItems) DB.settings.checklistCustomItems = { essentials:[], night:[], tactical:[] };
-  const id = uid('ci');
-  DB.settings.checklistCustomItems[cat].push({ id, label });
-  saveDB();
-  openChecklistModal(sessionId);
+  DB.settings.checklistCustomItems[cat].push({ id: uid('ci'), label });
+  saveDB(); openChecklistModal(sessionId);
+}
+
+function printChecklist(sessionId) {
+  const s = DB.sessions.find(x => x.id === sessionId);
+  if (!s) return;
+  const cl = s.checklist || { nightMode: false, tacticalMode: false, items: {} };
+  const f = getFirearm(s.firearmId);
+  const allItems = getChecklistItems(cl);
+  const toTake = allItems.filter(i => (cl.items[i.id]||{}).take);
+  const packed = toTake.filter(i => (cl.items[i.id]||{}).packed).length;
+
+  function sectionRows(cat, title, icon, defaultItems) {
+    const custom = (DB.settings.checklistCustomItems||{})[cat]||[];
+    const items = [...defaultItems, ...custom].filter(i => (cl.items[i.id]||{}).take);
+    if (!items.length) return '';
+    return `<div class="cl-section">
+      <div class="cl-section-title">${icon} ${title}</div>
+      ${items.map(item => {
+        const isPacked = (cl.items[item.id]||{}).packed;
+        return `<div class="cl-item ${isPacked?'packed':''}">
+          <span class="cl-box">${isPacked?'✓':''}</span>
+          <span class="cl-label">${item.label}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  const styles = `
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, Arial, sans-serif; font-size: 11pt; color: #111; background: #fff; padding: 32px 40px; max-width: 680px; margin: 0 auto; }
+    .header { border-bottom: 2px solid #111; padding-bottom: 12px; margin-bottom: 20px; }
+    .header h1 { font-size: 18pt; font-weight: bold; }
+    .header .meta { font-size: 10pt; color: #555; margin-top: 4px; }
+    .progress { margin-bottom: 20px; font-size: 12pt; color: #444; }
+    .cl-section { margin-bottom: 18px; }
+    .cl-section-title { font-size: 9pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 8px; }
+    .cl-item { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 4px; }
+    .cl-item.packed { background: #f0f8f0; border-color: #aaddaa; }
+    .cl-box { width: 18px; height: 18px; border: 1.5px solid #999; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 11pt; font-weight: bold; color: #2a7a2a; flex-shrink: 0; }
+    .cl-item.packed .cl-box { background: #d4edda; border-color: #2a7a2a; }
+    .cl-label { font-size: 11pt; }
+    .app-label { font-size: 8pt; color: #bbb; text-align: right; margin-bottom: 6px; }
+    @media print { body { padding: 0.4in 0.5in; } }
+  `;
+
+  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Session Checklist — ${formatDate(s.date)}</title><style>${styles}</style></head>
+  <body>
+    <div class="app-label">Pistol Tracker — Session Checklist</div>
+    <div class="header">
+      <h1>Session Checklist — ${formatDate(s.date)}</h1>
+      <div class="meta">${f ? f.name : '—'}${s.location ? ' · ' + s.location : ''}</div>
+    </div>
+    <div class="progress">${packed} of ${toTake.length} items packed</div>
+    ${sectionRows('essentials','Range Essentials','🎯', DEFAULT_CHECKLIST_ITEMS.essentials)}
+    ${cl.nightMode ? sectionRows('night','Night Session','🔦', DEFAULT_CHECKLIST_ITEMS.night) : ''}
+    ${cl.tacticalMode ? sectionRows('tactical','Tactical','🪖', DEFAULT_CHECKLIST_ITEMS.tactical) : ''}
+  </body></html>`;
+
+  const win = window.open('', '_blank');
+  if (!win) { alert('Pop-up blocked. Please allow pop-ups for this page.'); return; }
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(() => win.print(), 400);
 }
 
 /* ============================================================
@@ -4012,8 +4091,8 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
       ${isPlanMode ? `
       <hr>
       <details id="se-checklist-details">
-        <summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px;padding:4px 0;font-size:15px;font-weight:600">
-          <span>&#9745; Gear Checklist</span>
+        <summary style="cursor:pointer;display:flex;align-items:center;gap:8px;padding:4px 0;font-size:15px;font-weight:600">
+          Gear Checklist
           <span id="se-cl-progress" style="font-size:12px;font-weight:normal;color:var(--text-dim)"></span>
         </summary>
         <div id="se-checklist-content" style="margin-top:12px"></div>
@@ -4078,7 +4157,7 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
     ['focus','fund','sat'].forEach(k => {
       const inp = document.getElementById('se-'+k);
       const lbl = document.getElementById('se-'+k+'-val');
-      inp.addEventListener('input', () => lbl.textContent = inp.value);
+      if (inp && lbl) inp.addEventListener('input', () => lbl.textContent = inp.value);
     });
     // Re-render drill list when session type changes
     document.getElementById('se-type').addEventListener('change', renderDrillRows);
@@ -4098,16 +4177,25 @@ function updateSessionMagSection() {
     sec.innerHTML = '<div style="font-size:13px;color:var(--accent);margin-top:6px;margin-bottom:16px">⚠️ No magazines set up for this firearm — add them in Firearms → Magazines.</div>';
     return;
   }
-  sec.innerHTML = `<div style="margin-top:6px;margin-bottom:2px">
-    <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Magazines Used (optional)</div>
-    <div style="display:flex;flex-wrap:wrap;gap:10px">
+  const isPlan = !!(window._tempSession && window._tempSession.planned);
+  const magsInner = `<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:6px">
       ${poolMags.map(mg => `<label style="display:flex;align-items:center;gap:5px;font-weight:normal;text-transform:none;cursor:pointer;font-size:13px">
         <input type="checkbox" class="se-mag-check" value="${mg.id}" ${prevIds.includes(mg.id)?'checked':''}>
         ${escapeHtml(mg.label)}
       </label>`).join('')}
     </div>
-    <div class="help-text">Rounds divided equally among checked mags.</div>
-  </div>`;
+    <div class="help-text">Rounds divided equally among checked mags.</div>`;
+  if (isPlan) {
+    sec.innerHTML = `<details style="margin-top:6px;margin-bottom:2px">
+      <summary style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;cursor:pointer">Magazines Used (optional)</summary>
+      ${magsInner}
+    </details>`;
+  } else {
+    sec.innerHTML = `<div style="margin-top:6px;margin-bottom:2px">
+      <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Magazines Used (optional)</div>
+      ${magsInner}
+    </div>`;
+  }
 }
 function toggleMultiFirearm(val) {
   window._tempSession.multiFirearm = val;
