@@ -3472,9 +3472,17 @@ function sessionCard(s) {
         </div>
       </div>
       ${(s.targetImages && s.targetImages.length) ? `<div class="image-gallery">${s.targetImages.map((id, idx) => `<div class="image-thumb" style="background-image:url('${imgSrc(id)}')" onclick="showLightbox('${id}','${s.id}',${idx})" title="Click to view · Annotate button appears in viewer"></div>`).join('')}</div>` : ''}
+      ${isPlanned ? (() => {
+        const cl = s.checklist || {};
+        const allItems = getChecklistItems(cl);
+        const total = allItems.length;
+        const checked = allItems.filter(i => (cl.items || {})[i.id]).length;
+        return total > 0 ? `<div style="margin-top:10px;font-size:12px;color:${checked===total?'#3fb950':'#58a6ff'}">&#9745; ${checked} / ${total} items ready</div>` : '';
+      })() : ''}
       <div class="row-actions" style="margin-top:14px">
         ${isPlanned ? `
           <button class="btn small" style="background:#58a6ff;border-color:#58a6ff" onclick="convertPlannedSession('${s.id}')">&#10003; Convert to Logged</button>
+          <button class="btn small" style="background:#58a6ff;border-color:#58a6ff" onclick="openChecklistModal('${s.id}')">&#9745; Checklist</button>
           <button class="btn small secondary" onclick="openSessionModal('${s.id}')">Edit Plan</button>
           <button class="btn small danger" onclick="deleteSession('${s.id}')">Delete</button>
         ` : `
@@ -3500,6 +3508,158 @@ function convertPlannedSession(id) {
   }
   openSessionModal('', 'convert', prefill, id);
 }
+
+/* ============================================================
+   PLAN SESSION CHECKLIST
+   ============================================================ */
+const DEFAULT_CHECKLIST_ITEMS = {
+  essentials: [
+    { id:'e1', label:'Eye protection' },
+    { id:'e2', label:'Ear protection (passive)' },
+    { id:'e3', label:'Electronic ear protection' },
+    { id:'e4', label:'Ammo packed' },
+    { id:'e5', label:'Magazines loaded' },
+    { id:'e6', label:'Range bag' },
+    { id:'e7', label:'Targets' },
+    { id:'e8', label:'Staple gun / tape' },
+    { id:'e9', label:'Water / snacks' },
+    { id:'e10', label:'Medical kit / tourniquet' },
+  ],
+  night: [
+    { id:'n1', label:'Weapon light (charged & functional)' },
+    { id:'n2', label:'Handheld flashlight' },
+    { id:'n3', label:'Headlamp' },
+    { id:'n4', label:'Extra batteries' },
+    { id:'n5', label:'High-vis target markers' },
+    { id:'n6', label:'Night vision (if applicable)' },
+    { id:'n7', label:'Dark clothing' },
+  ],
+  tactical: [
+    { id:'t1', label:'Plate carrier / body armor' },
+    { id:'t2', label:'Helmet' },
+    { id:'t3', label:'Eye pro rated for FoF' },
+    { id:'t4', label:'Magazine pouches / chest rig' },
+    { id:'t5', label:'Radio / comms' },
+    { id:'t6', label:'Knee and elbow pads' },
+    { id:'t7', label:'Full IFAK medical kit' },
+    { id:'t8', label:'Simunition barrel (if applicable)' },
+  ]
+};
+
+function getChecklistItems(cl) {
+  const custom = (DB.settings.checklistCustomItems) || { essentials:[], night:[], tactical:[] };
+  const nightOn = cl.nightMode;
+  const tacticalOn = cl.tacticalMode;
+  const items = [...DEFAULT_CHECKLIST_ITEMS.essentials, ...(custom.essentials||[])];
+  if (nightOn) items.push(...DEFAULT_CHECKLIST_ITEMS.night, ...(custom.night||[]));
+  if (tacticalOn) items.push(...DEFAULT_CHECKLIST_ITEMS.tactical, ...(custom.tactical||[]));
+  return items;
+}
+
+function openChecklistModal(sessionId) {
+  const s = DB.sessions.find(x => x.id === sessionId);
+  if (!s) return;
+  if (!s.checklist) s.checklist = { nightMode: false, tacticalMode: false, items: {} };
+  const cl = s.checklist;
+  if (!DB.settings.checklistCustomItems) DB.settings.checklistCustomItems = { essentials:[], night:[], tactical:[] };
+  const custom = DB.settings.checklistCustomItems;
+
+  function renderChecklist() {
+    function sectionHtml(cat, title, icon, items, enabled) {
+      const customItems = custom[cat] || [];
+      const allItems = [...items, ...customItems];
+      const toggleId = `cl-toggle-${cat}`;
+      const isToggleable = cat !== 'essentials';
+      return `
+        <div style="margin-bottom:20px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim)">${icon} ${title}</div>
+            ${isToggleable ? `<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
+              <input type="checkbox" id="${toggleId}" ${enabled?'checked':''} onchange="toggleChecklistMode('${sessionId}','${cat}',this.checked)">
+              Include
+            </label>` : ''}
+          </div>
+          ${(!isToggleable || enabled) ? `
+            <div style="display:flex;flex-direction:column;gap:6px">
+              ${allItems.map(item => `
+                <label style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--panel-2);border-radius:6px;cursor:pointer;font-size:13px">
+                  <input type="checkbox" ${cl.items[item.id]?'checked':''} onchange="toggleChecklistItem('${sessionId}','${item.id}',this.checked)" style="width:16px;height:16px;flex-shrink:0">
+                  ${escapeHtml(item.label)}
+                </label>`).join('')}
+            </div>
+            <div style="margin-top:8px;display:flex;gap:6px">
+              <input id="cl-new-${cat}" type="text" placeholder="Add custom item…" style="flex:1;font-size:13px;padding:6px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text)">
+              <button class="btn small secondary" onclick="addChecklistCustomItem('${sessionId}','${cat}')">+ Add</button>
+            </div>
+          ` : `<div style="font-size:12px;color:var(--text-dim);padding:6px 0">Toggle "Include" above to add ${title.toLowerCase()} items.</div>`}
+        </div>`;
+    }
+
+    const allItems = getChecklistItems(cl);
+    const checked = allItems.filter(i => cl.items[i.id]).length;
+    const total = allItems.length;
+    const pct = total > 0 ? Math.round(checked/total*100) : 0;
+    const color = checked === total && total > 0 ? '#3fb950' : '#58a6ff';
+
+    return `
+      <div class="modal-header">
+        <h3>&#9745; Session Checklist</h3>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <div class="modal-body" style="max-height:70vh;overflow-y:auto">
+        <div style="margin-bottom:16px;padding:10px 14px;background:var(--panel-2);border-radius:8px;display:flex;align-items:center;gap:12px">
+          <div style="flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden">
+            <div style="width:${pct}%;height:100%;background:${color};border-radius:4px;transition:width 0.3s"></div>
+          </div>
+          <div style="font-size:13px;font-weight:600;color:${color};white-space:nowrap">${checked} / ${total} ready</div>
+        </div>
+        ${sectionHtml('essentials','Range Essentials','🎯', DEFAULT_CHECKLIST_ITEMS.essentials, true)}
+        ${sectionHtml('night','Night Session','🔦', DEFAULT_CHECKLIST_ITEMS.night, cl.nightMode)}
+        ${sectionHtml('tactical','Tactical','🪖', DEFAULT_CHECKLIST_ITEMS.tactical, cl.tacticalMode)}
+      </div>
+      <div class="modal-footer">
+        <button class="btn" onclick="closeModal()">Done</button>
+      </div>`;
+  }
+
+  openModal(renderChecklist());
+}
+
+function toggleChecklistItem(sessionId, itemId, checked) {
+  const s = DB.sessions.find(x => x.id === sessionId);
+  if (!s || !s.checklist) return;
+  s.checklist.items[itemId] = checked;
+  saveDB();
+  // Update progress line on card without full re-render
+  renderSessions();
+}
+
+function toggleChecklistMode(sessionId, cat, enabled) {
+  const s = DB.sessions.find(x => x.id === sessionId);
+  if (!s || !s.checklist) return;
+  if (cat === 'night') s.checklist.nightMode = enabled;
+  if (cat === 'tactical') s.checklist.tacticalMode = enabled;
+  // Clear checked state for items in this category when disabling
+  if (!enabled) {
+    const items = [...DEFAULT_CHECKLIST_ITEMS[cat], ...((DB.settings.checklistCustomItems||{})[cat]||[])];
+    items.forEach(i => delete s.checklist.items[i.id]);
+  }
+  saveDB();
+  // Re-render the modal in place
+  openChecklistModal(sessionId);
+}
+
+function addChecklistCustomItem(sessionId, cat) {
+  const input = document.getElementById(`cl-new-${cat}`);
+  const label = input ? input.value.trim() : '';
+  if (!label) return;
+  if (!DB.settings.checklistCustomItems) DB.settings.checklistCustomItems = { essentials:[], night:[], tactical:[] };
+  const id = uid('ci');
+  DB.settings.checklistCustomItems[cat].push({ id, label });
+  saveDB();
+  openChecklistModal(sessionId);
+}
+
 /* ============================================================
    PRINT SESSION REPORT
    ============================================================ */
