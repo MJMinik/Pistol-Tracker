@@ -3475,9 +3475,12 @@ function sessionCard(s) {
       ${isPlanned ? (() => {
         const cl = s.checklist || {};
         const allItems = getChecklistItems(cl);
-        const total = allItems.length;
-        const checked = allItems.filter(i => (cl.items || {})[i.id]).length;
-        return total > 0 ? `<div style="margin-top:10px;font-size:12px;color:${checked===total?'#3fb950':'#58a6ff'}">&#9745; ${checked} / ${total} items ready</div>` : '';
+        const toTake = allItems.filter(i => (cl.items||{})[i.id]?.take).length;
+        const packed = allItems.filter(i => (cl.items||{})[i.id]?.packed).length;
+        if (!toTake) return '';
+        const color = packed === toTake ? '#3fb950' : '#58a6ff';
+        const text = packed === toTake ? `✓ All packed (${packed}/${toTake})` : `${packed} / ${toTake} packed`;
+        return `<div style="margin-top:10px;font-size:12px;color:${color}">&#9745; ${text}</div>`;
       })() : ''}
       <div class="row-actions" style="margin-top:14px">
         ${isPlanned ? `
@@ -3560,68 +3563,94 @@ function renderChecklistInModal() {
   const cl = window._tempSession.checklist;
   const container = document.getElementById('se-checklist-content');
   if (!container || !cl) return;
+  if (!cl.items) cl.items = {};
   if (!DB.settings.checklistCustomItems) DB.settings.checklistCustomItems = { essentials:[], night:[], tactical:[] };
   const custom = DB.settings.checklistCustomItems;
 
-  function sectionHtml(cat, title, icon, defaultItems, enabled) {
-    const customItems = custom[cat] || [];
-    const allItems = [...defaultItems, ...customItems];
-    const isToggleable = cat !== 'essentials';
+  function itemRow(item) {
+    const state = cl.items[item.id] || {};
     return `
-      <div style="margin-bottom:16px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim)">${icon} ${title}</div>
-          ${isToggleable ? `<label style="display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer">
-            <input type="checkbox" ${enabled?'checked':''} onchange="setModalChecklistMode('${cat}',this.checked)"> Include
-          </label>` : ''}
-        </div>
-        ${(!isToggleable || enabled) ? `
-          <div style="display:flex;flex-direction:column;gap:5px">
-            ${allItems.map(item => `
-              <label style="display:flex;align-items:center;gap:10px;padding:7px 10px;background:var(--panel-2);border-radius:6px;cursor:pointer;font-size:13px">
-                <input type="checkbox" ${cl.items[item.id]?'checked':''} onchange="setModalChecklistItem('${item.id}',this.checked)" style="width:16px;height:16px;flex-shrink:0">
-                ${escapeHtml(item.label)}
-              </label>`).join('')}
-          </div>
-          <div style="display:flex;gap:6px;margin-top:6px">
-            <input id="cl-modal-new-${cat}" type="text" placeholder="Add custom item…" style="flex:1;font-size:13px;padding:5px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text)">
-            <button class="btn small secondary" onclick="addModalChecklistItem('${cat}')">+ Add</button>
-          </div>
-        ` : `<div style="font-size:12px;color:var(--text-dim);padding:4px 0">Enable above to add ${title.toLowerCase()} items.</div>`}
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--panel-2);border-radius:6px;margin-bottom:4px">
+        <label style="display:flex;align-items:center;gap:8px;flex:1;cursor:pointer;font-size:13px">
+          <input type="checkbox" ${state.take?'checked':''} onchange="setModalChecklistTake('${item.id}',this.checked)" style="width:16px;height:16px;flex-shrink:0">
+          ${escapeHtml(item.label)}
+        </label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-dim);cursor:pointer;white-space:nowrap;${!state.take?'opacity:0.35;pointer-events:none':''}">
+          <input type="checkbox" ${state.packed?'checked':''} ${!state.take?'disabled':''} onchange="setModalChecklistPacked('${item.id}',this.checked)" style="width:14px;height:14px">
+          Packed
+        </label>
       </div>`;
   }
 
-  const allItems = getChecklistItems(cl);
-  const checked = allItems.filter(i => cl.items[i.id]).length;
-  const total = allItems.length;
-  const pct = total > 0 ? Math.round(checked/total*100) : 0;
-  const color = checked === total && total > 0 ? '#3fb950' : '#58a6ff';
+  function sectionHtml(cat, title, icon, defaultItems, enabled) {
+    const allItems = [...defaultItems, ...(custom[cat]||[])];
+    const isToggleable = cat !== 'essentials';
+    return `
+      <div style="margin-bottom:16px">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:${isToggleable?'4px':'8px'}">${icon} ${title}</div>
+        ${isToggleable ? `
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-bottom:${enabled?'10px':'4px'};padding-left:4px">
+            <input type="checkbox" ${enabled?'checked':''} onchange="setModalChecklistMode('${cat}',this.checked)" style="width:15px;height:15px">
+            Include ${title.toLowerCase()} items in this session
+          </label>
+        ` : ''}
+        ${(!isToggleable || enabled) ? `
+          <div>${allItems.map(item => itemRow(item)).join('')}</div>
+          <div style="display:flex;gap:6px;margin-top:8px;align-items:center">
+            <input id="cl-modal-new-${cat}" type="text" placeholder="Add a gear item — saves to all future sessions" style="flex:1;font-size:12px;padding:5px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text)">
+            <button class="btn small secondary" onclick="addModalChecklistItem('${cat}')">+ Add</button>
+          </div>
+        ` : ''}
+      </div>`;
+  }
 
-  // Update progress indicator in summary
+  // Progress: count items marked "take" and "packed"
+  const allItems = getChecklistItems(cl);
+  const toTake = allItems.filter(i => (cl.items[i.id]||{}).take).length;
+  const packed = allItems.filter(i => (cl.items[i.id]||{}).packed).length;
+  const pct = toTake > 0 ? Math.round(packed/toTake*100) : 0;
+  const color = toTake > 0 && packed === toTake ? '#3fb950' : '#58a6ff';
+  const progressText = toTake === 0 ? 'Select items to bring' : packed === toTake ? `✓ All packed (${packed}/${toTake})` : `${packed} / ${toTake} packed`;
+
+  // Update summary line
   const prog = document.getElementById('se-cl-progress');
-  if (prog) prog.textContent = total > 0 ? `${checked} / ${total} ready` : '';
+  if (prog) prog.textContent = toTake > 0 ? `— ${progressText}` : '';
 
   container.innerHTML = `
-    <div style="margin-bottom:12px;padding:8px 12px;background:var(--panel-2);border-radius:8px;display:flex;align-items:center;gap:10px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-size:11px;color:var(--text-dim);padding:0 2px">
+      <span>Check items you plan to bring, then mark each as packed when ready.</span>
+    </div>
+    ${toTake > 0 ? `<div style="margin-bottom:12px;padding:8px 12px;background:var(--panel-2);border-radius:8px;display:flex;align-items:center;gap:10px">
       <div style="flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
         <div style="width:${pct}%;height:100%;background:${color};border-radius:3px;transition:width 0.3s"></div>
       </div>
-      <div style="font-size:12px;font-weight:600;color:${color};white-space:nowrap">${checked} / ${total}</div>
-    </div>
+      <div style="font-size:12px;font-weight:600;color:${color};white-space:nowrap">${progressText}</div>
+    </div>` : ''}
     ${sectionHtml('essentials','Range Essentials','🎯', DEFAULT_CHECKLIST_ITEMS.essentials, true)}
     ${sectionHtml('night','Night Session','🔦', DEFAULT_CHECKLIST_ITEMS.night, cl.nightMode)}
     ${sectionHtml('tactical','Tactical','🪖', DEFAULT_CHECKLIST_ITEMS.tactical, cl.tacticalMode)}
   `;
 }
 
-function setModalChecklistItem(itemId, checked) {
-  if (!window._tempSession || !window._tempSession.checklist) return;
-  window._tempSession.checklist.items[itemId] = checked;
+function setModalChecklistTake(itemId, checked) {
+  if (!window._tempSession?.checklist) return;
+  const items = window._tempSession.checklist.items;
+  if (!items[itemId]) items[itemId] = {};
+  items[itemId].take = checked;
+  if (!checked) items[itemId].packed = false; // can't be packed if not taking
+  renderChecklistInModal();
+}
+
+function setModalChecklistPacked(itemId, checked) {
+  if (!window._tempSession?.checklist) return;
+  const items = window._tempSession.checklist.items;
+  if (!items[itemId]) items[itemId] = {};
+  items[itemId].packed = checked;
   renderChecklistInModal();
 }
 
 function setModalChecklistMode(cat, enabled) {
-  if (!window._tempSession || !window._tempSession.checklist) return;
+  if (!window._tempSession?.checklist) return;
   const cl = window._tempSession.checklist;
   if (cat === 'night') cl.nightMode = enabled;
   if (cat === 'tactical') cl.tacticalMode = enabled;
@@ -4529,11 +4558,11 @@ function saveSession(id, sourcePlanId) {
   t.notes = document.getElementById('se-notes').value.trim();
   t.rangeFee = parseFloat(document.getElementById('se-rangefee').value) || null;
   t.holster = document.getElementById('se-holster').value.trim() || null;
-  t.selfRating = {
+  t.selfRating = document.getElementById('se-focus') ? {
     focus: parseInt(document.getElementById('se-focus').value),
     fundamentals: parseInt(document.getElementById('se-fund').value),
     satisfaction: parseInt(document.getElementById('se-sat').value)
-  };
+  } : (t.selfRating || { focus: 5, fundamentals: 5, satisfaction: 5 });
   // Block save if any ammo row has rounds but no SKU selected
   const unselectedAmmo = t.ammoUsage.filter(u => !u.ammoId && u.rounds > 0);
   if (unselectedAmmo.length) {
