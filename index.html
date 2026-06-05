@@ -4144,6 +4144,7 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
         <button class="btn small secondary" onclick="addAmmoRow()">+ Add</button>
       </div>
       <div id="se-ammo-rows"></div>
+      <div id="se-ammo-mismatch" style="display:none;margin-top:6px;font-size:12px;background:rgba(255,107,53,0.1);border:1px solid var(--accent);border-radius:6px;padding:8px 12px;line-height:1.5"></div>
 
       <hr>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -4321,12 +4322,32 @@ function updateSplit(firearmId, rounds) {
   const existing = window._tempSession.firearmSplits.find(s => s.firearmId === firearmId);
   if (existing) existing.rounds = rounds;
   else window._tempSession.firearmSplits.push({ firearmId, rounds });
-  const total = window._tempSession.firearmSplits.reduce((s, sp) => s + (sp.rounds || 0), 0);
+  const splitsTotal = window._tempSession.firearmSplits.reduce((s, sp) => s + (sp.rounds || 0), 0);
   const el = document.getElementById('split-total');
-  if (el) el.textContent = total;
-  // Also update the ammo total display for consistency
+  if (el) el.textContent = splitsTotal;
+  // If exactly 1 ammo row, auto-fill its rounds from splits total
+  const ammo = window._tempSession.ammoUsage;
+  if (ammo.length === 1) {
+    ammo[0].rounds = splitsTotal;
+    renderAmmoRows();
+  }
+  document.getElementById('se-total').value = splitsTotal;
+  checkAmmoSplitMismatch();
+}
+function checkAmmoSplitMismatch() {
+  const warn = document.getElementById('se-ammo-mismatch');
+  if (!warn) return;
+  const splits = window._tempSession.firearmSplits || [];
+  const splitsTotal = splits.reduce((s, sp) => s + (sp.rounds || 0), 0);
+  if (!splitsTotal) { warn.style.display = 'none'; return; }
   const ammoTotal = window._tempSession.ammoUsage.reduce((s, u) => s + (u.rounds || 0), 0);
-  document.getElementById('se-total').value = Math.max(total, ammoTotal);
+  if (ammoTotal !== splitsTotal) {
+    warn.style.display = 'block';
+    warn.innerHTML = `<strong>⚠️ Round count mismatch:</strong> Firearm splits total <strong>${splitsTotal}</strong> rounds, ammo total <strong>${ammoTotal}</strong> rounds.<br>
+      <span style="color:var(--text-dim)">Firearm round counts (for maintenance tracking) use the splits total. Ammo inventory will deduct the ammo total.</span>`;
+  } else {
+    warn.style.display = 'none';
+  }
 }
 function renderMalfunctionRows() {
   const c = document.getElementById('se-malf-rows');
@@ -4400,6 +4421,7 @@ function updateAmmoRow(i, key, val) { window._tempSession.ammoUsage[i][key] = va
 function recalcTotal() {
   const total = window._tempSession.ammoUsage.reduce((s, u) => s + (u.rounds || 0), 0);
   document.getElementById('se-total').value = total;
+  checkAmmoSplitMismatch();
 }
 
 function renderDrillRows() {
