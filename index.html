@@ -3710,7 +3710,7 @@ function printChecklistFromModal() {
     .header .meta { font-size: 10pt; color: #555; margin-top: 4px; }
     .progress { margin-bottom: 20px; font-size: 12pt; color: #444; }
     .cl-section { margin-bottom: 18px; }
-    .cl-section-title { font-size: 9pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 8px; }
+    .cl-section-title { font-size: 9pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: #222; margin-bottom: 8px; }
     .cl-item { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 4px; }
     .cl-item.packed { background: #f0f8f0; border-color: #aaddaa; }
     .cl-box { width: 18px; height: 18px; border: 1.5px solid #999; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 11pt; font-weight: bold; color: #2a7a2a; flex-shrink: 0; }
@@ -3892,7 +3892,7 @@ function printChecklist(sessionId) {
     .header .meta { font-size: 10pt; color: #555; margin-top: 4px; }
     .progress { margin-bottom: 20px; font-size: 12pt; color: #444; }
     .cl-section { margin-bottom: 18px; }
-    .cl-section-title { font-size: 9pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 8px; }
+    .cl-section-title { font-size: 9pt; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; color: #222; margin-bottom: 8px; }
     .cl-item { display: flex; align-items: center; gap: 10px; padding: 7px 8px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 4px; }
     .cl-item.packed { background: #f0f8f0; border-color: #aaddaa; }
     .cl-box { width: 18px; height: 18px; border: 1.5px solid #999; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 11pt; font-weight: bold; color: #2a7a2a; flex-shrink: 0; }
@@ -4159,8 +4159,9 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
       ${isPlanMode ? `
       <hr>
       <details id="se-checklist-details">
-        <summary style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:6px 0;user-select:none">
+        <summary style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;user-select:none;background:var(--panel-2);border-radius:6px;border:1px solid var(--border);list-style:none">
           <div style="display:flex;align-items:center;gap:8px">
+            <span id="se-cl-chevron" style="font-size:11px;color:var(--text-dim);transition:transform 0.2s">▶</span>
             <strong>Gear Checklist ${tip('Select items you plan to bring (left checkbox), then mark each as packed (right checkbox). Custom items are saved permanently for all future sessions.')}</strong>
             <span id="se-cl-progress" style="font-size:12px;font-weight:normal;color:var(--text-dim)"></span>
           </div>
@@ -4235,6 +4236,11 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
     if (isPlanMode) {
       if (!window._tempSession.checklist) window._tempSession.checklist = { nightMode: false, tacticalMode: false, items: {} };
       renderChecklistInModal();
+      const det = document.getElementById('se-checklist-details');
+      if (det) det.addEventListener('toggle', () => {
+        const ch = document.getElementById('se-cl-chevron');
+        if (ch) ch.style.transform = det.open ? 'rotate(90deg)' : '';
+      });
     }
     ['focus','fund','sat'].forEach(k => {
       const inp = document.getElementById('se-'+k);
