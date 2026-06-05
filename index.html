@@ -4131,7 +4131,7 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
       <div id="se-mag-section" data-prev-mag-ids="${(s.magIds||[]).join(',')}"></div>
       <div class="form-grid-2">
         <div class="form-row"><label>Location</label><input id="se-location" value="${escapeHtml(s.location)}" placeholder="e.g. Local Range, USPSA Match"></div>
-        <div class="form-row"><label><span id="se-rangefee-label-text">${s.type==='class'?'Class Fee ($)':'Range Fee ($)'}</span> ${tip('Lane fee, class tuition, or match entry fee. Automatically flows into the Range Fees bucket in Costs & Purchases. Pre-paid class fees can be entered when planning — they appear in Costs immediately and are removed if the plan is deleted.')}</label><input id="se-rangefee" type="number" min="0" step="0.01" value="${s.rangeFee || ''}" placeholder="0.00"></div>
+        <div class="form-row"><label><span id="se-rangefee-label-text">${s.type==='class'?'Class Fee ($)':s.type==='competition'?'Entry Fee ($)':'Range Fee ($)'}</span> ${tip('Range Fee (practice) · Class Fee (class/training) · Entry Fee (competition). Flows into the Range Fees bucket in Costs & Purchases. Pre-paid fees can be entered when planning — they appear in Costs immediately and are removed if the plan is deleted.')}</label><input id="se-rangefee" type="number" min="0" step="0.01" value="${s.rangeFee || ''}" placeholder="0.00"></div>
       </div>
       <div class="form-grid-2">
         <div class="form-row"><label>Distances Practiced ${tip('Comma-separated distances, e.g. 7yd, 15yd, 25yd. Shown on the session card for reference.')}</label><input id="se-dist" value="${escapeHtml(s.distances)}" placeholder="e.g. 7yd, 15yd, 25yd"></div>
@@ -4244,7 +4244,7 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
     document.getElementById('se-type').addEventListener('change', function() {
       renderDrillRows();
       const lbl = document.getElementById('se-rangefee-label-text');
-      if (lbl) lbl.textContent = this.value === 'class' ? 'Class Fee ($)' : 'Range Fee ($)';
+      if (lbl) lbl.textContent = this.value === 'class' ? 'Class Fee ($)' : this.value === 'competition' ? 'Entry Fee ($)' : 'Range Fee ($)';
     });
   });
 }
