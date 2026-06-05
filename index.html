@@ -4211,12 +4211,23 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
     if (!window._tempSession.malfunctions) window._tempSession.malfunctions = [];
     if (window._tempSession.noHolsterOnly === undefined) window._tempSession.noHolsterOnly = false;
     if (!window._tempSession.firearmSplits) window._tempSession.firearmSplits = [];
-    document.getElementById('se-no-holster').checked = !!window._tempSession.noHolsterOnly;
+    const noHolsterEl = document.getElementById('se-no-holster');
+    if (noHolsterEl) noHolsterEl.checked = !!window._tempSession.noHolsterOnly;
+    // Explicitly sync multi-firearm checkbox to session state (Safari may restore stale DOM state)
+    const multiEl = document.getElementById('se-multi-fw');
+    if (multiEl) multiEl.checked = !!(window._tempSession.firearmSplits.length || window._tempSession.multiFirearm);
+    const splitsDiv = document.getElementById('se-fw-splits');
     // If editing a multi-firearm session, hide the single firearm selector
     if (window._tempSession.firearmSplits.length) {
-      const singleRow = document.getElementById('se-firearm').closest('.form-row');
+      const singleRow = document.getElementById('se-firearm') && document.getElementById('se-firearm').closest('.form-row');
       if (singleRow) singleRow.style.display = 'none';
+      if (splitsDiv) splitsDiv.style.display = 'block';
       renderFirearmSplits();
+    } else {
+      // Ensure splits section is hidden for new sessions
+      if (splitsDiv) splitsDiv.style.display = 'none';
+      const singleRow = document.getElementById('se-firearm') && document.getElementById('se-firearm').closest('.form-row');
+      if (singleRow) singleRow.style.display = '';
     }
     renderAmmoRows();
     renderDrillRows();
