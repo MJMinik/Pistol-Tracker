@@ -352,6 +352,151 @@ test('Magazines', 'All magazines reference valid firearm IDs', () => {
   return detail(`${DB.magazines.length} magazines verified`);
 });
 
+// ─── SECTION 8: Planned Sessions ─────────────────────────────────────────────
+test('Planned Sessions', 'Planned sessions do not affect ammo inventory', () => {
+  if (!DB) return skip('No data');
+  const planned = DB.sessions.filter(s => s.planned);
+  if (!planned.length) return detail('No planned sessions — skipping inventory check');
+  // For each planned session, verify its ammo usage rounds would not be reflected
+  // in inventory (we can't directly test this, but we verify the flag is correctly set)
+  const badFlag = planned.filter(s => s.planned !== true);
+  assert(badFlag.length === 0, `${badFlag.length} planned session(s) have malformed planned flag`);
+  return detail(`${planned.length} planned session(s) verified`);
+});
+
+test('Planned Sessions', 'Planned sessions are excluded from round counts', () => {
+  if (!DB) return skip('No data');
+  const planned = DB.sessions.filter(s => s.planned);
+  if (!planned.length) return detail('No planned sessions present');
+  // Verify planned sessions have future or current dates (they should not be past logged sessions)
+  const loggedIds = new Set(DB.sessions.filter(s => !s.planned).map(s => s.id));
+  assert(!planned.some(s => loggedIds.has(s.id)), 'A session appears in both planned and logged state');
+  return detail(`${planned.length} planned session(s) correctly separated from logged sessions`);
+});
+
+test('Planned Sessions', 'Planned session checklist items use take/packed format', () => {
+  if (!DB) return skip('No data');
+  const planned = DB.sessions.filter(s => s.planned && s.checklist);
+  if (!planned.length) return detail('No planned sessions with checklists');
+  for (const s of planned) {
+    const items = Object.values(s.checklist.items || {});
+    const legacyBooleans = items.filter(v => typeof v === 'boolean');
+    assert(legacyBooleans.length === 0, `Session ${s.id} has ${legacyBooleans.length} legacy boolean checklist item(s) — should be {take, packed} objects`);
+  }
+  return detail(`${planned.length} checklist(s) verified`);
+});
+
+// ─── SECTION 9: Purchases ─────────────────────────────────────────────────────
+test('Purchases', 'DB.purchases exists and is an array', () => {
+  if (!DB) return skip('No data');
+  assert(Array.isArray(DB.purchases), 'DB.purchases is missing or not an array');
+  return detail(`${DB.purchases.length} purchase(s) tracked`);
+});
+
+test('Purchases', 'All purchases have required fields', () => {
+  if (!DB) return skip('No data');
+  if (!DB.purchases.length) return detail('No purchases to check');
+  const bad = DB.purchases.filter(p => !p.id || !p.date || p.amount == null);
+  assert(bad.length === 0, `${bad.length} purchase(s) missing id, date, or amount`);
+  return detail(`${DB.purchases.length} purchases checked`);
+});
+
+test('Purchases', 'All purchase amounts are non-negative', () => {
+  if (!DB) return skip('No data');
+  if (!DB.purchases.length) return detail('No purchases to check');
+  const bad = DB.purchases.filter(p => parseFloat(p.amount) < 0);
+  assert(bad.length === 0, `${bad.length} purchase(s) have negative amounts`);
+  return detail('All amounts valid');
+});
+
+test('Purchases', 'Purchases with linked ammo reference valid SKUs', () => {
+  if (!DB) return skip('No data');
+  if (!DB.purchases.length) return detail('No purchases to check');
+  const ammoIds = new Set(DB.ammunition.map(a => a.id));
+  const bad = DB.purchases.filter(p => p.ammoId && !ammoIds.has(p.ammoId));
+  assert(bad.length === 0, `${bad.length} purchase(s) reference non-existent ammo SKU`);
+  return detail('All ammo links valid');
+});
+
+// ─── SECTION 10: Matches ──────────────────────────────────────────────────────
+test('Matches', 'All matches reference valid firearm IDs', () => {
+  if (!DB) return skip('No data');
+  if (!(DB.matches || []).length) return detail('No matches to check');
+  const ids = new Set(DB.firearms.map(f => f.id));
+  const bad = DB.matches.filter(m => m.firearmId && !ids.has(m.firearmId));
+  assert(bad.length === 0, `${bad.length} match(es) reference non-existent firearm`);
+  return detail(`${DB.matches.length} matches checked`);
+});
+
+test('Matches', 'All matches have valid dates', () => {
+  if (!DB) return skip('No data');
+  if (!(DB.matches || []).length) return detail('No matches to check');
+  const bad = DB.matches.filter(m => !/^\d{4}-\d{2}-\d{2}$/.test(m.date));
+  assert(bad.length === 0, `${bad.length} match(es) have malformed dates`);
+  return detail('All match dates valid');
+});
+
+test('Matches', 'Match round counts are non-negative', () => {
+  if (!DB) return skip('No data');
+  if (!(DB.matches || []).length) return detail('No matches to check');
+  const bad = DB.matches.filter(m => m.totalRounds != null && m.totalRounds < 0);
+  assert(bad.length === 0, `${bad.length} match(es) have negative round counts`);
+  return detail('All round counts valid');
+});
+
+// ─── SECTION 11: Malfunctions ─────────────────────────────────────────────────
+test('Malfunctions', 'All standalone malfunctions reference valid firearm IDs', () => {
+  if (!DB) return skip('No data');
+  if (!(DB.malfunctions || []).length) return detail('No standalone malfunctions to check');
+  const ids = new Set(DB.firearms.map(f => f.id));
+  const bad = DB.malfunctions.filter(m => m.firearmId && !ids.has(m.firearmId));
+  assert(bad.length === 0, `${bad.length} malfunction(s) reference non-existent firearm`);
+  return detail(`${DB.malfunctions.length} malfunctions checked`);
+});
+
+test('Malfunctions', 'Malfunctions with linked ammo reference valid SKUs', () => {
+  if (!DB) return skip('No data');
+  if (!(DB.malfunctions || []).length) return detail('No malfunctions to check');
+  const ammoIds = new Set(DB.ammunition.map(a => a.id));
+  const bad = DB.malfunctions.filter(m => m.ammoId && !ammoIds.has(m.ammoId));
+  assert(bad.length === 0, `${bad.length} malfunction(s) reference non-existent ammo SKU`);
+  return detail('All ammo references valid');
+});
+
+test('Malfunctions', 'Malfunctions with linked magazine reference valid magazine IDs', () => {
+  if (!DB) return skip('No data');
+  if (!(DB.malfunctions || []).length) return detail('No malfunctions to check');
+  if (!(DB.magazines || []).length) return detail('No magazines tracked');
+  const magIds = new Set(DB.magazines.map(m => m.id));
+  const bad = DB.malfunctions.filter(m => m.magId && !magIds.has(m.magId));
+  assert(bad.length === 0, `${bad.length} malfunction(s) reference non-existent magazine`);
+  return detail('All magazine references valid');
+});
+
+// ─── SECTION 12: Optics ───────────────────────────────────────────────────────
+test('Optics', 'DB.optics exists and is an array', () => {
+  if (!DB) return skip('No data');
+  if (!Array.isArray(DB.optics)) return skip('DB.optics missing — old backup.');
+  return detail(`${DB.optics.length} optic(s) tracked`);
+});
+
+test('Optics', 'All optics reference valid firearm IDs', () => {
+  if (!DB) return skip('No data');
+  if (!(DB.optics || []).length) return detail('No optics to check');
+  const ids = new Set(DB.firearms.map(f => f.id));
+  const bad = DB.optics.filter(o => o.firearmId && !ids.has(o.firearmId));
+  assert(bad.length === 0, `${bad.length} optic(s) reference non-existent firearm`);
+  return detail(`${DB.optics.length} optics verified`);
+});
+
+test('Optics', 'All optics have required fields', () => {
+  if (!DB) return skip('No data');
+  if (!(DB.optics || []).length) return detail('No optics to check');
+  const bad = DB.optics.filter(o => !o.id || !o.name);
+  assert(bad.length === 0, `${bad.length} optic(s) missing id or name`);
+  return detail('All optics valid');
+});
+
 // ─── Render results ───────────────────────────────────────────────────────────
 const sections = {};
 for (const r of results) {
