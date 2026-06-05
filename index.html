@@ -4123,11 +4123,9 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
           <select id="se-firearm" onchange="updateSessionMagSection()" >${DB.firearms.map(f => `<option value="${f.id}" ${s.firearmId===f.id?'selected':''}>${escapeHtml(f.name)}</option>`).join('')}</select>
         </div>
       </div>
-      <div class="form-row" style="margin-top:-4px">
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
-          <input type="checkbox" id="se-multi-fw" ${(s.firearmSplits && s.firearmSplits.length)?'checked':''} onchange="toggleMultiFirearm(this.checked)">
-          <span style="font-size:13px">Multiple firearms used this session</span>
-        </label>
+      <div style="margin:4px 0 10px;display:flex;align-items:center;gap:8px;cursor:pointer" onclick="document.getElementById('se-multi-fw').click()">
+        <input type="checkbox" id="se-multi-fw" ${(s.firearmSplits && s.firearmSplits.length)?'checked':''} onchange="toggleMultiFirearm(this.checked)" onclick="event.stopPropagation()">
+        <span style="font-size:13px;color:var(--text-dim)">Multiple firearms used this session</span>
       </div>
       <div id="se-fw-splits" style="display:${(s.firearmSplits && s.firearmSplits.length)?'block':'none'}"></div>
       <div id="se-mag-section" data-prev-mag-ids="${(s.magIds||[]).join(',')}"></div>
