@@ -1626,7 +1626,11 @@ const SECTION_HELP = {
     <h4>Alerts</h4>
     Orange/red banners appear when a firearm needs a field strip, deep clean, recoil spring replacement, or annual inspection. Click <strong>+ Log Maintenance</strong> on the Firearms page to clear them.
     <h4>Rounds by Month</h4>
-    Bar chart showing your last 12 months of training volume. Orange = live-fire, blue = dry-fire.`,
+    Bar chart showing your last 12 months of training volume. Orange = live-fire, blue = dry-fire.
+    <h4>Plan Session &amp; Log Session</h4>
+    Two buttons appear at the top right. <strong>📋 Plan Session</strong> lets you plan a future range trip — including a gear checklist — before you go. <strong>+ Log Session</strong> records a session after the fact. Planned sessions do not affect any counts until converted to a logged session.
+    <h4>Maintenance Warning Bar</h4>
+    A colored bar appears when maintenance is due. Blue = recommended, orange = due, red = overdue. Tap any item to log it directly.`,
 
   firearms: `
     <h4>Overview</h4>
@@ -1664,19 +1668,30 @@ const SECTION_HELP = {
 
   sessions: `
     <h4>Overview</h4>
-    Sessions are the core of your training log. Each session records the firearm used, rounds fired, drills practiced, self-ratings, malfunctions, and target images.
+    Sessions are the core of your training log. Each session records the firearm used, rounds fired, drills practiced, self-ratings, malfunctions, and target images. You can log a session directly without planning one first.
+    <h4>Planning a Session</h4>
+    Click <strong>📋 Plan Session</strong> to create a planned session before you go to the range. Fill in your intended firearm, ammo, drills, and location. Use the Gear Checklist inside the plan to select what you're bringing and mark items as packed. Planned sessions appear at the top of your session list with a blue banner and do not affect ammo inventory or round counts until converted to a logged session.
+    <h4>Converting a Plan to a Logged Session</h4>
+    On a planned session card, tap <strong>✓ Convert to Logged</strong> to open a pre-filled form. Adjust anything that changed and save — ammo will deduct and round counts will update at that point.
     <h4>Logging a Session</h4>
-    Click <strong>+ Log Session</strong>. Select session type (Practice, Competition, Class, Dry Fire), firearm, date, location, and ammo used. Add drills with optional times/scores.
+    Click <strong>+ Log Session</strong>. Select session type, firearm, date, location, and ammo used. Add drills with optional times and scores.
     <h4>Session Types</h4>
     <ul>
       <li><strong>Practice</strong> — standard live-fire range session.</li>
-      <li><strong>Dry Fire</strong> — no rounds; compatible drills shown automatically. Does not trigger field strip reminder.</li>
-      <li><strong>Competition / Class</strong> — logged the same as Practice but categorized separately.</li>
+      <li><strong>Dry Fire</strong> — no rounds recorded; compatible drills shown automatically. Does not trigger any maintenance reminders.</li>
+      <li><strong>Class / Training</strong> — same as Practice but categorized separately; fee field becomes Class Fee.</li>
+      <li><strong>Competition</strong> — same as Practice; fee field becomes Entry Fee.</li>
     </ul>
+    <h4>Multi-Firearm Sessions</h4>
+    Check <strong>Multiple firearms used this session</strong> to enter round counts per gun. The splits total drives firearm round counts and maintenance tracking. Ammo inventory deducts from the ammo section total — a warning appears if the two totals don't match.
+    <h4>Location</h4>
+    The Location field suggests places you've shot before as you type. Type a new location and it's saved automatically for future sessions.
     <h4>Self-Ratings</h4>
     Rate Focus, Fundamentals, and Satisfaction (1–10) after each session. These feed the trend charts in Progress.
     <h4>Search & Filter</h4>
-    Use the filter bar at the top to narrow sessions by date range, firearm, type, or keyword.`,
+    Use the filter bar at the top to narrow sessions by date range, firearm, type, or keyword.
+    <h4>Recently Deleted</h4>
+    Deleted sessions appear in the Recently Deleted section at the top of the page for 30 days. Tap to expand, then Restore to recover a session (ammo returns to inventory automatically).`,
 
   progress: `
     <h4>Overview</h4>
@@ -1706,13 +1721,15 @@ const SECTION_HELP = {
 
   costs: /* Costs & Purchases */ `
     <h4>Overview</h4>
-    The Costs section automatically tracks what you're spending on training — ammo, range fees, match fees, and gear purchases.
+    Costs &amp; Purchases automatically tracks what you're spending on training — ammo, range fees, class fees, match entry fees, and gear purchases.
+    <h4>Fee Types</h4>
+    The fee field label changes based on session type: Range Fee (Practice), Class Fee (Class/Training), or Entry Fee (Competition). All three flow into the Range Fees bucket here.
+    <h4>Pre-Paid Fees</h4>
+    You can enter a fee when planning a session before you go to the range. It appears in Costs immediately. If you delete the plan, the fee is removed automatically.
     <h4>Ammo Costs</h4>
-    Calculated automatically from sessions using FIFO pricing — each session consumes from the oldest purchase lot first.
-    <h4>Range Fees</h4>
-    Enter a range fee when logging a session. It flows automatically into the Range Fees bucket here.
-    <h4>Gear & Purchases</h4>
-    Log equipment purchases, holsters, training classes, and other expenses. Use category "Range Fee" to route lane fees correctly.
+    Calculated automatically from sessions using FIFO (First In, First Out) pricing — each session consumes the ammunition from the oldest purchase lot first.
+    <h4>Gear &amp; Purchases</h4>
+    Log equipment, holsters, training classes, and other expenses. Use category "Range Fee" to route lane fees to the correct bucket.
     <h4>Dashboard Tab</h4>
     Summary stats, monthly bar chart, category donut chart, and per-firearm spending breakdown.`,
 
@@ -1764,7 +1781,7 @@ const SECTION_HELP = {
     <h4>Overview</h4>
     Settings handles data backup, sync, drill library management, and app preferences.
     <h4>iCloud Sync</h4>
-    Use <strong>Export Sync File</strong> at the range (iPhone) and <strong>Import Sync File</strong> at home (Mac) to keep your devices in sync via iCloud Drive.
+    Keeps your iPhone and Mac in sync via a shared file in iCloud Drive. On Mac (Chrome/Edge), use <strong>Set Up Auto-Sync</strong> to sync automatically on every change — no manual steps needed. On iPhone/Safari, tap the ↑ button in the top bar to export, save to iCloud Drive → Pistol Tracker, then tap <strong>Import Sync File</strong> on your Mac. Always uses the fixed filename <code>pistol-tracker-sync.json</code>.
     <h4>JSON Backup</h4>
     <strong>Download JSON Backup</strong> saves a complete timestamped backup of all your data. Do this regularly. Use <strong>Import JSON Backup</strong> to restore.
     <h4>Drill Library</h4>
@@ -3487,8 +3504,8 @@ function sessionCard(s) {
       })() : ''}
       <div class="row-actions" style="margin-top:14px">
         ${isPlanned ? `
-          <button class="btn small" style="background:#58a6ff;border-color:#58a6ff" onclick="convertPlannedSession('${s.id}')">&#10003; Convert to Logged</button>
-          <button class="btn small" style="background:#58a6ff;border-color:#58a6ff" onclick="openChecklistModal('${s.id}')">&#9745; Checklist</button>
+          <button class="btn small" style="background:#58a6ff;border-color:#58a6ff" onclick="convertPlannedSession('${s.id}')" title="Opens a pre-filled form based on your plan. Edit anything that changed, then save to record the actual session. Ammo deducts and round counts update at this point.">&#10003; Convert to Logged</button>
+          <button class="btn small" style="background:#58a6ff;border-color:#58a6ff" onclick="openChecklistModal('${s.id}')" title="Opens your gear checklist for this session. Review what you planned to bring and mark items as packed.">&#9745; Checklist</button>
           <button class="btn small secondary" onclick="openSessionModal('${s.id}')">Edit Plan</button>
           <button class="btn small danger" onclick="deleteSession('${s.id}')">Delete</button>
         ` : `
@@ -4125,17 +4142,17 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
       </div>
       <div style="margin:4px 0 10px;display:flex;align-items:center;gap:8px;cursor:pointer" onclick="document.getElementById('se-multi-fw').click()">
         <input type="checkbox" id="se-multi-fw" ${(s.firearmSplits && s.firearmSplits.length)?'checked':''} onchange="toggleMultiFirearm(this.checked)" onclick="event.stopPropagation()">
-        <span style="font-size:13px;color:var(--text-dim)">Multiple firearms used this session</span>
+        <span style="font-size:13px;color:var(--text-dim)">Multiple firearms used this session ${tip('Check this to enter round counts per gun. Firearm round counts and maintenance tracking use the per-gun totals. A warning appears if the ammo total does not match the round total.')}</span>
       </div>
       <div id="se-fw-splits" style="display:${(s.firearmSplits && s.firearmSplits.length)?'block':'none'}"></div>
       <div id="se-mag-section" data-prev-mag-ids="${(s.magIds||[]).join(',')}"></div>
       <div class="form-grid-2">
-        <div class="form-row"><label>Location</label><input id="se-location" value="${escapeHtml(s.location)}" placeholder="e.g. Local Range, USPSA Match" list="se-location-list" autocomplete="off"><datalist id="se-location-list">${[...new Set(DB.sessions.filter(x=>x.location).map(x=>x.location))].sort().map(l=>`<option value="${escapeHtml(l)}">`).join('')}</datalist></div>
+        <div class="form-row"><label>Location ${tip('Where you\'re shooting. Start typing and previously used locations appear as suggestions. New locations are saved automatically for future sessions.')}</label><input id="se-location" value="${escapeHtml(s.location)}" placeholder="e.g. Local Range, USPSA Match" list="se-location-list" autocomplete="off"><datalist id="se-location-list">${[...new Set(DB.sessions.filter(x=>x.location).map(x=>x.location))].sort().map(l=>`<option value="${escapeHtml(l)}">`).join('')}</datalist></div>
         <div class="form-row"><label><span id="se-rangefee-label-text">${s.type==='class'?'Class Fee ($)':s.type==='competition'?'Entry Fee ($)':'Range Fee ($)'}</span> ${tip('Range Fee (practice) · Class Fee (class/training) · Entry Fee (competition). Flows into the Range Fees bucket in Costs & Purchases. Pre-paid fees can be entered when planning — they appear in Costs immediately and are removed if the plan is deleted.')}</label><input id="se-rangefee" type="number" min="0" step="0.01" value="${s.rangeFee || ''}" placeholder="0.00"></div>
       </div>
       <div class="form-grid-2">
         <div class="form-row"><label>Distances Practiced ${tip('Comma-separated distances, e.g. 7yd, 15yd, 25yd. Shown on the session card for reference.')}</label><input id="se-dist" value="${escapeHtml(s.distances)}" placeholder="e.g. 7yd, 15yd, 25yd"></div>
-        <div class="form-row"><label>Holster ${tip('Optional. Record which holster you used. Shown on the session card and included in print reports.')}</label><input id="se-holster" value="${escapeHtml(s.holster||'')}" placeholder="e.g. Safariland 5197, BOSS hanger"></div>
+        <div class="form-row"><label>Holster ${tip('Optional. Record which holster you used. Previously used holsters appear as suggestions. Shown on the session card and included in print reports.')}</label><input id="se-holster" value="${escapeHtml(s.holster||'')}" placeholder="e.g. Safariland 5197, BOSS hanger" list="se-holster-list" autocomplete="off"><datalist id="se-holster-list">${[...new Set(DB.sessions.filter(x=>x.holster).map(x=>x.holster))].sort().map(h=>`<option value="${escapeHtml(h)}">`).join('')}</datalist></div>
       </div>
 
       <hr>
@@ -4280,7 +4297,7 @@ function updateSessionMagSection() {
   sec.innerHTML = `<div style="margin:6px 0 10px">
     <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="document.getElementById('se-mag-toggle').click()">
       <input type="checkbox" id="se-mag-toggle" ${anyChecked?'checked':''} onclick="event.stopPropagation()" onchange="document.getElementById('se-mag-list').style.display=this.checked?'block':'none'">
-      <span style="font-size:13px;color:var(--text-dim)">Track magazines used this session</span>
+      <span style="font-size:13px;color:var(--text-dim)">Track magazines used this session ${tip('Select which magazines you used. Rounds are divided equally among checked magazines and credited to their lifetime totals — used to track spring wear and correlate malfunctions.')}</span>
     </div>
     <div id="se-mag-list" style="display:${anyChecked?'block':'none'}">${magsInner}</div>
   </div>`;
