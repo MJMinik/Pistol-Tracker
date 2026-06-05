@@ -3578,7 +3578,7 @@ function renderChecklistInModal() {
           <input type="checkbox" ${state.take?'checked':''} onchange="setModalChecklistTake('${item.id}',this.checked)" style="width:16px;height:16px;flex-shrink:0">
           ${escapeHtml(item.label)}
         </label>
-        <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-dim);cursor:pointer;white-space:nowrap;${!state.take?'opacity:0.35;pointer-events:none':''}">
+        <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-dim);cursor:pointer;white-space:nowrap;${!state.take?'display:none':''}">
           <input type="checkbox" ${state.packed?'checked':''} ${!state.take?'disabled':''} onchange="setModalChecklistPacked('${item.id}',this.checked)" style="width:14px;height:14px">
           Packed
         </label>
@@ -3758,7 +3758,7 @@ function openChecklistModal(sessionId) {
           <input type="checkbox" ${state.take?'checked':''} onchange="setDbChecklistTake('${sessionId}','${item.id}',this.checked)" style="width:16px;height:16px;flex-shrink:0">
           ${escapeHtml(item.label)}
         </label>
-        <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-dim);cursor:pointer;white-space:nowrap;${!state.take?'opacity:0.35;pointer-events:none':''}">
+        <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-dim);cursor:pointer;white-space:nowrap;${!state.take?'display:none':''}">
           <input type="checkbox" ${state.packed?'checked':''} ${!state.take?'disabled':''} onchange="setDbChecklistPacked('${sessionId}','${item.id}',this.checked)" style="width:14px;height:14px">
           Packed
         </label>
