@@ -750,7 +750,7 @@ const SEED = {
   trash: [],
   settings: {
     firstUse: true,
-    version: '1.8',
+    version: '1.9',
     theme: 'dark',
     lastBackupDate: null,
     backupSnoozedUntil: null,
@@ -911,7 +911,7 @@ function loadDB() {
     runOneTimeMigrations(parsed);
     purgeOldTrash(parsed);
     // Ensure version stamp is current
-    parsed.settings.version = '1.8';
+    parsed.settings.version = '1.9';
     // Save migrated data back so localStorage is always up to date
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed)); } catch(e) {}
 
@@ -8091,7 +8091,7 @@ function importJSON(evt) {
       for (const key of Object.keys(SEED)) {
         if (parsed[key] === undefined) parsed[key] = JSON.parse(JSON.stringify(SEED[key]));
       }
-      parsed.settings.version = '1.8';
+      parsed.settings.version = '1.9';
       DB = parsed;
       DB._lastModified = Date.now();
       saveDB();
