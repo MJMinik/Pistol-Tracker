@@ -148,8 +148,8 @@
   }
   .tip::after {
     content: attr(data-tip);
-    position: absolute; bottom: calc(100% + 8px); left: 50%;
-    transform: translateX(-50%);
+    position: absolute; bottom: calc(100% + 8px); left: 0;
+    transform: none;
     background: #1a2028; color: var(--text);
     border: 1px solid var(--border);
     border-radius: 6px; padding: 7px 10px;
@@ -167,7 +167,7 @@
 
   .tip::before {
     content: ''; position: absolute; bottom: calc(100% + 2px);
-    left: 50%; transform: translateX(-50%);
+    left: 8px; transform: none;
     border: 5px solid transparent;
     border-top-color: var(--border);
     pointer-events: none; z-index: 200;
