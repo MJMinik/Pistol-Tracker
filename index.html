@@ -4262,25 +4262,21 @@ function updateSessionMagSection() {
     sec.innerHTML = '<div style="font-size:13px;color:var(--accent);margin-top:6px;margin-bottom:16px">⚠️ No magazines set up for this firearm — add them in Firearms → Magazines.</div>';
     return;
   }
-  const isPlan = !!(window._tempSession && window._tempSession.planned);
-  const magsInner = `<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:6px">
+  const anyChecked = prevIds.length > 0;
+  const magsInner = `<div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px">
       ${poolMags.map(mg => `<label style="display:flex;align-items:center;gap:5px;font-weight:normal;text-transform:none;cursor:pointer;font-size:13px">
         <input type="checkbox" class="se-mag-check" value="${mg.id}" ${prevIds.includes(mg.id)?'checked':''}>
         ${escapeHtml(mg.label)}
       </label>`).join('')}
     </div>
-    <div class="help-text">Rounds divided equally among checked mags.</div>`;
-  if (isPlan) {
-    sec.innerHTML = `<details style="margin-top:6px;margin-bottom:2px">
-      <summary style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;cursor:pointer">Magazines Used (optional)</summary>
-      ${magsInner}
-    </details>`;
-  } else {
-    sec.innerHTML = `<div style="margin-top:6px;margin-bottom:2px">
-      <div style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Magazines Used (optional)</div>
-      ${magsInner}
-    </div>`;
-  }
+    <div class="help-text" style="margin-top:4px">Rounds divided equally among checked magazines.</div>`;
+  sec.innerHTML = `<div style="margin:6px 0 10px">
+    <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="document.getElementById('se-mag-toggle').click()">
+      <input type="checkbox" id="se-mag-toggle" ${anyChecked?'checked':''} onclick="event.stopPropagation()" onchange="document.getElementById('se-mag-list').style.display=this.checked?'block':'none'">
+      <span style="font-size:13px;color:var(--text-dim)">Track magazines used this session</span>
+    </div>
+    <div id="se-mag-list" style="display:${anyChecked?'block':'none'}">${magsInner}</div>
+  </div>`;
 }
 function toggleMultiFirearm(val) {
   window._tempSession.multiFirearm = val;
