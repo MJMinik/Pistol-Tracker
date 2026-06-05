@@ -4417,7 +4417,7 @@ function renderAmmoRows() {
 }
 function addAmmoRow() { window._tempSession.ammoUsage.push({ ammoId:'', rounds:0 }); renderAmmoRows(); }
 function removeAmmoRow(i) { window._tempSession.ammoUsage.splice(i, 1); renderAmmoRows(); }
-function updateAmmoRow(i, key, val) { window._tempSession.ammoUsage[i][key] = val; recalcTotal(); }
+function updateAmmoRow(i, key, val) { window._tempSession.ammoUsage[i][key] = val; recalcTotal(); if (key === 'ammoId') renderAmmoRows(); }
 function recalcTotal() {
   const total = window._tempSession.ammoUsage.reduce((s, u) => s + (u.rounds || 0), 0);
   document.getElementById('se-total').value = total;
