@@ -298,10 +298,10 @@ test('Settings', 'DB.settings exists', () => {
   return detail('Settings object present');
 });
 
-test('Settings', 'App version is v1.8', () => {
+test('Settings', 'App version is v1.9', () => {
   if (!DB) return skip('No data');
   const v = DB.settings && DB.settings.version;
-  if (v !== '1.8') return skip(`Got version ${v} — old backup. App will auto-update on next import.`);
+  if (v !== '1.9') return skip(`Got version ${v} — old backup. App will auto-update on next import.`);
   return detail(`Version: ${v}`);
 });
 
@@ -396,8 +396,8 @@ test('Purchases', 'DB.purchases exists and is an array', () => {
 test('Purchases', 'All purchases have required fields', () => {
   if (!DB) return skip('No data');
   if (!DB.purchases.length) return detail('No purchases to check');
-  const bad = DB.purchases.filter(p => !p.id || !p.date || p.amount == null);
-  assert(bad.length === 0, `${bad.length} purchase(s) missing id, date, or amount`);
+  const bad = DB.purchases.filter(p => !p.id || !p.date || p.cost == null);
+  assert(bad.length === 0, `${bad.length} purchase(s) missing id, date, or cost`);
   return detail(`${DB.purchases.length} purchases checked`);
 });
 
@@ -492,8 +492,8 @@ test('Optics', 'All optics reference valid firearm IDs', () => {
 test('Optics', 'All optics have required fields', () => {
   if (!DB) return skip('No data');
   if (!(DB.optics || []).length) return detail('No optics to check');
-  const bad = DB.optics.filter(o => !o.id || !o.name);
-  assert(bad.length === 0, `${bad.length} optic(s) missing id or name`);
+  const bad = DB.optics.filter(o => !o.id || (!o.make && !o.model));
+  assert(bad.length === 0, `${bad.length} optic(s) missing id or make/model`);
   return detail('All optics valid');
 });
 
