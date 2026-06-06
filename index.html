@@ -7,7 +7,7 @@
 
 <!-- PWA: installable on iPhone / iPad / Android home screen -->
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#ff6b35">
+<meta name="theme-color" content="#5856D6">
 
 <!-- iOS-specific PWA tags -->
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -16,34 +16,34 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <style>
   :root {
-    --bg: #f5f5f5;
-    --panel: #ffffff;
-    --panel-2: #f0f0f0;
-    --border: #d0d7de;
-    --text: #1f2328;
-    --text-dim: #656d76;
-    --accent: #e85d04;
-    --accent-dim: #c44a00;
-    --success: #1a7f37;
-    --warn: #9a6700;
-    --danger: #cf222e;
-    --info: #0969da;
-    --shadow: 0 4px 14px rgba(0,0,0,0.1);
+    --bg: #F2F2F7;
+    --panel: #FFFFFF;
+    --panel-2: #F2F2F7;
+    --border: #C6C6C8;
+    --text: #000000;
+    --text-dim: #6E6E73;
+    --accent: #5856D6;
+    --accent-dim: #3634A3;
+    --success: #34C759;
+    --warn: #FF9500;
+    --danger: #FF3B30;
+    --info: #007AFF;
+    --shadow: 0 2px 10px rgba(0,0,0,0.08);
   }
   [data-theme="dark"] {
-    --bg: #0f1419;
-    --panel: #1a2028;
-    --panel-2: #232b36;
-    --border: #2d3744;
-    --text: #e6edf3;
-    --text-dim: #8b949e;
-    --accent: #ff6b35;
-    --accent-dim: #b8421f;
-    --success: #3fb950;
-    --warn: #d29922;
-    --danger: #f85149;
-    --info: #58a6ff;
-    --shadow: 0 4px 14px rgba(0,0,0,0.4);
+    --bg: #000000;
+    --panel: #1C1C1E;
+    --panel-2: #2C2C2E;
+    --border: #38383A;
+    --text: #FFFFFF;
+    --text-dim: #8E8E93;
+    --accent: #5E5CE6;
+    --accent-dim: #4E4CB8;
+    --success: #30D158;
+    --warn: #FF9F0A;
+    --danger: #FF453A;
+    --info: #0A84FF;
+    --shadow: 0 2px 10px rgba(0,0,0,0.4);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -2093,7 +2093,7 @@ function renderDashboard() {
         <div class="sub">${formatDate(new Date())} &middot; Training since January 2025</div>
       </div>
       <div style="display:flex;gap:8px">
-        <button class="btn" style="background:#58a6ff;border-color:#58a6ff" onclick="openSessionModal('','plan')" title="Plan an upcoming range trip or class">&#128203; Plan Session</button>
+        <button class="btn" style="background:#007AFF;border-color:#007AFF" onclick="openSessionModal('','plan')" title="Plan an upcoming range trip or class">&#128203; Plan Session</button>
         <button class="btn" onclick="openSessionModal()">+ Log Session</button>
       </div>
     </div>
@@ -3341,7 +3341,7 @@ function renderSessions() {
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         ${maintItems.length ? `<button class="btn secondary" onclick="document.getElementById('maint-alert-bar').scrollIntoView({behavior:'smooth'})" title="View maintenance items due">&#9881; ${maintItems.length} Maintenance Item${maintItems.length!==1?'s':''} Due</button>` : ''}
         <button class="btn secondary" onclick="printSessionRange()" title="Print all sessions matching current filters">&#128438; Print Report</button>
-        <button class="btn" style="background:#58a6ff;border-color:#58a6ff" onclick="openSessionModal('','plan')" title="Plan an upcoming range trip or class">&#128203; Plan Session</button>
+        <button class="btn" style="background:#007AFF;border-color:#007AFF" onclick="openSessionModal('','plan')" title="Plan an upcoming range trip or class">&#128203; Plan Session</button>
         <button class="btn" onclick="openSessionModal()">+ Log Session</button>
       </div>
     </div>
@@ -3461,14 +3461,14 @@ function sessionCard(s) {
   }).join('');
   const isPlanned = !!s.planned;
   return `
-    <div class="card">${isPlanned ? `<div style="background:#58a6ff;margin:-20px -20px 14px -20px;padding:6px 16px;border-radius:6px 6px 0 0;font-size:11px;font-weight:700;letter-spacing:1px;color:#fff">&#128203; PLANNED SESSION</div>` : ''}
+    <div class="card">${isPlanned ? `<div style="background:#007AFF;margin:-20px -20px 14px -20px;padding:6px 16px;border-radius:6px 6px 0 0;font-size:11px;font-weight:700;letter-spacing:1px;color:#fff">&#128203; PLANNED SESSION</div>` : ''}
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
-          <div style="font-size:16px;font-weight:600">${formatDate(s.date)} <span class="badge ${isPlanned ? '' : (s.type==='competition'?'info':'neutral')}" ${isPlanned ? 'style="background:rgba(88,166,255,0.15);color:#58a6ff;border:1px solid rgba(88,166,255,0.3)"' : ''}>${isPlanned ? escapeHtml(s.type||'practice') : escapeHtml(s.type||'practice')}</span></div>
+          <div style="font-size:16px;font-weight:600">${formatDate(s.date)} <span class="badge ${isPlanned ? '' : (s.type==='competition'?'info':'neutral')}" ${isPlanned ? 'style="background:rgba(0,122,255,0.12);color:#007AFF;border:1px solid rgba(0,122,255,0.3)"' : ''}>${isPlanned ? escapeHtml(s.type||'practice') : escapeHtml(s.type||'practice')}</span></div>
           <div class="text-dim" style="font-size:12px;margin-top:6px">${((s.firearmSplits && s.firearmSplits.length) || plannedFwIds.length > 1) ? firearmDisplay + ' &middot; ' : escapeHtml(f ? f.name : '—') + ' &middot; '}${escapeHtml(s.location || 'Location not set')}</div>
         </div>
         <div style="text-align:right">
-          ${s.type === 'dry_fire' && !isPlanned ? `<div style="font-size:15px;font-weight:600;color:var(--text-dim)">Dry Fire</div>` : `<div style="font-size:24px;font-weight:600;color:${isPlanned ? '#58a6ff' : 'var(--accent)'}">${isPlanned ? '~' : ''}${(s.totalRounds||0).toLocaleString()}</div><div class="text-dim" style="font-size:11px">${isPlanned ? 'planned rds' : 'rounds'}</div>`}
+          ${s.type === 'dry_fire' && !isPlanned ? `<div style="font-size:15px;font-weight:600;color:var(--text-dim)">Dry Fire</div>` : `<div style="font-size:24px;font-weight:600;color:${isPlanned ? '#007AFF' : 'var(--accent)'}">${isPlanned ? '~' : ''}${(s.totalRounds||0).toLocaleString()}</div><div class="text-dim" style="font-size:11px">${isPlanned ? 'planned rds' : 'rounds'}</div>`}
         </div>
       </div>
       ${ammoLines.length ? `<hr><div style="font-size:13px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap"><div><strong style="color:var(--text-dim)">Ammo:</strong> ${ammoLines.join(' &middot; ')}</div>${(() => {
@@ -3510,14 +3510,14 @@ function sessionCard(s) {
         const toTake = allItems.filter(i => (cl.items||{})[i.id]?.take).length;
         const packed = allItems.filter(i => (cl.items||{})[i.id]?.packed).length;
         if (!toTake) return '';
-        const color = packed === toTake ? '#3fb950' : '#58a6ff';
+        const color = packed === toTake ? '#34C759' : '#007AFF';
         const text = packed === toTake ? `✓ All packed (${packed}/${toTake})` : `${packed} / ${toTake} packed`;
         return `<div style="margin-top:10px;font-size:12px;color:${color}">&#9745; ${text}</div>`;
       })() : ''}
       <div class="row-actions" style="margin-top:14px">
         ${isPlanned ? `
-          <button class="btn small" style="background:#58a6ff;border-color:#58a6ff" onclick="convertPlannedSession('${s.id}')" title="Opens a pre-filled form based on your plan. Edit anything that changed, then save to record the actual session. Ammo deducts and round counts update at this point.">&#10003; Convert to Logged</button>
-          <button class="btn small" style="background:#58a6ff;border-color:#58a6ff" onclick="openChecklistModal('${s.id}')" title="Opens your gear checklist for this session. Review what you planned to bring and mark items as packed.">&#9745; Checklist</button>
+          <button class="btn small" style="background:#007AFF;border-color:#007AFF" onclick="convertPlannedSession('${s.id}')" title="Opens a pre-filled form based on your plan. Edit anything that changed, then save to record the actual session. Ammo deducts and round counts update at this point.">&#10003; Convert to Logged</button>
+          <button class="btn small" style="background:#007AFF;border-color:#007AFF" onclick="openChecklistModal('${s.id}')" title="Opens your gear checklist for this session. Review what you planned to bring and mark items as packed.">&#9745; Checklist</button>
           <button class="btn small secondary" onclick="openSessionModal('${s.id}')">Edit Plan</button>
           <button class="btn small danger" onclick="deleteSession('${s.id}')">Delete</button>
         ` : `
@@ -3652,7 +3652,7 @@ function renderChecklistInModal() {
   const toTake = allItems.filter(i => (cl.items[i.id]||{}).take).length + fwTake;
   const packed = allItems.filter(i => (cl.items[i.id]||{}).packed).length + fwPacked;
   const pct = toTake > 0 ? Math.round(packed/toTake*100) : 0;
-  const color = toTake > 0 && packed === toTake ? '#3fb950' : '#58a6ff';
+  const color = toTake > 0 && packed === toTake ? '#34C759' : '#007AFF';
   const progressText = toTake === 0 ? 'Select items to bring' : packed === toTake ? `✓ All packed (${packed}/${toTake})` : `${packed} / ${toTake} packed`;
 
   // Update summary line and print button
@@ -3867,7 +3867,7 @@ function openChecklistModal(sessionId) {
     const packed = allItems.filter(i => (cl.items[i.id]||{}).packed).length + fwPacked;
     if (!toTake) return '';
     const pct = Math.round(packed/toTake*100);
-    const color = packed === toTake ? '#3fb950' : '#58a6ff';
+    const color = packed === toTake ? '#34C759' : '#007AFF';
     const text = packed === toTake ? `✓ All packed (${packed}/${toTake})` : `${packed} / ${toTake} packed`;
     return `<div style="margin-bottom:12px;padding:8px 12px;background:var(--panel-2);border-radius:8px;display:flex;align-items:center;gap:10px">
       <div style="flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
@@ -6672,7 +6672,7 @@ function renderCostsDashboard({ ammoCost, rangeFees, matchFees, gearTotal, grand
   const innerW = chartW - padL - padR;
   const innerH = chartH - padB - padT;
   const barW = Math.floor(innerW / monthlyData.length) - 3;
-  const COLORS = { ammo: '#ff6b35', range: '#4a9eff', match: '#4caf50', gear: '#9c6fe4' };
+  const COLORS = { ammo: '#5856D6', range: '#007AFF', match: '#34C759', gear: '#FF9500' };
   const yScale = v => innerH - (v / maxMonthly) * innerH;
 
   // Y-axis gridlines
