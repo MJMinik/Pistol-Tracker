@@ -1676,7 +1676,7 @@ const SECTION_HELP = {
     <h4>Overview</h4>
     Sessions are the core of your training log. Each session records the firearm used, rounds fired, drills practiced, self-ratings, malfunctions, and target images. You can log a session directly without planning one first.
     <h4>Planning a Session</h4>
-    Click <strong>📋 Plan Session</strong> to create a planned session before you go to the range. Fill in your intended firearm, ammo, drills, and location. Use the Gear Checklist inside the plan to select what you're bringing and mark items as packed. Planned sessions appear at the top of your session list with a blue banner and do not affect ammo inventory or round counts until converted to a logged session.
+    Click <strong>📋 Plan Session</strong> to create a planned session before you go to the range. Fill in your intended ammo, drills, and location. Use the <strong>Gear Checklist</strong> inside the plan to select which firearms you are bringing and mark other gear as packed — check the firearms you are taking, then mark each as packed once it is in your bag. Planned sessions appear at the top of your session list with a blue banner and do not affect ammo inventory or round counts until converted to a logged session.
     <h4>Converting a Plan to a Logged Session</h4>
     On a planned session card, tap <strong>✓ Convert to Logged</strong> to open a pre-filled form. Adjust anything that changed and save — ammo will deduct and round counts will update at that point.
     <h4>Logging a Session</h4>
@@ -3436,12 +3436,18 @@ function quickMagSpringLog() {
 function sessionCard(s) {
   const f = getFirearm(s.firearmId);
   // Build firearm display: show splits if multi-gun session
+  // For planned sessions, derive firearm list from checklist (no rounds known yet)
+  const plannedFwIds = (!!s.planned && s.checklist && s.checklist.items)
+    ? DB.firearms.filter(fw => (s.checklist.items[`f_${fw.id}`]||{}).take).map(fw => fw.id)
+    : [];
   const firearmDisplay = (s.firearmSplits && s.firearmSplits.length)
     ? s.firearmSplits.map(sp => {
         const fw = getFirearm(sp.firearmId);
         return `<span class="chip" style="font-size:11px">${escapeHtml(fw ? fw.name : '?')} &middot; ${sp.rounds.toLocaleString()} rds</span>`;
       }).join(' ')
-    : escapeHtml(f ? f.name : '—');
+    : (plannedFwIds.length > 1)
+      ? plannedFwIds.map(fid => { const fw = getFirearm(fid); return `<span class="chip" style="font-size:11px">${escapeHtml(fw ? fw.name : '?')}</span>`; }).join(' ')
+      : escapeHtml(f ? f.name : '—');
   const ammoLines = (s.ammoUsage || []).map(u => {
     const a = getAmmo(u.ammoId);
     return a ? `${u.rounds} &times; ${escapeHtml(a.brand)} ${escapeHtml(a.grain)}gr ${escapeHtml(a.bulletType)}` : `${u.rounds} rounds (ammo deleted)`;
@@ -3458,7 +3464,7 @@ function sessionCard(s) {
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
           <div style="font-size:16px;font-weight:600">${formatDate(s.date)} <span class="badge ${isPlanned ? '' : (s.type==='competition'?'info':'neutral')}" ${isPlanned ? 'style="background:rgba(88,166,255,0.15);color:#58a6ff;border:1px solid rgba(88,166,255,0.3)"' : ''}>${isPlanned ? escapeHtml(s.type||'practice') : escapeHtml(s.type||'practice')}</span></div>
-          <div class="text-dim" style="font-size:12px;margin-top:6px">${(s.firearmSplits && s.firearmSplits.length) ? firearmDisplay + ' &middot; ' : escapeHtml(f ? f.name : '—') + ' &middot; '}${escapeHtml(s.location || 'Location not set')}</div>
+          <div class="text-dim" style="font-size:12px;margin-top:6px">${((s.firearmSplits && s.firearmSplits.length) || plannedFwIds.length > 1) ? firearmDisplay + ' &middot; ' : escapeHtml(f ? f.name : '—') + ' &middot; '}${escapeHtml(s.location || 'Location not set')}</div>
         </div>
         <div style="text-align:right">
           <div style="font-size:24px;font-weight:600;color:${isPlanned ? '#58a6ff' : 'var(--accent)'}">~${(s.totalRounds||0).toLocaleString()}</div>
@@ -3529,11 +3535,20 @@ function convertPlannedSession(id) {
   const prefill = JSON.parse(JSON.stringify(plan));
   prefill.planned = false;
   delete prefill.id;
-  // Recalculate totalRounds from splits if multi-firearm, so the modal shows the correct total
-  if (prefill.multiFirearm && prefill.firearmSplits && prefill.firearmSplits.length) {
-    const splitsTotal = prefill.firearmSplits.reduce((s, sp) => s + (sp.rounds || 0), 0);
-    prefill.totalRounds = splitsTotal;
-    if (prefill.ammoUsage.length === 1) prefill.ammoUsage[0].rounds = splitsTotal;
+  // Derive firearm selection from checklist
+  const _cl = plan.checklist || {};
+  const _ci = _cl.items || {};
+  const _fwIds = DB.firearms.filter(fw => (_ci[`f_${fw.id}`]||{}).take).map(fw => fw.id);
+  if (_fwIds.length >= 2) {
+    prefill.multiFirearm = true;
+    prefill.firearmSplits = _fwIds.map(fid => ({ firearmId: fid, rounds: 0 }));
+    prefill.firearmId = _fwIds[0];
+    prefill.totalRounds = 0;
+    if (prefill.ammoUsage.length === 1) prefill.ammoUsage[0].rounds = 0;
+  } else if (_fwIds.length === 1) {
+    prefill.firearmId = _fwIds[0];
+    prefill.multiFirearm = false;
+    prefill.firearmSplits = [];
   }
   openSessionModal('', 'convert', prefill, id);
 }
@@ -3630,10 +3645,12 @@ function renderChecklistInModal() {
       </div>`;
   }
 
-  // Progress: count items marked "take" and "packed"
+  // Progress: count firearms + gear items marked "take" and "packed"
   const allItems = getChecklistItems(cl);
-  const toTake = allItems.filter(i => (cl.items[i.id]||{}).take).length;
-  const packed = allItems.filter(i => (cl.items[i.id]||{}).packed).length;
+  const fwTake = DB.firearms.filter(f => (cl.items[`f_${f.id}`]||{}).take).length;
+  const fwPacked = DB.firearms.filter(f => (cl.items[`f_${f.id}`]||{}).packed).length;
+  const toTake = allItems.filter(i => (cl.items[i.id]||{}).take).length + fwTake;
+  const packed = allItems.filter(i => (cl.items[i.id]||{}).packed).length + fwPacked;
   const pct = toTake > 0 ? Math.round(packed/toTake*100) : 0;
   const color = toTake > 0 && packed === toTake ? '#3fb950' : '#58a6ff';
   const progressText = toTake === 0 ? 'Select items to bring' : packed === toTake ? `✓ All packed (${packed}/${toTake})` : `${packed} / ${toTake} packed`;
@@ -3643,6 +3660,21 @@ function renderChecklistInModal() {
   if (prog) prog.textContent = toTake > 0 ? `— ${progressText}` : '';
   const printBtn = document.getElementById('se-cl-print-btn');
   if (printBtn) printBtn.style.display = toTake > 0 ? '' : 'none';
+
+  function fwItemRow(f) {
+    const state = cl.items[`f_${f.id}`] || {};
+    return `
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--panel-2);border-radius:6px;margin-bottom:4px">
+        <label style="display:flex;align-items:center;gap:8px;flex:1;cursor:pointer;font-size:13px">
+          <input type="checkbox" ${state.take?'checked':''} onchange="setModalChecklistTake('f_${f.id}',this.checked)" style="width:16px;height:16px;flex-shrink:0">
+          ${escapeHtml(f.name)}
+        </label>
+        <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-dim);cursor:pointer;white-space:nowrap;${!state.take?'display:none':''}">
+          <input type="checkbox" ${state.packed?'checked':''} ${!state.take?'disabled':''} onchange="setModalChecklistPacked('f_${f.id}',this.checked)" style="width:14px;height:14px">
+          Packed
+        </label>
+      </div>`;
+  }
 
   container.innerHTML = `
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;font-size:11px;color:var(--text-dim);padding:0 2px">
@@ -3654,6 +3686,10 @@ function renderChecklistInModal() {
       </div>
       <div style="font-size:12px;font-weight:600;color:${color};white-space:nowrap">${progressText}</div>
     </div>` : ''}
+    <div style="margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:8px">🔫 Firearms</div>
+      <div>${DB.firearms.map(f => fwItemRow(f)).join('')}</div>
+    </div>
     ${sectionHtml('essentials','Range Essentials','🎯', DEFAULT_CHECKLIST_ITEMS.essentials, true)}
     ${sectionHtml('night','Night Session','🔦', DEFAULT_CHECKLIST_ITEMS.night, cl.nightMode)}
     ${sectionHtml('tactical','Tactical','🪖', DEFAULT_CHECKLIST_ITEMS.tactical, cl.tacticalMode)}
@@ -3812,8 +3848,10 @@ function openChecklistModal(sessionId) {
 
   function progressBar() {
     const allItems = getChecklistItems(cl);
-    const toTake = allItems.filter(i => (cl.items[i.id]||{}).take).length;
-    const packed = allItems.filter(i => (cl.items[i.id]||{}).packed).length;
+    const fwTake = DB.firearms.filter(f => (cl.items[`f_${f.id}`]||{}).take).length;
+    const fwPacked = DB.firearms.filter(f => (cl.items[`f_${f.id}`]||{}).packed).length;
+    const toTake = allItems.filter(i => (cl.items[i.id]||{}).take).length + fwTake;
+    const packed = allItems.filter(i => (cl.items[i.id]||{}).packed).length + fwPacked;
     if (!toTake) return '';
     const pct = Math.round(packed/toTake*100);
     const color = packed === toTake ? '#3fb950' : '#58a6ff';
@@ -3834,6 +3872,22 @@ function openChecklistModal(sessionId) {
     <div class="modal-body" style="max-height:70vh;overflow-y:auto">
       <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Check items you plan to bring, then mark each as packed when ready.</div>
       ${progressBar()}
+      <div style="margin-bottom:16px">
+        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:8px">🔫 Firearms</div>
+        <div>${DB.firearms.map(f => {
+          const state = cl.items[`f_${f.id}`] || {};
+          return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--panel-2);border-radius:6px;margin-bottom:4px">
+            <label style="display:flex;align-items:center;gap:8px;flex:1;cursor:pointer;font-size:13px">
+              <input type="checkbox" ${state.take?'checked':''} onchange="setDbChecklistTake('${sessionId}','f_${f.id}',this.checked)" style="width:16px;height:16px;flex-shrink:0">
+              ${escapeHtml(f.name)}
+            </label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-dim);cursor:pointer;white-space:nowrap;${!state.take?'display:none':''}">
+              <input type="checkbox" ${state.packed?'checked':''} ${!state.take?'disabled':''} onchange="setDbChecklistPacked('${sessionId}','f_${f.id}',this.checked)" style="width:14px;height:14px">
+              Packed
+            </label>
+          </div>`;
+        }).join('')}</div>
+      </div>
       ${sectionHtml('essentials','Range Essentials','🎯', DEFAULT_CHECKLIST_ITEMS.essentials, true)}
       ${sectionHtml('night','Night Session','🔦', DEFAULT_CHECKLIST_ITEMS.night, cl.nightMode)}
       ${sectionHtml('tactical','Tactical','🪖', DEFAULT_CHECKLIST_ITEMS.tactical, cl.tacticalMode)}
@@ -3933,6 +3987,17 @@ function printChecklist(sessionId) {
       <div class="meta">${f ? f.name : '—'}${s.location ? ' · ' + s.location : ''}</div>
     </div>
     <div class="progress">${packed} of ${toTake.length} items packed</div>
+    ${(() => {
+      const fwItems = DB.firearms.filter(f => (cl.items[`f_${f.id}`]||{}).take);
+      if (!fwItems.length) return '';
+      return `<div class="cl-section">
+        <div class="cl-section-title">🔫 Firearms</div>
+        ${fwItems.map(f => {
+          const isPacked = (cl.items[`f_${f.id}`]||{}).packed;
+          return `<div class="cl-item ${isPacked?'packed':''}"><span class="cl-box">${isPacked?'✓':''}</span><span class="cl-label">${f.name}</span></div>`;
+        }).join('')}
+      </div>`;
+    })()}
     ${sectionRows('essentials','Range Essentials','🎯', DEFAULT_CHECKLIST_ITEMS.essentials)}
     ${cl.nightMode ? sectionRows('night','Night Session','🔦', DEFAULT_CHECKLIST_ITEMS.night) : ''}
     ${cl.tacticalMode ? sectionRows('tactical','Tactical','🪖', DEFAULT_CHECKLIST_ITEMS.tactical) : ''}
@@ -4142,11 +4207,11 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
             <option value="dry_fire" ${s.type==='dry_fire'?'selected':''}>Dry Fire</option>
           </select>
         </div>
-        <div class="form-row"><label>Firearm</label>
+        <div class="form-row" ${isPlanMode ? 'style="display:none"' : ''}><label>Firearm</label>
           <select id="se-firearm" onchange="updateSessionMagSection()" >${DB.firearms.map(f => `<option value="${f.id}" ${s.firearmId===f.id?'selected':''}>${escapeHtml(f.name)}</option>`).join('')}</select>
         </div>
       </div>
-      <div style="margin:4px 0 10px;display:flex;align-items:center;gap:8px;cursor:pointer" onclick="document.getElementById('se-multi-fw').click()">
+      <div style="margin:4px 0 10px;display:${isPlanMode ? 'none' : 'flex'};align-items:center;gap:8px;cursor:pointer" onclick="document.getElementById('se-multi-fw').click()">
         <input type="checkbox" id="se-multi-fw" ${(s.firearmSplits && s.firearmSplits.length)?'checked':''} onchange="toggleMultiFirearm(this.checked)" onclick="event.stopPropagation()">
         <span style="font-size:13px;color:var(--text-dim)">Multiple firearms used this session ${tip('Check this to enter round counts per gun. Firearm round counts and maintenance tracking use the per-gun totals. A warning appears if the ammo total does not match the round total.')}</span>
       </div>
@@ -4163,7 +4228,7 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
 
       <hr>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <strong>Ammunition Used ${tip('Select ammo SKU and enter rounds fired. Inventory decrements on save. Costs are calculated using FIFO pricing.')}</strong>
+        <strong>Ammunition ${tip('Select the ammo type and quantity. When planning, this is what you\'re bringing. When logging, inventory decrements on save and costs are calculated using FIFO pricing.')}</strong>
         <button class="btn small secondary" onclick="addAmmoRow()">+ Add</button>
       </div>
       <div id="se-ammo-rows"></div>
@@ -4772,7 +4837,18 @@ function saveSession(id, sourcePlanId) {
   const t = window._tempSession;
   t.date = document.getElementById('se-date').value;
   t.type = document.getElementById('se-type').value;
-  t.firearmId = document.getElementById('se-firearm').value;
+  if (t.planned) {
+    // Firearm(s) come from checklist, not the dropdown
+    const _cl = t.checklist || {};
+    const _ci = _cl.items || {};
+    const _fwIds = DB.firearms.filter(fw => (_ci[`f_${fw.id}`]||{}).take).map(fw => fw.id);
+    if (!_fwIds.length) { alert('Select at least one firearm in the Firearms checklist.'); return; }
+    t.firearmId = _fwIds[0];
+    t.firearmSplits = [];
+    t.multiFirearm = false;
+  } else {
+    t.firearmId = document.getElementById('se-firearm').value;
+  }
   t.location = document.getElementById('se-location').value.trim();
   t.distances = document.getElementById('se-dist').value.trim();
   t.notes = document.getElementById('se-notes').value.trim();
