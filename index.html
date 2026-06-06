@@ -4392,24 +4392,51 @@ function renderFirearmSplits() {
   const c = document.getElementById('se-fw-splits');
   if (!c) return;
   const splits = window._tempSession.firearmSplits || [];
+  const includedIds = new Set(splits.map(s => s.firearmId));
+  const addable = DB.firearms.filter(f => !includedIds.has(f.id));
   c.innerHTML = `
     <div style="background:var(--panel-2);border-radius:8px;padding:12px;margin-bottom:8px">
-      <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Enter rounds fired with each firearm (leave 0 to omit):</div>
-      ${DB.firearms.map(f => {
-        const sp = splits.find(s => s.firearmId === f.id) || { rounds: 0 };
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Enter rounds fired with each firearm:</div>
+      ${splits.map(sp => {
+        const f = getFirearm(sp.firearmId);
+        if (!f) return '';
         return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
           <span style="flex:1;font-size:13px">${escapeHtml(f.name)}</span>
           <input type="number" min="0" value="${sp.rounds || 0}"
             style="width:90px"
             onchange="updateSplit('${f.id}', parseInt(this.value)||0)">
           <span style="font-size:12px;color:var(--text-dim)">rounds</span>
+          <button class="btn small secondary" style="padding:2px 8px;font-size:11px;line-height:1" onclick="removeFirearmSplit('${f.id}')">✕</button>
         </div>`;
       }).join('')}
-      <div style="font-size:12px;margin-top:6px;color:var(--text-dim)">
+      ${addable.length ? `
+        <div style="margin-top:8px;display:flex;gap:6px;align-items:center">
+          <select id="se-fw-add-sel" style="flex:1;font-size:13px">
+            <option value="">Add a firearm…</option>
+            ${addable.map(f => `<option value="${f.id}">${escapeHtml(f.name)}</option>`).join('')}
+          </select>
+          <button class="btn small secondary" onclick="addFirearmSplit()">Add</button>
+        </div>
+      ` : ''}
+      <div style="font-size:12px;margin-top:8px;color:var(--text-dim)">
         Total: <strong style="color:var(--accent)" id="split-total">${splits.reduce((s,sp)=>s+(sp.rounds||0),0)}</strong> rounds
       </div>
     </div>
   `;
+}
+function addFirearmSplit() {
+  const sel = document.getElementById('se-fw-add-sel');
+  const fid = sel ? sel.value : '';
+  if (!fid) return;
+  if (!window._tempSession.firearmSplits) window._tempSession.firearmSplits = [];
+  if (!window._tempSession.firearmSplits.find(s => s.firearmId === fid))
+    window._tempSession.firearmSplits.push({ firearmId: fid, rounds: 0 });
+  renderFirearmSplits();
+}
+function removeFirearmSplit(firearmId) {
+  if (!window._tempSession.firearmSplits) return;
+  window._tempSession.firearmSplits = window._tempSession.firearmSplits.filter(s => s.firearmId !== firearmId);
+  renderFirearmSplits();
 }
 function updateSplit(firearmId, rounds) {
   if (!window._tempSession.firearmSplits) window._tempSession.firearmSplits = [];
