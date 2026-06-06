@@ -13,6 +13,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Pistol Tracker">
+<meta name="color-scheme" content="light dark">
 <link rel="apple-touch-icon" href="icon-180.png">
 <style>
   :root {
@@ -29,6 +30,8 @@
     --danger: #FF3B30;
     --info: #007AFF;
     --shadow: 0 2px 10px rgba(0,0,0,0.08);
+    --accent-muted-1: rgba(88,86,214,0.3);
+    --accent-muted-2: rgba(88,86,214,0.6);
   }
   [data-theme="dark"] {
     --bg: #000000;
@@ -44,6 +47,8 @@
     --danger: #FF453A;
     --info: #0A84FF;
     --shadow: 0 2px 10px rgba(0,0,0,0.4);
+    --accent-muted-1: rgba(94,92,230,0.3);
+    --accent-muted-2: rgba(94,92,230,0.6);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -63,12 +68,13 @@
   nav { flex: 1; }
   nav a {
     display: flex; align-items: center; gap: 10px;
-    padding: 10px 20px; color: var(--text-dim);
+    padding: 10px 14px; margin: 1px 8px;
+    color: var(--text-dim); border-radius: 8px;
     text-decoration: none; cursor: pointer;
-    font-size: 14px; border-left: 3px solid transparent;
+    font-size: 14px;
   }
   nav a:hover { background: var(--panel-2); color: var(--text); }
-  nav a.active { background: var(--panel-2); color: var(--accent); border-left-color: var(--accent); }
+  nav a.active { background: var(--accent); color: #fff; }
   nav .icon { font-size: 16px; width: 20px; text-align: center; }
   .sidebar-footer { padding: 12px 20px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-dim); }
 
@@ -79,7 +85,7 @@
   .search-bar input {
     width: 100%; padding: 7px 10px 7px 30px;
     background: var(--panel-2); border: 1px solid var(--border);
-    border-radius: 6px; color: var(--text); font-size: 13px;
+    border-radius: 10px; color: var(--text); font-size: 13px;
   }
   .search-bar input:focus { outline: none; border-color: var(--accent); }
   .search-bar .search-icon {
@@ -130,6 +136,8 @@
     cursor: pointer; font-size: 13px; font-weight: 500;
   }
   .btn:hover { background: var(--accent-dim); }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .btn.secondary { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); }
   .btn.secondary:hover { background: var(--border); }
   .btn.danger { background: var(--danger); }
@@ -150,9 +158,9 @@
     content: attr(data-tip);
     position: absolute; bottom: calc(100% + 8px); left: 0;
     transform: none;
-    background: #1a2028; color: var(--text);
+    background: var(--panel); color: var(--text);
     border: 1px solid var(--border);
-    border-radius: 6px; padding: 7px 10px;
+    border-radius: 8px; padding: 7px 10px;
     font-size: 12px; font-weight: 400; line-height: 1.5;
     text-transform: none; letter-spacing: normal;
     white-space: normal; width: 220px; text-align: left;
@@ -193,7 +201,7 @@
   .help-btn:hover, .help-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
   .section-help-panel {
     background: var(--panel-2); border: 1px solid var(--border);
-    border-radius: 8px; padding: 16px 20px; margin-bottom: 20px;
+    border-radius: 10px; padding: 16px 20px; margin-bottom: 20px;
     font-size: 13px; line-height: 1.7; color: var(--text);
     display: none;
   }
@@ -229,18 +237,20 @@
   table { width: 100%; border-collapse: collapse; }
   th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); font-size: 13px; }
   th { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); font-weight: 500; }
-  tbody tr:hover { background: var(--panel-2); }
+  tbody tr:nth-child(even) { background: var(--panel-2); }
+  tbody tr:hover { background: var(--border); }
+  ::placeholder { color: var(--text-dim); opacity: 1; }
 
   .badge {
     display: inline-block; padding: 2px 8px;
     border-radius: 10px; font-size: 11px; font-weight: 500;
   }
-  .badge.success { background: rgba(63,185,80,0.15); color: var(--success); }
-  .badge.warn { background: rgba(210,153,34,0.15); color: var(--warn); }
-  .badge.danger { background: rgba(248,81,73,0.15); color: var(--danger); }
-  .badge.info { background: rgba(88,166,255,0.15); color: var(--info); }
+  .badge.success { background: rgba(52,199,89,0.15); color: var(--success); }
+  .badge.warn { background: rgba(255,149,0,0.15); color: var(--warn); }
+  .badge.danger { background: rgba(255,59,48,0.15); color: var(--danger); }
+  .badge.info { background: rgba(0,122,255,0.15); color: var(--info); }
   .badge.neutral { background: var(--panel-2); color: var(--text-dim); }
-  .badge.pr { background: rgba(255,107,53,0.18); color: var(--accent); }
+  .badge.pr { background: rgba(88,86,214,0.15); color: var(--accent); }
 
   .modal-backdrop {
     display: none; position: fixed; inset: 0;
@@ -252,7 +262,7 @@
   .modal {
     background: var(--panel); border: 1px solid var(--border);
     border-radius: 12px; width: 100%; max-width: 700px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    box-shadow: var(--shadow);
   }
   .modal-header {
     padding: 18px 24px; border-bottom: 1px solid var(--border);
@@ -286,10 +296,10 @@
     padding: 12px 16px; border-radius: 10px; margin-bottom: 12px;
     display: flex; align-items: center; gap: 10px; font-size: 13px;
   }
-  .alert.warn { background: rgba(210,153,34,0.1); border: 1px solid var(--warn); color: var(--warn); }
-  .alert.danger { background: rgba(248,81,73,0.1); border: 1px solid var(--danger); color: var(--danger); }
-  .alert.info { background: rgba(88,166,255,0.1); border: 1px solid var(--info); color: var(--info); }
-  .alert.success { background: rgba(63,185,80,0.1); border: 1px solid var(--success); color: var(--success); }
+  .alert.warn { background: rgba(255,149,0,0.1); border: 1px solid var(--warn); color: var(--warn); }
+  .alert.danger { background: rgba(255,59,48,0.1); border: 1px solid var(--danger); color: var(--danger); }
+  .alert.info { background: rgba(0,122,255,0.1); border: 1px solid var(--info); color: var(--info); }
+  .alert.success { background: rgba(52,199,89,0.1); border: 1px solid var(--success); color: var(--success); }
 
   .progress {
     height: 6px; background: var(--panel-2);
@@ -304,7 +314,7 @@
   .image-thumb {
     width: 80px; height: 80px;
     background-size: cover; background-position: center;
-    border-radius: 6px; border: 1px solid var(--border);
+    border-radius: 8px; border: 1px solid var(--border);
     cursor: pointer; position: relative;
   }
   .image-thumb .remove {
@@ -318,7 +328,7 @@
   .chip-list { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
   .chip {
     background: var(--panel-2); border: 1px solid var(--border);
-    padding: 4px 10px; border-radius: 12px; font-size: 12px;
+    padding: 4px 12px; border-radius: 100px; font-size: 12px;
   }
 
   .chart-container { padding: 12px 0; }
@@ -370,10 +380,8 @@
   .skill-rating {
     display: flex; align-items: center; gap: 4px;
   }
-  .skill-rating input[type=range] {
-    flex: 1;
-    accent-color: var(--accent);
-  }
+  input[type=range] { accent-color: var(--accent); }
+  .skill-rating input[type=range] { flex: 1; }
   .skill-rating .val {
     min-width: 28px; text-align: center;
     font-weight: 600; color: var(--accent);
@@ -444,7 +452,7 @@
   @media (max-width: 767px) {
     body { overflow: hidden; }
 
-    .app { flex-direction: column; height: 100dvh; height: 100vh; }
+    .app { flex-direction: column; height: 100vh; height: 100dvh; }
 
     .mobile-header { display: flex; }
 
@@ -457,7 +465,6 @@
       z-index: 60;
       transition: left 0.25s ease;
       overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
       /* Respect iPhone notch at top */
       padding-top: max(20px, env(safe-area-inset-top));
       padding-bottom: max(16px, env(safe-area-inset-bottom));
@@ -477,7 +484,6 @@
       flex: 1;
       overflow-y: auto;
       padding: 16px;
-      -webkit-overflow-scrolling: touch;
       padding-bottom: max(24px, env(safe-area-inset-bottom));
     }
 
@@ -492,7 +498,6 @@
     table {
       display: block;
       overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
       white-space: nowrap;
     }
     th, td { white-space: nowrap; }
@@ -500,7 +505,7 @@
     /* Modals: nearly full-width, scrollable */
     .modal-backdrop { padding: 20px 10px; align-items: flex-start; }
     .modal { max-width: 100%; }
-    .modal-body { max-height: 65vh !important; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .modal-body { max-height: 65vh !important; overflow-y: auto; }
 
     /* View header wraps gracefully */
     .view-header { flex-wrap: wrap; gap: 10px; }
@@ -625,7 +630,7 @@
 
 <script>
 /* ============================================================
-   PISTOL PRACTICE & MAINTENANCE TRACKER  v1.7
+   PISTOL PRACTICE & MAINTENANCE TRACKER  v1.9
    Single-file app. All data persisted to localStorage.
 
    DATA MODEL OVERVIEW
@@ -4254,7 +4259,7 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
         <button class="btn small secondary" onclick="addAmmoRow()">+ Add</button>
       </div>
       <div id="se-ammo-rows"></div>
-      <div id="se-ammo-mismatch" style="display:none;margin-top:6px;font-size:12px;background:rgba(255,107,53,0.1);border:1px solid var(--accent);border-radius:6px;padding:8px 12px;line-height:1.5"></div>
+      <div id="se-ammo-mismatch" style="display:none;margin-top:6px;font-size:12px;background:rgba(255,149,0,0.1);border:1px solid var(--warn);border-radius:10px;padding:8px 12px;line-height:1.5"></div>
 
       <hr>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -5472,8 +5477,8 @@ function renderHeatmapPane() {
   function cellColor(count, future) {
     if (future) return 'var(--bg)';
     if (count === 0) return 'var(--panel-2)';
-    if (count === 1) return 'rgba(255,107,53,0.3)';
-    if (count === 2) return 'rgba(255,107,53,0.6)';
+    if (count === 1) return 'var(--accent-muted-1)';
+    if (count === 2) return 'var(--accent-muted-2)';
     return 'var(--accent)'; // 3+
   }
 
@@ -5510,7 +5515,7 @@ function renderHeatmapPane() {
       const x = padL + wi * (cs + gap);
       const y = padT + di * (cs + gap);
       const label = cell.future ? '' : `${cell.iso}: ${cell.count} session${cell.count !== 1 ? 's' : ''}`;
-      const stroke = cell.count > 0 && !cell.future ? 'rgba(255,107,53,0.5)' : 'none';
+      const stroke = cell.count > 0 && !cell.future ? 'var(--accent-muted-2)' : 'none';
       cells += `<rect x="${x}" y="${y}" width="${cs}" height="${cs}" rx="2" fill="${cellColor(cell.count, cell.future)}" stroke="${stroke}" stroke-width="0.5"><title>${label}</title></rect>`;
     });
   });
@@ -5560,7 +5565,7 @@ function renderHeatmapPane() {
       <!-- Legend -->
       <div style="display:flex;align-items:center;gap:6px;margin-top:8px;font-size:11px;color:var(--text-dim);flex-wrap:wrap">
         <span>Less</span>
-        <svg width="62" height="13" style="display:inline-block;flex-shrink:0"><rect x="0" y="0" width="13" height="13" rx="2" fill="var(--panel-2)"/><rect x="17" y="0" width="13" height="13" rx="2" fill="rgba(255,107,53,0.3)"/><rect x="34" y="0" width="13" height="13" rx="2" fill="rgba(255,107,53,0.6)"/><rect x="51" y="0" width="13" height="13" rx="2" fill="var(--accent)"/></svg>
+        <svg width="62" height="13" style="display:inline-block;flex-shrink:0"><rect x="0" y="0" width="13" height="13" rx="2" fill="var(--panel-2)"/><rect x="17" y="0" width="13" height="13" rx="2" fill="var(--accent-muted-1)"/><rect x="34" y="0" width="13" height="13" rx="2" fill="var(--accent-muted-2)"/><rect x="51" y="0" width="13" height="13" rx="2" fill="var(--accent)"/></svg>
         <span>More &nbsp;|&nbsp; 1 square = 1 day</span>
       </div>
     </div>
@@ -7807,7 +7812,7 @@ function renderSettings() {
           </div>
         </div>
         ${autoSyncStatus.connected ? `
-          <div style="background:rgba(63,185,80,0.1);border:1px solid var(--success);border-radius:6px;padding:12px;font-size:13px">
+          <div style="background:rgba(52,199,89,0.1);border:1px solid var(--success);border-radius:10px;padding:12px;font-size:13px">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
               <div>
                 <strong style="color:var(--success)">&#10003; Auto-sync ON</strong>
@@ -7821,7 +7826,7 @@ function renderSettings() {
             </div>
           </div>
         ` : (autoSyncStatus.filename ? `
-          <div style="background:rgba(210,153,34,0.1);border:1px solid var(--warn);border-radius:6px;padding:12px;font-size:13px">
+          <div style="background:rgba(255,149,0,0.1);border:1px solid var(--warn);border-radius:10px;padding:12px;font-size:13px">
             <strong style="color:var(--warn)">Auto-sync needs to be reconnected</strong>
             <div style="font-size:12px;color:var(--text-dim);margin-top:4px">Browser permission was lost (this happens after browser restarts). Click below to re-grant write access to <strong>${escapeHtml(autoSyncStatus.filename)}</strong>.</div>
             <div style="margin-top:10px;display:flex;gap:8px">
