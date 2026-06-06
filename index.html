@@ -4226,8 +4226,8 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
             <option value="dry_fire" ${s.type==='dry_fire'?'selected':''}>Dry Fire</option>
           </select>
         </div>
-        <div class="form-row" ${isPlanMode ? 'style="display:none"' : ''}><label>Firearm</label>
-          <select id="se-firearm" onchange="updateSessionMagSection()" >${DB.firearms.map(f => `<option value="${f.id}" ${s.firearmId===f.id?'selected':''}>${escapeHtml(f.name)}</option>`).join('')}</select>
+        <div class="form-row"><label>Firearm</label>
+          <select id="se-firearm" onchange="updateSessionMagSection();syncPlanFirearmToChecklist(this.value)" >${DB.firearms.map(f => `<option value="${f.id}" ${s.firearmId===f.id?'selected':''}>${escapeHtml(f.name)}</option>`).join('')}</select>
         </div>
       </div>
       <div style="margin:4px 0 10px;display:${isPlanMode ? 'none' : 'flex'};align-items:center;gap:8px;cursor:pointer" onclick="document.getElementById('se-multi-fw').click()">
@@ -4344,10 +4344,12 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
       if (!window._tempSession.checklist) window._tempSession.checklist = { nightMode: false, tacticalMode: false, items: {} };
       const _cl = window._tempSession.checklist;
       if (!_cl.items) _cl.items = {};
-      // Pre-check the default firearm if no firearms have been selected yet
+      // Pre-check the current dropdown firearm if no firearms have been selected yet
+      const _dropdownFwId = document.getElementById('se-firearm')?.value || window._tempSession.firearmId;
       const _anyFwChecked = DB.firearms.some(f => (_cl.items[`f_${f.id}`]||{}).take);
-      if (!_anyFwChecked && window._tempSession.firearmId) {
-        _cl.items[`f_${window._tempSession.firearmId}`] = { take: true, packed: false };
+      if (!_anyFwChecked && _dropdownFwId) {
+        _cl.items[`f_${_dropdownFwId}`] = { take: true, packed: false };
+        window._tempSession._dropdownFirearmId = _dropdownFwId;
       }
       renderChecklistInModal();
       const det = document.getElementById('se-checklist-details');
@@ -4372,6 +4374,20 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
 function toggleNoHolster(val) {
   window._tempSession.noHolsterOnly = val;
   renderDrillRows();
+}
+function syncPlanFirearmToChecklist(newFirearmId) {
+  const cl = window._tempSession?.checklist;
+  if (!cl || !cl.items) return; // not in plan mode or checklist not open yet
+  const prevId = window._tempSession._dropdownFirearmId;
+  // Uncheck the previously dropdown-selected firearm (if it's not also manually checked alongside others)
+  if (prevId && prevId !== newFirearmId) {
+    if (cl.items[`f_${prevId}`]) cl.items[`f_${prevId}`] = { take: false, packed: false };
+  }
+  // Check the new one
+  if (!cl.items[`f_${newFirearmId}`]) cl.items[`f_${newFirearmId}`] = {};
+  cl.items[`f_${newFirearmId}`].take = true;
+  window._tempSession._dropdownFirearmId = newFirearmId;
+  renderChecklistInModal();
 }
 function updateSessionMagSection() {
   const sec = document.getElementById('se-mag-section');
