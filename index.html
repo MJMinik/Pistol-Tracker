@@ -1828,7 +1828,7 @@ function runGlobalSearch(kw) {
     if (hay.includes(q)) results.push({
       group: 'Sessions', icon: '▲',
       title: `${formatDate(s.date)} — ${fw ? fw.name : '?'}`,
-      subtitle: `${s.type} · ${s.totalRounds || 0} rounds${s.location ? ' · ' + s.location : ''}`,
+      subtitle: `${{ practice:'Practice', competition:'Competition', class:'Class / Training', dry_fire:'Dry Fire' }[s.type]||s.type} · ${s.totalRounds || 0} rounds${s.location ? ' · ' + s.location : ''}`,
       action: () => { closeGlobalSearch(); setView('sessions'); }
     });
   }
@@ -3468,7 +3468,7 @@ function sessionCard(s) {
     <div class="card">${isPlanned ? `<div style="background:#007AFF;margin:-20px -20px 14px -20px;padding:6px 16px;border-radius:6px 6px 0 0;font-size:11px;font-weight:700;letter-spacing:1px;color:#fff">&#128203; PLANNED SESSION</div>` : ''}
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
-          <div style="font-size:16px;font-weight:600">${formatDate(s.date)} <span class="badge ${isPlanned ? '' : (s.type==='competition'?'info':'neutral')}" ${isPlanned ? 'style="background:rgba(0,122,255,0.12);color:#007AFF;border:1px solid rgba(0,122,255,0.3)"' : ''}>${isPlanned ? escapeHtml(s.type||'practice') : escapeHtml(s.type||'practice')}</span></div>
+          <div style="font-size:16px;font-weight:600">${formatDate(s.date)} <span class="badge ${isPlanned ? '' : (s.type==='competition'?'info':'neutral')}" ${isPlanned ? 'style="background:rgba(0,122,255,0.12);color:#007AFF;border:1px solid rgba(0,122,255,0.3)"' : ''}>${({'practice':'Practice','competition':'Competition','class':'Class / Training','dry_fire':'Dry Fire'}[s.type||'practice']||escapeHtml(s.type||'practice'))}</span></div>
           <div class="text-dim" style="font-size:12px;margin-top:6px">${((s.firearmSplits && s.firearmSplits.length) || plannedFwIds.length > 1) ? firearmDisplay + ' &middot; ' : escapeHtml(f ? f.name : '—') + ' &middot; '}${escapeHtml(s.location || 'Location not set')}</div>
         </div>
         <div style="text-align:right">
@@ -8615,12 +8615,13 @@ function drillProgressionChart() {
 
 function sessionTypeBreakdown() {
   const counts = {};
+  const typeLabel = t => ({'practice':'Practice','competition':'Competition','class':'Class / Training','dry_fire':'Dry Fire'}[t]||t);
   for (const s of DB.sessions) counts[s.type||'practice'] = (counts[s.type||'practice']||0) + 1;
   const total = Object.values(counts).reduce((a,b)=>a+b,0);
   if (!total) return '<div class="empty">No sessions yet.</div>';
   return `<div>${Object.entries(counts).map(([t, c]) => `
     <div style="margin:8px 0">
-      <div style="display:flex;justify-content:space-between;font-size:13px"><strong>${escapeHtml(t)}</strong><span class="text-dim">${c} (${Math.round(c/total*100)}%)</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:13px"><strong>${escapeHtml(typeLabel(t))}</strong><span class="text-dim">${c} (${Math.round(c/total*100)}%)</span></div>
       <div class="progress"><div class="progress-fill" style="width:${(c/total)*100}%"></div></div>
     </div>
   `).join('')}</div>`;
