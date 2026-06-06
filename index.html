@@ -4342,6 +4342,13 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
     updateSessionMagSection();
     if (isPlanMode) {
       if (!window._tempSession.checklist) window._tempSession.checklist = { nightMode: false, tacticalMode: false, items: {} };
+      const _cl = window._tempSession.checklist;
+      if (!_cl.items) _cl.items = {};
+      // Pre-check the default firearm if no firearms have been selected yet
+      const _anyFwChecked = DB.firearms.some(f => (_cl.items[`f_${f.id}`]||{}).take);
+      if (!_anyFwChecked && window._tempSession.firearmId) {
+        _cl.items[`f_${window._tempSession.firearmId}`] = { take: true, packed: false };
+      }
       renderChecklistInModal();
       const det = document.getElementById('se-checklist-details');
       if (det) det.addEventListener('toggle', () => {
