@@ -515,7 +515,7 @@
     .stat .value { font-size: 22px; }
 
     /* Bigger tap targets */
-    .btn { min-height: 38px; }
+    .btn { min-height: 44px; }
     nav a { padding: 14px 20px; }
 
     /* Charts: make them full width */
@@ -8425,8 +8425,33 @@ function importRangeReadyCSV() {
 }
 
 function resetAll() {
-  if (!confirm('Reset ALL data? This cannot be undone.')) return;
-  if (!confirm('Last chance. Really reset everything?')) return;
+  openModal(`
+    <div class="modal-header">
+      <h3 style="color:var(--danger)">Reset All Data</h3>
+      <button class="modal-close" onclick="closeModal()">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:15px;margin-bottom:14px">This will permanently delete <strong>everything</strong> stored in this app:</p>
+      <ul style="font-size:13px;color:var(--text-dim);padding-left:20px;line-height:2.1">
+        <li>All firearms, optics, and spare parts</li>
+        <li>All sessions, drills, and target photos</li>
+        <li>All maintenance records and malfunctions</li>
+        <li>All ammunition inventory and purchases</li>
+        <li>All competition matches and classifiers</li>
+        <li>All goals, skill assessments, and settings</li>
+      </ul>
+      <div class="alert danger" style="margin-top:16px;font-weight:500">
+        &#9888;&#65039; This cannot be undone and there is no recovery. Export a backup first if you want to keep your data.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn danger" onclick="confirmResetAll()">Delete Everything</button>
+    </div>
+  `);
+}
+function confirmResetAll() {
+  closeModal();
   localStorage.removeItem(STORAGE_KEY);
   // Also wipe IndexedDB images
   indexedDB.deleteDatabase(IMAGE_DB_NAME);
