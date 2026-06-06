@@ -64,7 +64,7 @@
   }
   .brand { padding: 0 20px 20px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
   .brand h1 { font-size: 18px; font-weight: 600; }
-  .brand .sub { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+  .brand .sub { font-size: 11px; color: var(--text-dim); }
   nav { flex: 1; }
   nav a {
     display: flex; align-items: center; gap: 10px;
@@ -111,7 +111,7 @@
   .search-results { max-height: 60vh; overflow-y: auto; }
   .search-result-group { padding: 8px 0; border-bottom: 1px solid var(--border); }
   .search-result-group:last-child { border-bottom: none; }
-  .search-result-label { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); padding: 4px 16px; }
+  .search-result-label { font-size: 11px; font-weight: 600; color: var(--text-dim); padding: 4px 16px; }
   .search-result-item {
     padding: 10px 16px; cursor: pointer; display: flex; flex-direction: column; gap: 2px;
   }
@@ -206,7 +206,7 @@
     display: none;
   }
   .section-help-panel.open { display: block; }
-  .section-help-panel h4 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--accent); margin: 12px 0 4px; }
+  .section-help-panel h4 { font-size: 12px; font-weight: 600; color: var(--accent); margin: 12px 0 4px; }
   .section-help-panel h4:first-child { margin-top: 0; }
   .section-help-panel ul { padding-left: 18px; margin: 4px 0; }
   .section-help-panel li { margin-bottom: 3px; }
@@ -216,7 +216,7 @@
     border-radius: 12px; padding: 20px; margin-bottom: 16px;
     box-shadow: var(--shadow);
   }
-  .card h3 { font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); margin-bottom: 12px; }
+  .card h3 { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 12px; }
   #se-total::-webkit-outer-spin-button, #se-total::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   #se-total { -moz-appearance: textfield; }
 
@@ -229,14 +229,14 @@
     background: var(--panel); border: 1px solid var(--border);
     border-radius: 12px; padding: 16px 20px;
   }
-  .stat .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); }
+  .stat .label { font-size: 11px; color: var(--text-dim); }
   .stat .value { font-size: 28px; font-weight: 600; margin-top: 6px; }
   .stat .value.accent { color: var(--accent); }
   .stat .delta { font-size: 12px; color: var(--success); margin-top: 4px; }
 
   table { width: 100%; border-collapse: collapse; }
   th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); font-size: 13px; }
-  th { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); font-weight: 500; }
+  th { font-size: 11px; color: var(--text-dim); font-weight: 600; }
   tbody tr:nth-child(even) { background: var(--panel-2); }
   tbody tr:hover { background: var(--border); }
   ::placeholder { color: var(--text-dim); opacity: 1; }
@@ -277,7 +277,7 @@
   }
 
   .form-row { margin-bottom: 14px; }
-  .form-row label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .form-row label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
   .form-row input, .form-row select, .form-row textarea {
     width: 100%; padding: 8px 10px;
     background: var(--bg); border: 1px solid var(--border);
@@ -2438,16 +2438,16 @@ function firearmCard(f) {
       <hr>
       <div class="grid grid-3">
         <div>
-          <div class="text-dim" style="font-size:11px;text-transform:uppercase">Live-Fire Rounds ${tip('Total rounds fired since tracking started, including the starting round count. Dry-fire rounds shown separately below.')}</div>
+          <div class="text-dim" style="font-size:11px">Live-Fire Rounds ${tip('Total rounds fired since tracking started, including the starting round count. Dry-fire rounds shown separately below.')}</div>
           <div style="font-size:20px;font-weight:600;color:var(--accent)">${live.toLocaleString()}</div>
           ${dryRoundsCalc > 0 ? `<div style="font-size:11px;color:var(--text-dim)">${dryRoundsCalc.toLocaleString()} dry-fire</div>` : ''}
         </div>
         <div>
-          <div class="text-dim" style="font-size:11px;text-transform:uppercase">Sessions ${tip('Total live-fire sessions logged for this firearm, including multi-firearm sessions.')}</div>
+          <div class="text-dim" style="font-size:11px">Sessions ${tip('Total live-fire sessions logged for this firearm, including multi-firearm sessions.')}</div>
           <div style="font-size:20px;font-weight:600">${sessionsCount}</div>
           ${drySessionsCount > 0 ? `<div style="font-size:11px;color:var(--text-dim)">${drySessionsCount} dry-fire</div>` : ''}
         </div>
-        <div><div class="text-dim" style="font-size:11px;text-transform:uppercase">Since Deep Clean ${tip('Rounds fired since the last recorded deep clean. Deep clean is recommended every 10,000 rounds per Atlas guidance.')}</div><div style="font-size:20px;font-weight:600">${st.roundsSinceDeepClean.toLocaleString()}</div></div>
+        <div><div class="text-dim" style="font-size:11px">Since Deep Clean ${tip('Rounds fired since the last recorded deep clean. Deep clean is recommended every 10,000 rounds per Atlas guidance.')}</div><div style="font-size:20px;font-weight:600">${st.roundsSinceDeepClean.toLocaleString()}</div></div>
       </div>
       <div style="margin-top:12px">
         <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim)">
@@ -2507,7 +2507,7 @@ function firearmCard(f) {
       </div>
       <!-- Insurance panel (collapsed by default) -->
       <div id="ins-panel-${f.id}" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-        <div style="font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:10px">&#128274; Insurance Documentation</div>
+        <div style="font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:10px">&#128274; Insurance Documentation</div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
           <span style="font-size:12px;color:var(--text-dim);white-space:nowrap">Serial Number:</span>
           <span id="ins-sn-display-${f.id}" style="font-size:13px;font-family:monospace;color:var(--text);cursor:pointer" onclick="editSerialNumber('${f.id}')" title="Click to edit">${f.serialNumber ? escapeHtml(f.serialNumber) : '<span style="color:var(--text-dim);font-style:italic">Not recorded — click to add</span>'}</span>
@@ -3359,22 +3359,22 @@ function renderSessions() {
     <div class="card" style="margin-bottom:16px;padding:14px 16px">
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end">
         <div>
-          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">From</label>
+          <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">From</label>
           <input type="date" value="${f.dateFrom}" style="width:100%;height:34px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateSessionFilter('dateFrom',this.value)">
         </div>
         <div>
-          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">To</label>
+          <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">To</label>
           <input type="date" value="${f.dateTo}" style="width:100%;height:34px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateSessionFilter('dateTo',this.value)">
         </div>
         <div>
-          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">Firearm</label>
+          <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">Firearm</label>
           <select style="width:100%;height:34px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateSessionFilter('firearmId',this.value)">
             <option value="">All firearms</option>
             ${DB.firearms.map(fw => `<option value="${fw.id}" ${f.firearmId===fw.id?'selected':''}>${escapeHtml(fw.name)}</option>`).join('')}
           </select>
         </div>
         <div>
-          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">Type</label>
+          <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">Type</label>
           <select style="width:100%;height:34px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateSessionFilter('type',this.value)">
             <option value="">All types</option>
             <option value="practice" ${f.type==='practice'?'selected':''}>Practice</option>
@@ -3384,7 +3384,7 @@ function renderSessions() {
           </select>
         </div>
         <div>
-          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">Search</label>
+          <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">Search</label>
           <input type="search" id="se-keyword-search" placeholder="Location, drill, notes…" value="${escapeHtml(f.keyword)}" style="width:100%;height:34px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateSessionFilter('keyword',this.value)">
         </div>
         <div style="display:flex;align-items:flex-end">
@@ -3470,7 +3470,7 @@ function sessionCard(s) {
   }).join('');
   const isPlanned = !!s.planned;
   return `
-    <div class="card">${isPlanned ? `<div style="background:#007AFF;margin:-20px -20px 14px -20px;padding:6px 16px;border-radius:6px 6px 0 0;font-size:11px;font-weight:700;letter-spacing:1px;color:#fff">&#128203; PLANNED SESSION</div>` : ''}
+    <div class="card">${isPlanned ? `<div style="background:#007AFF;margin:-20px -20px 14px -20px;padding:6px 16px;border-radius:12px 12px 0 0;font-size:12px;font-weight:600;color:#fff">&#128203; Planned Session</div>` : ''}
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
           <div style="font-size:16px;font-weight:600">${formatDate(s.date)} <span class="badge ${isPlanned ? '' : (s.type==='competition'?'info':'neutral')}" ${isPlanned ? 'style="background:rgba(0,122,255,0.12);color:#007AFF;border:1px solid rgba(0,122,255,0.3)"' : ''}>${({'practice':'Practice','competition':'Competition','class':'Class / Training','dry_fire':'Dry Fire'}[s.type||'practice']||escapeHtml(s.type||'practice'))}</span></div>
@@ -3486,10 +3486,10 @@ function sessionCard(s) {
         if (cpr == null && !cost) return '';
         return `<div style="text-align:right;white-space:nowrap"><strong style="color:var(--accent)">${cpr != null ? '$' + cpr.toFixed(3) + '/rd' : ''}</strong>${cost ? ` &middot; <span class="text-dim">$${cost.toFixed(2)} total</span>` : ''}</div>`;
       })()}</div>` : ''}
-      ${drillsHtml ? `<div style="margin-top:10px"><strong style="color:var(--text-dim);font-size:12px;text-transform:uppercase">Drills</strong><div class="chip-list">${drillsHtml}</div></div>` : ''}
+      ${drillsHtml ? `<div style="margin-top:10px"><strong style="color:var(--text-dim);font-size:12px">Drills</strong><div class="chip-list">${drillsHtml}</div></div>` : ''}
       ${s.distances ? `<div style="margin-top:10px;font-size:13px"><strong style="color:var(--text-dim)">Distances:</strong> ${escapeHtml(s.distances)}</div>` : ''}
       ${s.holster ? `<div style="margin-top:6px;font-size:13px"><strong style="color:var(--text-dim)">Holster:</strong> ${escapeHtml(s.holster)}</div>` : ''}
-      ${(s.malfunctions && s.malfunctions.length) ? `<div style="margin-top:10px"><strong style="color:var(--danger);font-size:12px;text-transform:uppercase">Malfunctions (${s.malfunctions.length})</strong><div class="chip-list">${s.malfunctions.map(m => `<span class="chip" style="border-color:var(--danger);color:var(--danger)">${escapeHtml(m.type)}${m.roundCount ? ' @ ' + m.roundCount : ''}</span>`).join('')}</div></div>` : ''}
+      ${(s.malfunctions && s.malfunctions.length) ? `<div style="margin-top:10px"><strong style="color:var(--danger);font-size:12px">Malfunctions (${s.malfunctions.length})</strong><div class="chip-list">${s.malfunctions.map(m => `<span class="chip" style="border-color:var(--danger);color:var(--danger)">${escapeHtml(m.type)}${m.roundCount ? ' @ ' + m.roundCount : ''}</span>`).join('')}</div></div>` : ''}
       <div style="margin-top:8px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text-dim)">
         <span title="Click to edit location" onclick="inlineEditSessionField('${s.id}','location')" style="cursor:text;padding:2px 4px;border-radius:3px;transition:background 0.15s" onmouseenter="this.style.background='var(--panel-2)'" onmouseleave="this.style.background=''">
           <span id="se-loc-display-${s.id}">&#128205; ${s.location ? escapeHtml(s.location) : '<em>Add location</em>'}</span>
@@ -3637,7 +3637,7 @@ function renderChecklistInModal() {
     const isToggleable = cat !== 'essentials';
     return `
       <div style="margin-bottom:16px">
-        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:${isToggleable?'4px':'8px'}">${icon} ${title}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text-dim);margin-bottom:${isToggleable?'4px':'8px'}">${icon} ${title}</div>
         ${isToggleable ? `
           <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-bottom:${enabled?'10px':'4px'};padding-left:4px">
             <input type="checkbox" ${enabled?'checked':''} onchange="setModalChecklistMode('${cat}',this.checked)" style="width:15px;height:15px">
@@ -3696,7 +3696,7 @@ function renderChecklistInModal() {
       <div style="font-size:12px;font-weight:600;color:${color};white-space:nowrap">${progressText}</div>
     </div>` : ''}
     <div style="margin-bottom:16px">
-      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:8px">🔫 Firearms</div>
+      <div style="font-size:13px;font-weight:600;color:var(--text-dim);margin-bottom:8px">🔫 Firearms</div>
       <div>${DB.firearms.map(f => fwItemRow(f)).join('')}</div>
     </div>
     ${sectionHtml('essentials','Range Essentials','🎯', DEFAULT_CHECKLIST_ITEMS.essentials, true)}
@@ -3851,7 +3851,7 @@ function openChecklistModal(sessionId) {
     const isToggleable = cat !== 'essentials';
     return `
       <div style="margin-bottom:16px">
-        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:${isToggleable?'4px':'8px'}">${icon} ${title}</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text-dim);margin-bottom:${isToggleable?'4px':'8px'}">${icon} ${title}</div>
         ${isToggleable ? `
           <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;margin-bottom:${enabled?'10px':'4px'};padding-left:4px">
             <input type="checkbox" ${enabled?'checked':''} onchange="setDbChecklistMode('${sessionId}','${cat}',this.checked)" style="width:15px;height:15px">
@@ -3895,7 +3895,7 @@ function openChecklistModal(sessionId) {
       <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Check items you plan to bring, then mark each as packed when ready.</div>
       ${progressBar()}
       <div style="margin-bottom:16px">
-        <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text-dim);margin-bottom:8px">🔫 Firearms</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text-dim);margin-bottom:8px">🔫 Firearms</div>
         <div>${DB.firearms.map(f => {
           const state = cl.items[`f_${f.id}`] || {};
           return `<div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--panel-2);border-radius:6px;margin-bottom:4px">
@@ -5242,9 +5242,9 @@ function renderGoalsPane() {
         <button class="btn" onclick="openGoalModal()">+ Add Goal</button>
       </div>
       <hr>
-      <strong style="font-size:13px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Open (${open.length})</strong>
+      <strong style="font-size:13px;font-weight:600;color:var(--text-dim)">Open (${open.length})</strong>
       ${open.length ? open.map(g => goalRow(g)).join('') : '<div class="empty">No open goals. Set one to give your training direction.</div>'}
-      ${done.length ? `<hr><strong style="font-size:13px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Achieved (${done.length})</strong>${done.map(g => goalRow(g)).join('')}` : ''}
+      ${done.length ? `<hr><strong style="font-size:13px;font-weight:600;color:var(--text-dim)">Achieved (${done.length})</strong>${done.map(g => goalRow(g)).join('')}` : ''}
     </div>
     <div class="card">
       <h3>Suggested Goals to Get Started</h3>
@@ -5669,29 +5669,29 @@ function renderMatchesPane() {
     <div class="card" style="margin-bottom:16px;padding:14px 16px">
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end">
         <div>
-          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">From</label>
+          <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">From</label>
           <input type="date" value="${mf.dateFrom}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMatchFilter('dateFrom',this.value)">
         </div>
         <div>
-          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">To</label>
+          <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">To</label>
           <input type="date" value="${mf.dateTo}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMatchFilter('dateTo',this.value)">
         </div>
         <div>
-          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">Firearm</label>
+          <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">Firearm</label>
           <select style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateMatchFilter('firearmId',this.value)">
             <option value="">All firearms</option>
             ${DB.firearms.map(fw => `<option value="${fw.id}" ${mf.firearmId===fw.id?'selected':''}>${escapeHtml(fw.name)}</option>`).join('')}
           </select>
         </div>
         <div>
-          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">Match Type</label>
+          <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">Match Type</label>
           <select style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateMatchFilter('matchType',this.value)">
             <option value="">All types</option>
             ${['USPSA','IDPA','Three-Gun','Steel Challenge','Sporting Clays','Other'].map(t => `<option value="${t}" ${mf.matchType===t?'selected':''}>${t}</option>`).join('')}
           </select>
         </div>
         <div>
-          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">Search</label>
+          <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">Search</label>
           <input type="search" placeholder="Name, location, division…" value="${escapeHtml(mf.keyword)}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMatchFilter('keyword',this.value)">
         </div>
         <div style="display:flex;align-items:flex-end">
@@ -5874,11 +5874,11 @@ function matchCard(m) {
       </div>
       <hr>
       <div class="grid grid-4" style="margin-bottom:12px">
-        <div><div class="text-dim" style="font-size:11px;text-transform:uppercase">Firearm</div><div style="font-weight:500">${escapeHtml(f ? f.name : '—')}</div></div>
-        <div><div class="text-dim" style="font-size:11px;text-transform:uppercase">Stages</div><div style="font-weight:500">${stages.length}</div></div>
-        <div><div class="text-dim" style="font-size:11px;text-transform:uppercase">Overall HF</div><div style="font-weight:500;color:var(--accent)">${overallHF}</div></div>
+        <div><div class="text-dim" style="font-size:11px">Firearm</div><div style="font-weight:500">${escapeHtml(f ? f.name : '—')}</div></div>
+        <div><div class="text-dim" style="font-size:11px">Stages</div><div style="font-weight:500">${stages.length}</div></div>
+        <div><div class="text-dim" style="font-size:11px">Overall HF</div><div style="font-weight:500;color:var(--accent)">${overallHF}</div></div>
         <div>
-          <div class="text-dim" style="font-size:11px;text-transform:uppercase">Match %</div>
+          <div class="text-dim" style="font-size:11px">Match %</div>
           <div id="mpct-display-${m.id}" onclick="inlineEditMatchPct('${m.id}')" style="font-weight:500;cursor:text;padding:2px 3px;border-radius:3px;transition:background 0.15s" onmouseenter="this.style.background='var(--panel-2)'" onmouseleave="this.style.background=''" title="Click to edit">${m.matchPercentage != null ? m.matchPercentage.toFixed(2) + '%' : '<span style=\'color:var(--border)\'>—</span>'}</div>
           <div id="mpct-editor-${m.id}" style="display:none;align-items:center;gap:4px;margin-top:2px">
             <input id="mpct-input-${m.id}" type="number" step="0.01" min="0" max="120" value="${m.matchPercentage != null ? m.matchPercentage : ''}" style="width:70px;font-size:12px;padding:2px 4px;background:var(--bg);border:1px solid var(--accent);border-radius:4px;color:var(--text)">
@@ -5947,7 +5947,7 @@ function renderClassificationPane() {
           <div style="font-size:12px;color:var(--text-dim);line-height:1.8">
             <strong style="color:var(--text)">Class thresholds:</strong> GM ≥ 95% &middot; M ≥ 85% &middot; A ≥ 75% &middot; B ≥ 60% &middot; C ≥ 40% &middot; D < 40%
           </div>
-          <div style="margin-top:12px"><strong style="font-size:12px;color:var(--text-dim);text-transform:uppercase">Scores used</strong><div style="margin-top:6px">${c.used.map(x => `<div style="font-size:13px;padding:4px 0;border-bottom:1px dotted var(--border)"><span class="text-dim">${formatDate(x.date)}</span> &middot; ${escapeHtml(x.classifierCode||'')} &middot; <strong style="color:var(--accent)">${x.classifierPercent.toFixed(2)}%</strong></div>`).join('')}</div></div>
+          <div style="margin-top:12px"><strong style="font-size:12px;color:var(--text-dim)">Scores Used</strong><div style="margin-top:6px">${c.used.map(x => `<div style="font-size:13px;padding:4px 0;border-bottom:1px dotted var(--border)"><span class="text-dim">${formatDate(x.date)}</span> &middot; ${escapeHtml(x.classifierCode||'')} &middot; <strong style="color:var(--accent)">${x.classifierPercent.toFixed(2)}%</strong></div>`).join('')}</div></div>
         </div>`;
       }).join('')}
     </div>
@@ -7209,29 +7209,29 @@ function renderMalfunctions() {
     <div class="card" style="margin-bottom:16px;padding:14px 16px">
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end">
         <div>
-          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">From</label>
+          <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">From</label>
           <input type="date" value="${f.dateFrom}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMalfFilter('dateFrom',this.value)">
         </div>
         <div>
-          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">To</label>
+          <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">To</label>
           <input type="date" value="${f.dateTo}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMalfFilter('dateTo',this.value)">
         </div>
         <div>
-          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">Firearm</label>
+          <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">Firearm</label>
           <select style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateMalfFilter('firearmId',this.value)">
             <option value="">All firearms</option>
             ${DB.firearms.map(fw => `<option value="${fw.id}" ${f.firearmId===fw.id?'selected':''}>${escapeHtml(fw.name)}</option>`).join('')}
           </select>
         </div>
         <div>
-          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">Type</label>
+          <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">Type</label>
           <select style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateMalfFilter('type',this.value)">
             <option value="">All types</option>
             ${['Failure to Feed','Failure to Eject','Failure to Extract','Stovepipe','Double Feed','Failure to Return to Battery','Light Strike','Mag Issue','Slide Lock (early)','Other'].map(t => `<option value="${t}" ${f.type===t?'selected':''}>${t}</option>`).join('')}
           </select>
         </div>
         <div>
-          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">Search</label>
+          <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">Search</label>
           <input type="search" placeholder="Type, notes, resolution…" value="${escapeHtml(f.keyword)}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMalfFilter('keyword',this.value)">
         </div>
         <div style="display:flex;align-items:flex-end">
@@ -7474,22 +7474,22 @@ function renderMaintenance() {
     <div class="card" style="margin-bottom:16px;padding:14px 16px">
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end">
         <div>
-          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">From</label>
+          <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">From</label>
           <input type="date" value="${mf.dateFrom}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMaintenanceFilter('dateFrom',this.value)">
         </div>
         <div>
-          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">To</label>
+          <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">To</label>
           <input type="date" value="${mf.dateTo}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMaintenanceFilter('dateTo',this.value)">
         </div>
         <div>
-          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">Firearm</label>
+          <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">Firearm</label>
           <select style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateMaintenanceFilter('firearmId',this.value)">
             <option value="">All firearms</option>
             ${DB.firearms.map(fw => `<option value="${fw.id}" ${mf.firearmId===fw.id?'selected':''}>${escapeHtml(fw.name)}</option>`).join('')}
           </select>
         </div>
         <div>
-          <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">Task Type</label>
+          <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">Task Type</label>
           <select style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateMaintenanceFilter('type',this.value)">
             <option value="">All types</option>
             <option value="field_strip" ${mf.type==='field_strip'?'selected':''}>Field Strip</option>
@@ -8330,7 +8330,7 @@ function renderRRPreview(headers, rows) {
   if (!preview) return;
   const selectors = Object.entries(_rrMapping).map(([field, col]) => `
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px">
-      <span style="width:80px;color:var(--text-dim);font-size:11px;text-transform:uppercase">${field}</span>
+      <span style="width:80px;color:var(--text-dim);font-size:11px">${field}</span>
       <select onchange="_rrMapping['${field}']=this.value;renderRRPreview(${JSON.stringify(headers)}, _rrRows)" style="flex:1;padding:4px 6px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px">
         <option value="">— not mapped —</option>
         ${headers.map(h => `<option value="${escapeHtml(h)}" ${col===h?'selected':''}>${escapeHtml(h)}</option>`).join('')}
@@ -9256,7 +9256,7 @@ function renderFullTourStep() {
     <div style="display:flex;align-items:flex-start;gap:20px;padding:14px 20px;flex-wrap:wrap">
       <div style="flex:1;min-width:200px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <span style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px">Step ${_tourB.step + 1} of ${total}</span>
+          <span style="font-size:11px;color:var(--text-dim)">Step ${_tourB.step + 1} of ${total}</span>
           <span style="color:var(--accent);font-weight:700;font-size:15px">${escapeHtml(s.title)}</span>
         </div>
         <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:8px">${escapeHtml(s.body)}</div>
