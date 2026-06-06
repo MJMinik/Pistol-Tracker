@@ -16,21 +16,6 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <style>
   :root {
-    --bg: #0f1419;
-    --panel: #1a2028;
-    --panel-2: #232b36;
-    --border: #2d3744;
-    --text: #e6edf3;
-    --text-dim: #8b949e;
-    --accent: #ff6b35;
-    --accent-dim: #b8421f;
-    --success: #3fb950;
-    --warn: #d29922;
-    --danger: #f85149;
-    --info: #58a6ff;
-    --shadow: 0 4px 14px rgba(0,0,0,0.4);
-  }
-  [data-theme="light"] {
     --bg: #f5f5f5;
     --panel: #ffffff;
     --panel-2: #f0f0f0;
@@ -44,6 +29,21 @@
     --danger: #cf222e;
     --info: #0969da;
     --shadow: 0 4px 14px rgba(0,0,0,0.1);
+  }
+  [data-theme="dark"] {
+    --bg: #0f1419;
+    --panel: #1a2028;
+    --panel-2: #232b36;
+    --border: #2d3744;
+    --text: #e6edf3;
+    --text-dim: #8b949e;
+    --accent: #ff6b35;
+    --accent-dim: #b8421f;
+    --success: #3fb950;
+    --warn: #d29922;
+    --danger: #f85149;
+    --info: #58a6ff;
+    --shadow: 0 4px 14px rgba(0,0,0,0.4);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -591,8 +591,8 @@
       <a data-view="settings"><span class="icon">&#9776;</span> Settings &amp; Data</a>
     </nav>
     <div class="sidebar-footer">
-      v1.8 &middot; <a href="#" id="export-data" style="color:var(--accent)">Export Data</a>
-      &middot; <button onclick="toggleTheme()" id="theme-toggle-btn" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:11px;padding:0">&#9790; Light</button>
+      v1.9 &middot; <a href="#" id="export-data" style="color:var(--accent)">Export Data</a>
+      &middot; <button onclick="toggleTheme()" id="theme-toggle-btn" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:11px;padding:0">&#9790; Dark</button>
     </div>
   </aside>
 
@@ -751,7 +751,7 @@ const SEED = {
   settings: {
     firstUse: true,
     version: '1.9',
-    theme: 'dark',
+    theme: 'light',
     lastBackupDate: null,
     backupSnoozedUntil: null,
     lastSyncExportDate: null,
@@ -4344,12 +4344,14 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
       if (!window._tempSession.checklist) window._tempSession.checklist = { nightMode: false, tacticalMode: false, items: {} };
       const _cl = window._tempSession.checklist;
       if (!_cl.items) _cl.items = {};
-      // Pre-check the current dropdown firearm if no firearms have been selected yet
+      // Determine which firearm the dropdown is showing
       const _dropdownFwId = document.getElementById('se-firearm')?.value || window._tempSession.firearmId;
+      // Always track this so syncPlanFirearmToChecklist knows what to swap
+      window._tempSession._dropdownFirearmId = _dropdownFwId;
+      // Pre-check the dropdown firearm if no firearms have been selected yet
       const _anyFwChecked = DB.firearms.some(f => (_cl.items[`f_${f.id}`]||{}).take);
       if (!_anyFwChecked && _dropdownFwId) {
         _cl.items[`f_${_dropdownFwId}`] = { take: true, packed: false };
-        window._tempSession._dropdownFirearmId = _dropdownFwId;
       }
       renderChecklistInModal();
       const det = document.getElementById('se-checklist-details');
@@ -4376,17 +4378,21 @@ function toggleNoHolster(val) {
   renderDrillRows();
 }
 function syncPlanFirearmToChecklist(newFirearmId) {
-  const cl = window._tempSession?.checklist;
-  if (!cl || !cl.items) return; // not in plan mode or checklist not open yet
-  const prevId = window._tempSession._dropdownFirearmId;
-  // Uncheck the previously dropdown-selected firearm (if it's not also manually checked alongside others)
-  if (prevId && prevId !== newFirearmId) {
-    if (cl.items[`f_${prevId}`]) cl.items[`f_${prevId}`] = { take: false, packed: false };
+  if (!newFirearmId) return;
+  const t = window._tempSession;
+  if (!t) return;
+  if (!t.checklist) t.checklist = { nightMode: false, tacticalMode: false, items: {} };
+  const cl = t.checklist;
+  if (!cl.items) cl.items = {};
+  // Uncheck whichever firearm the dropdown previously pointed to
+  const prevId = t._dropdownFirearmId;
+  if (prevId && prevId !== newFirearmId && cl.items[`f_${prevId}`]) {
+    cl.items[`f_${prevId}`] = { take: false, packed: false };
   }
-  // Check the new one
+  // Check the newly selected firearm
   if (!cl.items[`f_${newFirearmId}`]) cl.items[`f_${newFirearmId}`] = {};
   cl.items[`f_${newFirearmId}`].take = true;
-  window._tempSession._dropdownFirearmId = newFirearmId;
+  t._dropdownFirearmId = newFirearmId;
   renderChecklistInModal();
 }
 function updateSessionMagSection() {
@@ -8626,10 +8632,10 @@ function sessionTypeBreakdown() {
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   const btn = document.getElementById('theme-toggle-btn');
-  if (btn) btn.innerHTML = theme === 'light' ? '&#9790; Dark' : '&#9790; Light';
+  if (btn) btn.innerHTML = theme === 'dark' ? '&#9790; Light' : '&#9790; Dark';
 }
 function toggleTheme() {
-  const current = document.documentElement.getAttribute('data-theme') || 'dark';
+  const current = document.documentElement.getAttribute('data-theme') || 'light';
   const next = current === 'dark' ? 'light' : 'dark';
   DB.settings.theme = next;
   saveDB();
