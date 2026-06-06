@@ -3351,22 +3351,22 @@ function renderSessions() {
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end">
         <div>
           <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">From</label>
-          <input type="date" value="${f.dateFrom}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateSessionFilter('dateFrom',this.value)">
+          <input type="date" value="${f.dateFrom}" style="width:100%;height:34px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateSessionFilter('dateFrom',this.value)">
         </div>
         <div>
           <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">To</label>
-          <input type="date" value="${f.dateTo}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateSessionFilter('dateTo',this.value)">
+          <input type="date" value="${f.dateTo}" style="width:100%;height:34px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateSessionFilter('dateTo',this.value)">
         </div>
         <div>
           <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">Firearm</label>
-          <select style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateSessionFilter('firearmId',this.value)">
+          <select style="width:100%;height:34px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateSessionFilter('firearmId',this.value)">
             <option value="">All firearms</option>
             ${DB.firearms.map(fw => `<option value="${fw.id}" ${f.firearmId===fw.id?'selected':''}>${escapeHtml(fw.name)}</option>`).join('')}
           </select>
         </div>
         <div>
           <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">Type</label>
-          <select style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateSessionFilter('type',this.value)">
+          <select style="width:100%;height:34px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateSessionFilter('type',this.value)">
             <option value="">All types</option>
             <option value="practice" ${f.type==='practice'?'selected':''}>Practice</option>
             <option value="competition" ${f.type==='competition'?'selected':''}>Competition</option>
@@ -3376,7 +3376,7 @@ function renderSessions() {
         </div>
         <div>
           <label style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:3px">Search</label>
-          <input type="search" placeholder="Location, drill, notes…" value="${escapeHtml(f.keyword)}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateSessionFilter('keyword',this.value)">
+          <input type="search" placeholder="Location, drill, notes…" value="${escapeHtml(f.keyword)}" style="width:100%;height:34px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateSessionFilter('keyword',this.value)">
         </div>
         <div style="display:flex;align-items:flex-end">
           ${hasFilter ? `<button class="btn small secondary" onclick="clearSessionFilter()" style="width:100%">&#10005; Clear</button>` : '<div></div>'}
@@ -3468,8 +3468,7 @@ function sessionCard(s) {
           <div class="text-dim" style="font-size:12px;margin-top:6px">${((s.firearmSplits && s.firearmSplits.length) || plannedFwIds.length > 1) ? firearmDisplay + ' &middot; ' : escapeHtml(f ? f.name : '—') + ' &middot; '}${escapeHtml(s.location || 'Location not set')}</div>
         </div>
         <div style="text-align:right">
-          <div style="font-size:24px;font-weight:600;color:${isPlanned ? '#58a6ff' : 'var(--accent)'}">~${(s.totalRounds||0).toLocaleString()}</div>
-          <div class="text-dim" style="font-size:11px">${isPlanned ? 'planned rds' : 'rounds'}</div>
+          ${s.type === 'dry_fire' && !isPlanned ? `<div style="font-size:15px;font-weight:600;color:var(--text-dim)">Dry Fire</div>` : `<div style="font-size:24px;font-weight:600;color:${isPlanned ? '#58a6ff' : 'var(--accent)'}">${isPlanned ? '~' : ''}${(s.totalRounds||0).toLocaleString()}</div><div class="text-dim" style="font-size:11px">${isPlanned ? 'planned rds' : 'rounds'}</div>`}
         </div>
       </div>
       ${ammoLines.length ? `<hr><div style="font-size:13px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap"><div><strong style="color:var(--text-dim)">Ammo:</strong> ${ammoLines.join(' &middot; ')}</div>${(() => {
