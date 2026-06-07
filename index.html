@@ -401,12 +401,13 @@
   .seg-btn:active:not(.active) { background: var(--panel-2); }
 
   /* iOS-style toggle switch */
-  .toggle-wrap { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; min-height: 44px; user-select: none; -webkit-tap-highlight-color: transparent; }
-  .toggle-input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .toggle-wrap { position: relative; display: flex; align-items: center; gap: 10px; cursor: pointer; min-height: 44px; width: 100%; user-select: none; -webkit-tap-highlight-color: transparent; }
+  .toggle-input { position: absolute; opacity: 0; width: 0; height: 0; -webkit-appearance: none; appearance: none; pointer-events: none; }
   .toggle-track { position: relative; width: 51px; height: 31px; background: var(--border); border-radius: 100px; transition: background 0.2s; flex-shrink: 0; }
   .toggle-thumb { position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; background: #fff; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,0.25); transition: left 0.2s; }
   .toggle-input:checked + .toggle-track { background: var(--accent); }
   .toggle-input:checked + .toggle-track .toggle-thumb { left: 22px; }
+  .toggle-label { flex: 1; min-width: 0; }
 
   .chart-container { padding: 12px 0; }
   svg.chart { width: 100%; height: 220px; }
@@ -2519,7 +2520,7 @@ function openMagazineModal(id) {
         <label class="toggle-wrap">
           <input type="checkbox" id="mg-active" class="toggle-input" ${mg.active !== false ? 'checked' : ''}>
           <span class="toggle-track"><span class="toggle-thumb"></span></span>
-          <span style="font-size:13px">Active — tap to retire this magazine</span>
+          <span class="toggle-label" style="font-size:13px">Active — tap to retire this magazine</span>
         </label>
       </div>
       <div class="form-row">
@@ -2841,7 +2842,7 @@ function openMaintenanceScheduleModal(firearmId) {
           <label class="toggle-wrap" style="margin-top:6px">
             <input type="checkbox" id="ms-annual" class="toggle-input" ${s.trackAnnual !== false ? 'checked' : ''}>
             <span class="toggle-track"><span class="toggle-thumb"></span></span>
-            <span style="font-size:13px;font-weight:normal">Track annual inspection reminders</span>
+            <span class="toggle-label" style="font-size:13px;font-weight:normal">Track annual inspection reminders</span>
           </label>
         </div>
       </div>
@@ -4481,7 +4482,7 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
         <label class="toggle-wrap">
           <input type="checkbox" id="se-multi-fw" class="toggle-input" ${(s.firearmSplits && s.firearmSplits.length)?'checked':''} onchange="toggleMultiFirearm(this.checked)">
           <span class="toggle-track"><span class="toggle-thumb"></span></span>
-          <span style="font-size:13px;color:var(--text-dim)">Multiple firearms used this session ${tip('Check this to enter round counts per gun. Firearm round counts and maintenance tracking use the per-gun totals. A warning appears if the ammo total does not match the round total.')}</span>
+          <span class="toggle-label" style="font-size:13px;color:var(--text-dim)">Multiple firearms used this session ${tip('Check this to enter round counts per gun. Firearm round counts and maintenance tracking use the per-gun totals. A warning appears if the ammo total does not match the round total.')}</span>
         </label>
       </div>
       <div id="se-fw-splits" style="display:${(s.firearmSplits && s.firearmSplits.length)?'block':'none'}"></div>
@@ -4668,7 +4669,7 @@ function updateSessionMagSection() {
     <label class="toggle-wrap">
       <input type="checkbox" id="se-mag-toggle" class="toggle-input" ${anyChecked?'checked':''} onchange="document.getElementById('se-mag-list').style.display=this.checked?'block':'none'">
       <span class="toggle-track"><span class="toggle-thumb"></span></span>
-      <span style="font-size:13px;color:var(--text-dim)">Track magazines used this session ${tip('Select which magazines you used. Rounds are divided equally among checked magazines and credited to their lifetime totals — used to track spring wear and correlate malfunctions.')}</span>
+      <span class="toggle-label" style="font-size:13px;color:var(--text-dim)">Track magazines used this session ${tip('Select which magazines you used. Rounds are divided equally among checked magazines and credited to their lifetime totals — used to track spring wear and correlate malfunctions.')}</span>
     </label>
     <div id="se-mag-list" style="display:${anyChecked?'block':'none'}">${magsInner}</div>
   </div>`;
