@@ -151,16 +151,22 @@
   /* Tooltips */
   .tip {
     position: relative; display: inline-flex; align-items: center;
-    justify-content: center; width: 16px; height: 16px;
-    border-radius: 50%; background: var(--panel-2);
-    border: 1px solid var(--border); color: var(--text-dim);
-    font-size: 11px; font-weight: 700; cursor: default;
-    vertical-align: middle; margin-left: 4px; flex-shrink: 0;
-    line-height: 1;
+    justify-content: center;
+    width: 44px; height: 44px; border-radius: 50%;
+    background: transparent; border: none;
+    cursor: pointer; vertical-align: middle;
+    margin-left: calc(4px - 14px); flex-shrink: 0;
+  }
+  .tip-dot {
+    display: flex; align-items: center; justify-content: center;
+    width: 16px; height: 16px; border-radius: 50%;
+    background: var(--panel-2); border: 1px solid var(--border);
+    color: var(--text-dim); font-size: 11px; font-weight: 700;
+    line-height: 1; pointer-events: none; flex-shrink: 0;
   }
   .tip::after {
     content: attr(data-tip);
-    position: absolute; bottom: calc(100% + 8px); left: 0;
+    position: absolute; bottom: calc(100% + 8px); left: 14px;
     transform: none;
     background: var(--panel); color: var(--text);
     border: 1px solid var(--border);
@@ -179,7 +185,7 @@
 
   .tip::before {
     content: ''; position: absolute; bottom: calc(100% + 2px);
-    left: 8px; transform: none;
+    left: 22px; transform: none;
     border: 5px solid transparent;
     border-top-color: var(--border);
     pointer-events: none; z-index: 200;
@@ -2013,7 +2019,7 @@ document.addEventListener('click', function(e) {
 
 // Helper: create a tooltip icon
 function tip(text) {
-  return `<span class="tip" data-tip="${text.replace(/"/g, '&quot;')}">ⓘ</span>`;
+  return `<span class="tip" data-tip="${text.replace(/"/g, '&quot;')}"><span class="tip-dot">ⓘ</span></span>`;
 }
 
 function renderView(name) {
