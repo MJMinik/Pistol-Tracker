@@ -4491,6 +4491,9 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
       </div>
       <div id="se-fw-splits" style="display:${(s.firearmSplits && s.firearmSplits.length)?'block':'none'}"></div>
       <div id="se-mag-section" data-prev-mag-ids="${(s.magIds||[]).join(',')}"></div>
+
+      <hr>
+      <div style="font-size:13px;font-weight:600;color:var(--text-dim);margin-bottom:8px">Details</div>
       <div class="form-grid-2">
         <div class="form-row"><label>Location ${tip('Where you\'re shooting. Start typing and previously used locations appear as suggestions. New locations are saved automatically for future sessions.')}</label><input id="se-location" value="${escapeHtml(s.location)}" placeholder="e.g. Local Range, USPSA Match" list="se-location-list" autocomplete="off"><datalist id="se-location-list">${[...new Set(DB.sessions.filter(x=>x.location).map(x=>x.location))].sort().map(l=>`<option value="${escapeHtml(l)}">`).join('')}</datalist></div>
         <div class="form-row"><label><span id="se-rangefee-label-text">${s.type==='class'?'Class Fee ($)':s.type==='competition'?'Entry Fee ($)':'Range Fee ($)'}</span> ${tip('Range Fee (practice) · Class Fee (class/training) · Entry Fee (competition). Flows into the Range Fees bucket in Costs & Purchases. Pre-paid fees can be entered when planning — they appear in Costs immediately and are removed if the plan is deleted.')}</label><input id="se-rangefee" type="number" min="0" step="0.01" value="${s.rangeFee || ''}" placeholder="0.00"></div>
@@ -4507,6 +4510,7 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
       </div>
       <div id="se-ammo-rows"></div>
       <div id="se-ammo-mismatch" style="display:none;margin-top:6px;font-size:13px;background:var(--warn-bg);border:1px solid var(--warn);border-radius:10px;padding:8px 12px;line-height:1.5"></div>
+      <div class="form-row" style="margin-top:8px"><label>Total Rounds (auto)</label><input id="se-total" type="number" readonly value="${s.totalRounds||0}" style="background:var(--panel-2)"></div>
 
       <hr>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -4560,8 +4564,6 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
       </div>
       ` : ''}
       <div class="form-row"><label>Notes</label><textarea id="se-notes" rows="4">${escapeHtml(s.notes)}</textarea></div>
-
-      <div class="form-row"><label>Total Rounds (auto)</label><input id="se-total" type="number" readonly value="${s.totalRounds||0}" style="background:var(--panel-2)"></div>
     </div>
     <div class="modal-footer">
       <button class="btn secondary" onclick="closeModal()">Cancel</button>
