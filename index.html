@@ -4609,19 +4609,21 @@ function updateMalfunctionRow(i, key, val) { window._tempSession.malfunctions[i]
 function renderAmmoRows() {
   const c = document.getElementById('se-ammo-rows');
   c.innerHTML = window._tempSession.ammoUsage.map((u, i) => {
-    const unselected = !u.ammoId && (u.rounds > 0);
+    const ammoSelected = !!u.ammoId;
     return `
     <div class="form-grid-3" style="align-items:end">
       <div class="form-row"><label>Ammunition</label>
-        <select onchange="updateAmmoRow(${i},'ammoId',this.value)" style="${unselected?'border-color:var(--accent)':''}">
+        <select onchange="updateAmmoRow(${i},'ammoId',this.value)">
           <option value="">— Select ammo —</option>
           <option value="__untracked__" ${u.ammoId==='__untracked__'?'selected':''}>Untracked / Range Purchase</option>
           ${DB.ammunition.map(a => `<option value="${a.id}" ${u.ammoId===a.id?'selected':''}>${escapeHtml(a.brand)} ${escapeHtml(a.caliber)} ${escapeHtml(a.grain)}gr ${escapeHtml(a.bulletType)} &mdash; ${(a.quantity||0).toLocaleString()} in can</option>`).join('')}
         </select>
-        ${unselected ? `<div style="font-size:13px;color:var(--accent);margin-top:4px;text-align:right">⚠️ Select an ammo type or choose Untracked / Range Purchase.</div>` : ''}
       </div>
       <div class="form-row"><label>Rounds</label>
-        <input type="number" min="0" value="${u.rounds||0}" onchange="updateAmmoRow(${i},'rounds',parseInt(this.value)||0);renderAmmoRows()">
+        <input id="se-ammo-qty-${i}" type="number" min="0" value="${u.rounds||0}"
+          ${!ammoSelected ? 'disabled title="Select an ammo type first"' : ''}
+          style="${!ammoSelected ? 'opacity:0.4;cursor:not-allowed;background:var(--panel-2)' : ''}"
+          onchange="updateAmmoRow(${i},'rounds',parseInt(this.value)||0);renderAmmoRows()">
       </div>
       <div class="form-row"><button class="btn small danger" onclick="removeAmmoRow(${i})">Remove</button></div>
     </div>
@@ -4630,7 +4632,17 @@ function renderAmmoRows() {
 }
 function addAmmoRow() { window._tempSession.ammoUsage.push({ ammoId:'', rounds:0 }); renderAmmoRows(); }
 function removeAmmoRow(i) { window._tempSession.ammoUsage.splice(i, 1); renderAmmoRows(); }
-function updateAmmoRow(i, key, val) { window._tempSession.ammoUsage[i][key] = val; recalcTotal(); if (key === 'ammoId') renderAmmoRows(); }
+function updateAmmoRow(i, key, val) {
+  window._tempSession.ammoUsage[i][key] = val;
+  recalcTotal();
+  if (key === 'ammoId') {
+    renderAmmoRows();
+    if (val) { // ammo was just selected — focus the rounds field
+      const qtyInput = document.getElementById('se-ammo-qty-' + i);
+      if (qtyInput) { qtyInput.focus(); qtyInput.select(); }
+    }
+  }
+}
 function recalcTotal() {
   const total = window._tempSession.ammoUsage.reduce((s, u) => s + (u.rounds || 0), 0);
   document.getElementById('se-total').value = total;
