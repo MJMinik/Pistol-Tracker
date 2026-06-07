@@ -406,7 +406,7 @@
   /* iOS-style toggle switch */
   .toggle-wrap { position: relative; display: flex; align-items: center; gap: 10px; cursor: pointer; min-height: 44px; width: 100%; user-select: none; -webkit-tap-highlight-color: transparent; }
   .toggle-input { position: absolute; opacity: 0; width: 0; height: 0; -webkit-appearance: none; appearance: none; pointer-events: none; }
-  .toggle-track { position: relative; width: 51px; height: 31px; background: var(--border); border-radius: 100px; transition: background 0.2s; flex-shrink: 0; }
+  .toggle-track { display: inline-block; position: relative; width: 51px; height: 31px; background: var(--border); border-radius: 100px; transition: background 0.2s; flex-shrink: 0; vertical-align: middle; }
   .toggle-thumb { position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; background: #fff; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,0.25); transition: left 0.2s; }
   .toggle-input:checked + .toggle-track { background: var(--accent); }
   .toggle-input:checked + .toggle-track .toggle-thumb { left: 22px; }
@@ -2842,11 +2842,11 @@ function openMaintenanceScheduleModal(firearmId) {
         </div>
         <div class="form-row">
           <label>Annual Inspection ${tip('Toggle whether to track annual inspection reminders for this firearm.')}</label>
-          <label class="toggle-wrap" style="margin-top:6px">
+          <div class="toggle-wrap" style="margin-top:6px" onclick="document.getElementById('ms-annual').click()">
             <input type="checkbox" id="ms-annual" class="toggle-input" ${s.trackAnnual !== false ? 'checked' : ''}>
             <span class="toggle-track"><span class="toggle-thumb"></span></span>
-            <span class="toggle-label" style="font-size:13px;font-weight:normal">Track annual inspection reminders</span>
-          </label>
+            <span class="toggle-label" style="font-size:13px">Track annual inspection reminders</span>
+          </div>
         </div>
       </div>
       <div class="form-row" style="margin-top:4px">
