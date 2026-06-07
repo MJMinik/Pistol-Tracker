@@ -3526,7 +3526,7 @@ function sessionCard(s) {
       ${s.holster ? `<div style="margin-top:6px;font-size:13px"><strong style="color:var(--text-dim)">Holster:</strong> ${escapeHtml(s.holster)}</div>` : ''}
       ${(s.malfunctions && s.malfunctions.length) ? `<div style="margin-top:10px"><strong style="color:var(--danger);font-size:13px">Malfunctions (${s.malfunctions.length})</strong><div class="chip-list">${s.malfunctions.map(m => `<span class="chip" style="border-color:var(--danger);color:var(--danger)">${escapeHtml(m.type)}${m.roundCount ? ' @ ' + m.roundCount : ''}</span>`).join('')}</div></div>` : ''}
       <div style="margin-top:8px;display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--text-dim)">
-        <span title="Tap to edit location" onclick="inlineEditSessionField('${s.id}','location')" style="cursor:text;padding:2px 4px;border-radius:3px;transition:background 0.15s" onmouseenter="this.style.background='var(--panel-2)'" onmouseleave="this.style.background=''">
+        <span title="Tap to edit location" onclick="inlineEditSessionField('${s.id}','location')" style="cursor:pointer;padding:2px 4px;border-radius:3px;background:var(--panel-2);border-bottom:1px dashed var(--border)">
           <span id="se-loc-display-${s.id}">&#128205; ${s.location ? escapeHtml(s.location) : '<em>Add location</em>'}</span>
         </span>
       </div>
@@ -3537,7 +3537,7 @@ function sessionCard(s) {
           <button class="btn small secondary" onclick="cancelInlineSessionField('${s.id}','location')">Cancel</button>
         </div>
       </div>
-      <div id="notes-display-${s.id}" onclick="inlineEditNotes('${s.id}')" style="margin-top:10px;font-size:13px;cursor:text;border-radius:4px;padding:4px;transition:background 0.15s" onmouseenter="this.style.background='var(--panel-2)'" onmouseleave="this.style.background=''" title="Tap to edit notes">
+      <div id="notes-display-${s.id}" onclick="inlineEditNotes('${s.id}')" style="margin-top:10px;font-size:13px;cursor:pointer;border-radius:4px;padding:6px 8px;background:var(--panel-2);border:1px dashed var(--border)" title="Tap to edit notes">
         ${s.notes ? `<span style="color:var(--text-dim);white-space:pre-wrap">${escapeHtml(s.notes)}</span>` : `<span style="color:var(--border);font-style:italic;font-size:13px">Tap to add notes...</span>`}
       </div>
       <div id="notes-editor-${s.id}" style="display:none;margin-top:10px">
@@ -4341,7 +4341,8 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
       ${!isPlanMode ? `
       <hr>
       <div class="form-row"><label>Target Images</label>
-        <input id="se-img-input" type="file" accept="image/*" multiple onchange="handleImageUpload(event)">
+        <input id="se-img-input" type="file" accept="image/*" multiple onchange="handleImageUpload(event)" style="display:none">
+        <label for="se-img-input" class="btn secondary" style="display:inline-block;cursor:pointer">Choose Photos</label>
         <div class="help-text">Photos stored locally. Auto-resized to ~1000px wide.</div>
         <div id="se-img-gallery" class="image-gallery"></div>
       </div>
