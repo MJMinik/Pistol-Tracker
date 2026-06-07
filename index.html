@@ -2545,7 +2545,7 @@ function firearmCard(f) {
         <div style="font-size:13px;font-weight:600;color:var(--text-dim);margin-bottom:10px">&#128274; Insurance Documentation</div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
           <span style="font-size:13px;color:var(--text-dim);white-space:nowrap">Serial Number:</span>
-          <span id="ins-sn-display-${f.id}" style="font-size:13px;font-family:monospace;color:var(--text);cursor:pointer" onclick="editSerialNumber('${f.id}')" title="Click to edit">${f.serialNumber ? escapeHtml(f.serialNumber) : '<span style="color:var(--text-dim);font-style:italic">Not recorded — click to add</span>'}</span>
+          <span id="ins-sn-display-${f.id}" style="font-size:13px;font-family:monospace;color:var(--text);cursor:pointer" onclick="editSerialNumber('${f.id}')" title="Tap to edit">${f.serialNumber ? escapeHtml(f.serialNumber) : '<span style="color:var(--text-dim);font-style:italic">Not recorded — tap to add</span>'}</span>
         </div>
         <div style="margin-bottom:10px">
           <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px">Photos (firearm + serial number)</div>
@@ -3432,7 +3432,7 @@ function renderSessions() {
     ${maintItems.length ? `<div id="maint-alert-bar" class="alert ${maintItems.some(i=>i.level==='danger')?'danger':maintItems.some(i=>i.level==='warn')?'warn':'info'}" style="flex-direction:column;align-items:stretch;cursor:pointer" onclick="openMaintAction('${maintItems[0].firearm.id}','${maintItems[0].mtype}')">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
         <strong style="font-size:13px">&#9888; ${maintItems.length} Maintenance Item${maintItems.length!==1?'s':''} Due</strong>
-        <span style="color:var(--text-dim);font-size:13px">Click any item to log it.</span>
+        <span style="color:var(--text-dim);font-size:13px">Tap any item to log it.</span>
       </div>
       ${maintItems.map(item => `
         <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-top:1px solid rgba(255,255,255,0.08);gap:8px">
@@ -3526,7 +3526,7 @@ function sessionCard(s) {
       ${s.holster ? `<div style="margin-top:6px;font-size:13px"><strong style="color:var(--text-dim)">Holster:</strong> ${escapeHtml(s.holster)}</div>` : ''}
       ${(s.malfunctions && s.malfunctions.length) ? `<div style="margin-top:10px"><strong style="color:var(--danger);font-size:13px">Malfunctions (${s.malfunctions.length})</strong><div class="chip-list">${s.malfunctions.map(m => `<span class="chip" style="border-color:var(--danger);color:var(--danger)">${escapeHtml(m.type)}${m.roundCount ? ' @ ' + m.roundCount : ''}</span>`).join('')}</div></div>` : ''}
       <div style="margin-top:8px;display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--text-dim)">
-        <span title="Click to edit location" onclick="inlineEditSessionField('${s.id}','location')" style="cursor:text;padding:2px 4px;border-radius:3px;transition:background 0.15s" onmouseenter="this.style.background='var(--panel-2)'" onmouseleave="this.style.background=''">
+        <span title="Tap to edit location" onclick="inlineEditSessionField('${s.id}','location')" style="cursor:text;padding:2px 4px;border-radius:3px;transition:background 0.15s" onmouseenter="this.style.background='var(--panel-2)'" onmouseleave="this.style.background=''">
           <span id="se-loc-display-${s.id}">&#128205; ${s.location ? escapeHtml(s.location) : '<em>Add location</em>'}</span>
         </span>
       </div>
@@ -3537,8 +3537,8 @@ function sessionCard(s) {
           <button class="btn small secondary" onclick="cancelInlineSessionField('${s.id}','location')">Cancel</button>
         </div>
       </div>
-      <div id="notes-display-${s.id}" onclick="inlineEditNotes('${s.id}')" style="margin-top:10px;font-size:13px;cursor:text;border-radius:4px;padding:4px;transition:background 0.15s" onmouseenter="this.style.background='var(--panel-2)'" onmouseleave="this.style.background=''" title="Click to edit notes">
-        ${s.notes ? `<span style="color:var(--text-dim);white-space:pre-wrap">${escapeHtml(s.notes)}</span>` : `<span style="color:var(--border);font-style:italic;font-size:13px">Click to add notes...</span>`}
+      <div id="notes-display-${s.id}" onclick="inlineEditNotes('${s.id}')" style="margin-top:10px;font-size:13px;cursor:text;border-radius:4px;padding:4px;transition:background 0.15s" onmouseenter="this.style.background='var(--panel-2)'" onmouseleave="this.style.background=''" title="Tap to edit notes">
+        ${s.notes ? `<span style="color:var(--text-dim);white-space:pre-wrap">${escapeHtml(s.notes)}</span>` : `<span style="color:var(--border);font-style:italic;font-size:13px">Tap to add notes...</span>`}
       </div>
       <div id="notes-editor-${s.id}" style="display:none;margin-top:10px">
         <textarea id="notes-ta-${s.id}" style="width:100%;min-height:60px;font-size:13px" placeholder="Session notes...">${escapeHtml(s.notes||'')}</textarea>
@@ -3547,7 +3547,7 @@ function sessionCard(s) {
           <button class="btn small secondary" onclick="cancelInlineNote('${s.id}')">Cancel</button>
         </div>
       </div>
-      ${(s.targetImages && s.targetImages.length) ? `<div class="image-gallery">${s.targetImages.map((id, idx) => `<div class="image-thumb" style="background-image:url('${imgSrc(id)}')" onclick="showLightbox('${id}','${s.id}',${idx})" title="Click to view · Annotate button appears in viewer"></div>`).join('')}</div>` : ''}
+      ${(s.targetImages && s.targetImages.length) ? `<div class="image-gallery">${s.targetImages.map((id, idx) => `<div class="image-thumb" style="background-image:url('${imgSrc(id)}')" onclick="showLightbox('${id}','${s.id}',${idx})" title="Tap to view · Annotate button appears in viewer"></div>`).join('')}</div>` : ''}
       ${isPlanned ? (() => {
         const cl = s.checklist || {};
         const allItems = getChecklistItems(cl);
@@ -4705,7 +4705,7 @@ function updateDrillRow(i, key, val) {
 function renderSessionImages() {
   const c = document.getElementById('se-img-gallery');
   c.innerHTML = (window._tempSession.targetImages || []).map((id, i) => `
-    <div class="image-thumb" style="background-image:url('${imgSrc(id)}');cursor:pointer" onclick="showLightbox('${id}')" title="Click to preview">
+    <div class="image-thumb" style="background-image:url('${imgSrc(id)}');cursor:pointer" onclick="showLightbox('${id}')" title="Tap to preview">
       <button class="remove" onclick="event.stopPropagation();removeSessionImage(${i})">&times;</button>
     </div>
   `).join('');
@@ -5121,7 +5121,7 @@ function saveInlineNote(id) {
   const disp = document.getElementById('notes-display-' + id);
   disp.innerHTML = s.notes
     ? `<span style="color:var(--text-dim);white-space:pre-wrap">${escapeHtml(s.notes)}</span>`
-    : `<span style="color:var(--border);font-style:italic;font-size:13px">Click to add notes...</span>`;
+    : `<span style="color:var(--border);font-style:italic;font-size:13px">Tap to add notes...</span>`;
   disp.style.display = '';
   document.getElementById('notes-editor-' + id).style.display = 'none';
 }
@@ -5914,7 +5914,7 @@ function matchCard(m) {
         <div><div class="text-dim" style="font-size:11px">Overall HF</div><div style="font-weight:500;color:var(--accent)">${overallHF}</div></div>
         <div>
           <div class="text-dim" style="font-size:11px">Match %</div>
-          <div id="mpct-display-${m.id}" onclick="inlineEditMatchPct('${m.id}')" style="font-weight:500;cursor:text;padding:2px 3px;border-radius:3px;transition:background 0.15s" onmouseenter="this.style.background='var(--panel-2)'" onmouseleave="this.style.background=''" title="Click to edit">${m.matchPercentage != null ? m.matchPercentage.toFixed(2) + '%' : '<span style=\'color:var(--border)\'>—</span>'}</div>
+          <div id="mpct-display-${m.id}" onclick="inlineEditMatchPct('${m.id}')" style="font-weight:500;cursor:text;padding:2px 3px;border-radius:3px;transition:background 0.15s" onmouseenter="this.style.background='var(--panel-2)'" onmouseleave="this.style.background=''" title="Tap to edit">${m.matchPercentage != null ? m.matchPercentage.toFixed(2) + '%' : '<span style=\'color:var(--border)\'>—</span>'}</div>
           <div id="mpct-editor-${m.id}" style="display:none;align-items:center;gap:4px;margin-top:2px">
             <input id="mpct-input-${m.id}" type="number" step="0.01" min="0" max="120" value="${m.matchPercentage != null ? m.matchPercentage : ''}" style="width:70px;font-size:13px;padding:2px 4px;background:var(--bg);border:1px solid var(--accent);border-radius:4px;color:var(--text)">
             <button class="btn small" onclick="saveInlineMatchPct('${m.id}')">✓</button>
