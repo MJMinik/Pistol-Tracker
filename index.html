@@ -66,6 +66,10 @@
   .brand h1 { font-size: 17px; font-weight: 600; }
   .brand .sub { font-size: 11px; color: var(--text-dim); }
   nav { flex: 1; }
+  .nav-group-label {
+    font-size: 11px; font-weight: 600; color: var(--text-dim);
+    padding: 16px 22px 4px; pointer-events: none; user-select: none;
+  }
   nav a {
     display: flex; align-items: center; gap: 10px;
     padding: 10px 14px; margin: 1px 8px;
@@ -582,15 +586,19 @@
     </div>
     <nav>
       <a data-view="dashboard" class="active"><span class="icon">&#9678;</span> Dashboard</a>
+      <div class="nav-group-label">Equipment</div>
       <a data-view="firearms"><span class="icon">&#9670;</span> Firearms</a>
       <a data-view="optics"><span class="icon">&#9678;</span> Optics</a>
       <a data-view="ammo"><span class="icon">&#9679;</span> Ammunition</a>
+      <div class="nav-group-label">Training</div>
       <a data-view="sessions"><span class="icon">&#9650;</span> Sessions</a>
       <a data-view="progress"><span class="icon">&#9733;</span> Progress</a>
       <a data-view="competition"><span class="icon">&#9819;</span> Competition</a>
+      <div class="nav-group-label">Records</div>
       <a data-view="costs"><span class="icon">&#9654;</span> Costs & Purchases</a>
       <a data-view="malfunctions"><span class="icon">&#9888;</span> Malfunctions</a>
       <a data-view="maintenance"><span class="icon">&#9881;</span> Maintenance</a>
+      <div class="nav-group-label">Reference</div>
       <a data-view="reference"><span class="icon">&#9432;</span> Atlas Reference</a>
       <a data-view="help"><span class="icon">&#9432;</span> Help</a>
       <a data-view="settings"><span class="icon">&#9776;</span> Settings &amp; Data</a>
