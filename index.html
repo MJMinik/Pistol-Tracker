@@ -400,6 +400,14 @@
   .seg-btn.active { background: var(--accent); color: #fff; font-weight: 600; }
   .seg-btn:active:not(.active) { background: var(--panel-2); }
 
+  /* iOS-style toggle switch */
+  .toggle-wrap { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; min-height: 44px; user-select: none; -webkit-tap-highlight-color: transparent; }
+  .toggle-input { position: absolute; opacity: 0; width: 0; height: 0; }
+  .toggle-track { position: relative; width: 51px; height: 31px; background: var(--border); border-radius: 100px; transition: background 0.2s; flex-shrink: 0; }
+  .toggle-thumb { position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; background: #fff; border-radius: 50%; box-shadow: 0 1px 4px rgba(0,0,0,0.25); transition: left 0.2s; }
+  .toggle-input:checked + .toggle-track { background: var(--accent); }
+  .toggle-input:checked + .toggle-track .toggle-thumb { left: 22px; }
+
   .chart-container { padding: 12px 0; }
   svg.chart { width: 100%; height: 220px; }
 
@@ -2507,9 +2515,12 @@ function openMagazineModal(id) {
         <input id="mg-label" value="${escapeHtml(mg.label)}" placeholder="e.g. A1, S3, E2">
         <div class="help-text">Match what's on the physical mag (paint pen or label).</div>
       </div>
-      <div style="margin-bottom:12px;display:flex;align-items:center;gap:8px;cursor:pointer" onclick="document.getElementById('mg-active').click()">
-        <input type="checkbox" id="mg-active" ${mg.active !== false ? 'checked' : ''} onclick="event.stopPropagation()">
-        <span style="font-size:13px">Active — uncheck to retire this magazine</span>
+      <div style="margin-bottom:12px">
+        <label class="toggle-wrap">
+          <input type="checkbox" id="mg-active" class="toggle-input" ${mg.active !== false ? 'checked' : ''}>
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          <span style="font-size:13px">Active — tap to retire this magazine</span>
+        </label>
       </div>
       <div class="form-row">
         <label>Firearm Pool ${tip('Check all firearms that can use this magazine. Magazines shared between guns (e.g. Apollo + Erebus) should have both checked.')}</label>
@@ -2827,8 +2838,10 @@ function openMaintenanceScheduleModal(firearmId) {
         </div>
         <div class="form-row">
           <label>Annual Inspection ${tip('Toggle whether to track annual inspection reminders for this firearm.')}</label>
-          <label style="display:flex;align-items:center;gap:8px;margin-top:6px;font-weight:normal;text-transform:none">
-            <input type="checkbox" id="ms-annual" ${s.trackAnnual !== false ? 'checked' : ''}> Track annual inspection reminders
+          <label class="toggle-wrap" style="margin-top:6px">
+            <input type="checkbox" id="ms-annual" class="toggle-input" ${s.trackAnnual !== false ? 'checked' : ''}>
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+            <span style="font-size:13px;font-weight:normal">Track annual inspection reminders</span>
           </label>
         </div>
       </div>
@@ -4464,9 +4477,12 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
           <select id="se-firearm" onchange="updateSessionMagSection();syncPlanFirearmToChecklist(this.value)" >${DB.firearms.map(f => `<option value="${f.id}" ${s.firearmId===f.id?'selected':''}>${escapeHtml(f.name)}</option>`).join('')}</select>
         </div>
       </div>
-      <div style="margin:4px 0 10px;display:${isPlanMode ? 'none' : 'flex'};align-items:center;gap:8px;cursor:pointer" onclick="document.getElementById('se-multi-fw').click()">
-        <input type="checkbox" id="se-multi-fw" ${(s.firearmSplits && s.firearmSplits.length)?'checked':''} onchange="toggleMultiFirearm(this.checked)" onclick="event.stopPropagation()">
-        <span style="font-size:13px;color:var(--text-dim)">Multiple firearms used this session ${tip('Check this to enter round counts per gun. Firearm round counts and maintenance tracking use the per-gun totals. A warning appears if the ammo total does not match the round total.')}</span>
+      <div style="margin:4px 0 10px;display:${isPlanMode ? 'none' : 'block'}">
+        <label class="toggle-wrap">
+          <input type="checkbox" id="se-multi-fw" class="toggle-input" ${(s.firearmSplits && s.firearmSplits.length)?'checked':''} onchange="toggleMultiFirearm(this.checked)">
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          <span style="font-size:13px;color:var(--text-dim)">Multiple firearms used this session ${tip('Check this to enter round counts per gun. Firearm round counts and maintenance tracking use the per-gun totals. A warning appears if the ammo total does not match the round total.')}</span>
+        </label>
       </div>
       <div id="se-fw-splits" style="display:${(s.firearmSplits && s.firearmSplits.length)?'block':'none'}"></div>
       <div id="se-mag-section" data-prev-mag-ids="${(s.magIds||[]).join(',')}"></div>
@@ -4649,10 +4665,11 @@ function updateSessionMagSection() {
     </div>
     <div class="help-text" style="margin-top:4px">Rounds divided equally among checked magazines.</div>`;
   sec.innerHTML = `<div style="margin:6px 0 10px">
-    <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="document.getElementById('se-mag-toggle').click()">
-      <input type="checkbox" id="se-mag-toggle" ${anyChecked?'checked':''} onclick="event.stopPropagation()" onchange="document.getElementById('se-mag-list').style.display=this.checked?'block':'none'">
+    <label class="toggle-wrap">
+      <input type="checkbox" id="se-mag-toggle" class="toggle-input" ${anyChecked?'checked':''} onchange="document.getElementById('se-mag-list').style.display=this.checked?'block':'none'">
+      <span class="toggle-track"><span class="toggle-thumb"></span></span>
       <span style="font-size:13px;color:var(--text-dim)">Track magazines used this session ${tip('Select which magazines you used. Rounds are divided equally among checked magazines and credited to their lifetime totals — used to track spring wear and correlate malfunctions.')}</span>
-    </div>
+    </label>
     <div id="se-mag-list" style="display:${anyChecked?'block':'none'}">${magsInner}</div>
   </div>`;
 }
