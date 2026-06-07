@@ -32,6 +32,10 @@
     --shadow: 0 2px 10px rgba(0,0,0,0.08);
     --accent-muted-1: rgba(88,86,214,0.3);
     --accent-muted-2: rgba(88,86,214,0.6);
+    --success-bg: rgba(52,199,89,0.12);
+    --warn-bg: rgba(255,149,0,0.12);
+    --danger-bg: rgba(255,59,48,0.12);
+    --info-bg: rgba(0,122,255,0.12);
   }
   [data-theme="dark"] {
     --bg: #000000;
@@ -49,6 +53,10 @@
     --shadow: 0 2px 10px rgba(0,0,0,0.4);
     --accent-muted-1: rgba(94,92,230,0.3);
     --accent-muted-2: rgba(94,92,230,0.6);
+    --success-bg: rgba(48,209,88,0.18);
+    --warn-bg: rgba(255,159,10,0.18);
+    --danger-bg: rgba(255,69,58,0.18);
+    --info-bg: rgba(10,132,255,0.18);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -145,6 +153,7 @@
   .btn:active { opacity: 0.75; transform: scale(0.98); }
   .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; color: var(--accent); }
   .btn.secondary { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); }
   @media (hover: hover) { .btn.secondary:hover { background: var(--border); } }
   .btn.secondary:active { background: var(--border); opacity: 1; }
@@ -262,10 +271,10 @@
     display: inline-block; padding: 2px 8px;
     border-radius: 10px; font-size: 11px; font-weight: 500;
   }
-  .badge.success { background: rgba(52,199,89,0.15); color: var(--success); }
-  .badge.warn { background: rgba(255,149,0,0.15); color: var(--warn); }
-  .badge.danger { background: rgba(255,59,48,0.15); color: var(--danger); }
-  .badge.info { background: rgba(0,122,255,0.15); color: var(--info); }
+  .badge.success { background: var(--success-bg); color: var(--success); }
+  .badge.warn { background: var(--warn-bg); color: var(--warn); }
+  .badge.danger { background: var(--danger-bg); color: var(--danger); }
+  .badge.info { background: var(--info-bg); color: var(--info); }
   .badge.neutral { background: var(--panel-2); color: var(--text-dim); }
   .badge.pr { background: rgba(88,86,214,0.15); color: var(--accent); }
 
@@ -293,6 +302,42 @@
     display: flex; gap: 8px; justify-content: flex-end;
   }
 
+  /* Action Sheet */
+  .action-sheet-backdrop {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5); z-index: 200;
+    align-items: flex-end;
+  }
+  .action-sheet-backdrop.show { display: flex; }
+  .action-sheet {
+    width: 100%; padding: 0 8px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+    transform: translateY(100%);
+    transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+  }
+  .action-sheet-backdrop.show .action-sheet { transform: translateY(0); }
+  .action-sheet-group {
+    background: var(--panel); border-radius: 14px;
+    overflow: hidden; margin-bottom: 8px;
+  }
+  .action-sheet-title {
+    padding: 12px 16px 10px; text-align: center;
+    font-size: 13px; color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+  }
+  .action-sheet-btn {
+    display: block; width: 100%; padding: 16px;
+    background: none; border: none; border-top: 1px solid var(--border);
+    color: var(--text); font-size: 17px; text-align: center;
+    cursor: pointer; font-family: inherit;
+  }
+  .action-sheet-btn:first-of-type { border-top: none; }
+  .action-sheet-btn.danger { color: var(--danger); }
+  .action-sheet-btn.cancel {
+    font-weight: 600; background: var(--panel);
+    border-radius: 14px; margin-top: 0;
+  }
+
   .form-row { margin-bottom: 14px; }
   .form-row label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 4px; }
   .form-row input, .form-row select, .form-row textarea {
@@ -313,10 +358,10 @@
     padding: 12px 16px; border-radius: 10px; margin-bottom: 12px;
     display: flex; align-items: center; gap: 10px; font-size: 13px;
   }
-  .alert.warn { background: rgba(255,149,0,0.1); border: 1px solid var(--warn); color: var(--warn); }
-  .alert.danger { background: rgba(255,59,48,0.1); border: 1px solid var(--danger); color: var(--danger); }
-  .alert.info { background: rgba(0,122,255,0.1); border: 1px solid var(--info); color: var(--info); }
-  .alert.success { background: rgba(52,199,89,0.1); border: 1px solid var(--success); color: var(--success); }
+  .alert.warn { background: var(--warn-bg); border: 1px solid var(--warn); color: var(--warn); }
+  .alert.danger { background: var(--danger-bg); border: 1px solid var(--danger); color: var(--danger); }
+  .alert.info { background: var(--info-bg); border: 1px solid var(--info); color: var(--info); }
+  .alert.success { background: var(--success-bg); border: 1px solid var(--success); color: var(--success); }
 
   .progress {
     height: 6px; background: var(--panel-2);
@@ -347,6 +392,13 @@
     background: var(--panel-2); border: 1px solid var(--border);
     padding: 4px 12px; border-radius: 100px; font-size: 13px;
   }
+
+  /* Segmented control */
+  .seg-ctrl { display: flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: var(--bg); width: 100%; }
+  .seg-btn { flex: 1; padding: 10px 4px; font-size: 13px; text-align: center; cursor: pointer; color: var(--text-dim); background: transparent; border: none; border-radius: 0; min-height: 44px; transition: background 0.15s, color 0.15s; -webkit-tap-highlight-color: transparent; }
+  .seg-btn:not(:last-child) { border-right: 1px solid var(--border); }
+  .seg-btn.active { background: var(--accent); color: #fff; font-weight: 600; }
+  .seg-btn:active:not(.active) { background: var(--panel-2); }
 
   .chart-container { padding: 12px 0; }
   svg.chart { width: 100%; height: 220px; }
@@ -398,6 +450,18 @@
   details summary:active { color: var(--accent); }
   details > div { padding: 8px 0 8px 16px; font-size: 13px; color: var(--text-dim); }
 
+  /* Help section collapsible */
+  .help-section-toggle {
+    width: 100%; display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0; background: none; border: none; cursor: pointer;
+    font-size: 15px; font-weight: 600; color: var(--text); text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  @media (hover: hover) { .help-section-toggle:hover { color: var(--accent); } }
+  .help-section-toggle:active { color: var(--accent); }
+  .help-chevron { font-size: 18px; color: var(--text-dim); transition: transform 0.2s ease; flex-shrink: 0; }
+  .help-section-body { overflow: hidden; }
+
   .skill-rating {
     display: flex; align-items: center; gap: 4px;
   }
@@ -430,10 +494,12 @@
   .goal-item .text { flex: 1; font-size: 15px; }
   .goal-item .meta { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
 
-  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+  .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 1px; }
+  .tabs::-webkit-scrollbar { display: none; }
   .tabs .tab {
-    padding: 10px 16px; cursor: pointer; font-size: 13px;
+    padding: 13px 16px; cursor: pointer; font-size: 13px;
     color: var(--text-dim); border-bottom: 2px solid transparent;
+    white-space: nowrap; flex-shrink: 0;
   }
   .tabs .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
   .tab-pane { display: none; }
@@ -524,10 +590,41 @@
     }
     th, td { white-space: nowrap; }
 
-    /* Modals: nearly full-width, scrollable */
-    .modal-backdrop { padding: 20px 10px; align-items: flex-start; }
-    .modal { max-width: 100%; }
-    .modal-body { max-height: 65vh !important; overflow-y: auto; }
+    /* Modals: bottom sheet on iPhone */
+    .modal-backdrop {
+      padding: 0;
+      align-items: flex-end;
+      overflow-y: hidden;
+    }
+    .modal {
+      max-width: 100%;
+      border-radius: 20px 20px 0 0;
+      max-height: 92vh;
+      display: flex;
+      flex-direction: column;
+      transform: translateY(100%);
+      transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .modal-backdrop.show .modal { transform: translateY(0); }
+    .modal::before {
+      content: '';
+      display: block;
+      width: 36px; height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin: 10px auto 2px;
+      flex-shrink: 0;
+    }
+    .modal-body {
+      flex: 1;
+      overflow-y: auto;
+      max-height: none !important;
+    }
+    .modal-footer {
+      padding-bottom: max(16px, env(safe-area-inset-bottom));
+      flex-shrink: 0;
+    }
+    .modal-header { flex-shrink: 0; }
 
     /* View header wraps gracefully */
     .view-header { flex-wrap: wrap; gap: 10px; }
@@ -557,6 +654,9 @@
     .grid-4 { grid-template-columns: repeat(2, 1fr); }
     .form-grid-4 { grid-template-columns: 1fr 1fr; }
   }
+
+  /* Hide desktop-only table columns on mobile */
+  @media (max-width: 767px) { .col-desktop { display: none; } }
 
   /* Desktop: ensure mobile elements stay hidden */
   @media (min-width: 768px) {
@@ -603,23 +703,23 @@
       <input type="search" placeholder="Search…" onclick="openGlobalSearch()" readonly style="cursor:pointer">
     </div>
     <nav>
-      <a data-view="dashboard" class="active"><span class="icon">&#9678;</span> Dashboard</a>
+      <a data-view="dashboard" class="active"><span class="icon">📊</span> Dashboard</a>
       <div class="nav-group-label">Equipment</div>
-      <a data-view="firearms"><span class="icon">&#9670;</span> Firearms</a>
-      <a data-view="optics"><span class="icon">&#9678;</span> Optics</a>
-      <a data-view="ammo"><span class="icon">&#9679;</span> Ammunition</a>
+      <a data-view="firearms"><span class="icon">🔫</span> Firearms</a>
+      <a data-view="optics"><span class="icon">🔭</span> Optics</a>
+      <a data-view="ammo"><span class="icon">🎯</span> Ammunition</a>
       <div class="nav-group-label">Training</div>
-      <a data-view="sessions"><span class="icon">&#9650;</span> Sessions</a>
-      <a data-view="progress"><span class="icon">&#9733;</span> Progress</a>
-      <a data-view="competition"><span class="icon">&#9819;</span> Competition</a>
+      <a data-view="sessions"><span class="icon">📋</span> Sessions</a>
+      <a data-view="progress"><span class="icon">📈</span> Progress</a>
+      <a data-view="competition"><span class="icon">🏆</span> Competition</a>
       <div class="nav-group-label">Records</div>
-      <a data-view="costs"><span class="icon">&#9654;</span> Costs & Purchases</a>
-      <a data-view="malfunctions"><span class="icon">&#9888;</span> Malfunctions</a>
-      <a data-view="maintenance"><span class="icon">&#9881;</span> Maintenance</a>
+      <a data-view="costs"><span class="icon">💰</span> Costs & Purchases</a>
+      <a data-view="malfunctions"><span class="icon">⚠️</span> Malfunctions</a>
+      <a data-view="maintenance"><span class="icon">🔧</span> Maintenance</a>
       <div class="nav-group-label">Reference</div>
-      <a data-view="reference"><span class="icon">&#9432;</span> Atlas Reference</a>
-      <a data-view="help"><span class="icon">&#9432;</span> Help</a>
-      <a data-view="settings"><span class="icon">&#9776;</span> Settings &amp; Data</a>
+      <a data-view="reference"><span class="icon">📖</span> Atlas Reference</a>
+      <a data-view="help"><span class="icon">❓</span> Help</a>
+      <a data-view="settings"><span class="icon">⚙️</span> Settings &amp; Data</a>
     </nav>
     <div class="sidebar-footer">
       v1.9 &middot; <a href="#" id="export-data" style="color:var(--accent)">Export Data</a>
@@ -787,7 +887,7 @@ const SEED = {
     backupSnoozedUntil: null,
     lastSyncExportDate: null,
     lastSyncImportDate: null,
-    magazineSpringSchedule: { startDate: '2026-06-01', intervalMonths: 6 },
+    magazineSpringSchedule: { startDate: '', intervalMonths: 6 },
     defaultRecoilSpringInterval: 5000,
     competition: { defaultDivision: 'Carry Optics', defaultPowerFactor: 'Minor' }
   }
@@ -1096,7 +1196,11 @@ function restoreFromTrash(trashId) {
 }
 
 function permanentlyDelete(trashId) {
-  if (!confirm('Permanently delete this item? This cannot be undone.')) return;
+  showActionSheet('Permanently delete this item?', [
+    { label: 'Delete Permanently', style: 'danger', fn: () => { _doPermanentlyDelete(trashId); } }
+  ]);
+}
+function _doPermanentlyDelete(trashId) {
   const entry = (DB.trash || []).find(x => x.id === trashId);
   if (entry && entry.type === 'session') {
     for (const imgId of (entry.data.targetImages || [])) deleteImage(imgId);
@@ -1179,7 +1283,7 @@ function saveDB() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
     if (typeof queueAutoSync === 'function') queueAutoSync();
   } catch (e) {
-    alert('Could not save data. localStorage may be full. Try Settings → Download JSON Backup then clear some browser data.');
+    showToast('Storage full — go to Settings and download a backup.');
     console.error(e);
   }
 }
@@ -1533,9 +1637,9 @@ function divisionsWithClassifiers() {
 
 /* Magazine spring schedule: time-based, every N months from a start date */
 function magazineSpringStatus() {
-  const sched = (DB.settings && DB.settings.magazineSpringSchedule) || { startDate: '2026-06-01', intervalMonths: 6 };
+  const sched = (DB.settings && DB.settings.magazineSpringSchedule) || { startDate: todayISO(), intervalMonths: 6 };
   const intervalMonths = sched.intervalMonths || 6;
-  const start = new Date(sched.startDate || '2026-06-01');
+  const start = new Date(sched.startDate || todayISO());
   // Find most recent mag_springs maintenance across all firearms
   const allMagSpring = DB.maintenance.filter(m => m.type === 'mag_springs').sort((a,b) => b.date.localeCompare(a.date));
   const lastDone = allMagSpring[0];
@@ -1653,6 +1757,9 @@ function setView(name) {
   if (link) link.classList.add('active');
   const titleEl = document.querySelector('.mobile-header .brand-title');
   if (titleEl) titleEl.textContent = VIEW_LABELS[name] || 'Pistol Tracker';
+  // Reset scroll so section heading is never clipped by the mobile header
+  const mainEl = document.querySelector('main');
+  if (mainEl) mainEl.scrollTop = 0;
   renderView(name);
 }
 /* ============================================================
@@ -1670,7 +1777,7 @@ const SECTION_HELP = {
       <li><strong>Open Goals</strong> — training goals not yet marked achieved.</li>
     </ul>
     <h4>Alerts</h4>
-    Orange/red banners appear when a firearm needs a field strip, deep clean, recoil spring replacement, or annual inspection. Click <strong>+ Log Maintenance</strong> on the Firearms page to clear them.
+    Orange/red banners appear when a firearm needs a field strip, deep clean, recoil spring replacement, or annual inspection. Tap <strong>+ Log Maintenance</strong> on the Firearms page to clear them.
     <h4>Rounds by Month</h4>
     Bar chart showing your last 12 months of training volume. Orange = live-fire, blue = dry-fire.
     <h4>Plan Session &amp; Log Session</h4>
@@ -1682,7 +1789,7 @@ const SECTION_HELP = {
     <h4>Overview</h4>
     The Firearms page tracks your registered guns — round counts, maintenance status, recoil spring progress, and barrel info.
     <h4>Adding a Firearm</h4>
-    Click <strong>+ Add Firearm</strong>. Enter the name, manufacturer, caliber, and optionally a starting round count if the gun already has rounds on it.
+    Tap <strong>+ Add Firearm</strong>. Enter the name, manufacturer, caliber, and optionally a starting round count if the gun already has rounds on it.
     <h4>Round Counts</h4>
     Rounds are automatically credited when you log a session or competition match. The deep clean progress bar fills as rounds accumulate since the last deep clean.
     <h4>Maintenance Status</h4>
@@ -1694,9 +1801,9 @@ const SECTION_HELP = {
     <h4>Overview</h4>
     Track every optic and sight on your firearms — zero distance, mount height, torque spec, settings snapshot, and battery change history.
     <h4>Adding an Optic</h4>
-    Click <strong>+ Add Optic</strong>. Assign it to a firearm and fill in the details you want to track. All fields are optional except the name.
+    Tap <strong>+ Add Optic</strong>. Assign it to a firearm and fill in the details you want to track. All fields are optional except the name.
     <h4>Battery Log</h4>
-    Click <strong>+ Log Change</strong> on any optic card to record a battery replacement. The card shows a warning when ~11 months have passed since the last change.
+    Tap <strong>+ Log Change</strong> on any optic card to record a battery replacement. The card shows a warning when ~11 months have passed since the last change.
     <h4>Spare Parts</h4>
     The Spare Parts table at the bottom tracks consumables like springs, pins, and cleaning supplies. Adjust quantities as you use or reorder parts.`,
 
@@ -1704,23 +1811,23 @@ const SECTION_HELP = {
     <h4>Overview</h4>
     The Ammunition page tracks your inventory. Rounds are automatically deducted when you save a session.
     <h4>Adding Ammo</h4>
-    Click <strong>+ Add Ammo</strong>. Enter brand, caliber, grain, bullet type, current quantity, and an optional cost per round for automatic cost tracking in the Costs & Purchases section.
+    Tap <strong>+ Add Ammo</strong>. Enter brand, caliber, grain, bullet type, current quantity, and an optional cost per round for automatic cost tracking in the Costs & Purchases section.
     <h4>Cost Per Round</h4>
     Enter a cost per round (e.g. 0.285) to unlock automatic ammo cost calculations. Each session will show its ammo cost and the Costs page will track totals.
     <h4>Low Ammo Alert</h4>
     A Dashboard warning appears when any SKU drops to 50 rounds or below.
     <h4>Consolidate Duplicates</h4>
-    If you have multiple rows of the same ammo, click <strong>↻ Consolidate Duplicates</strong> to merge them automatically.`,
+    If you have multiple rows of the same ammo, tap <strong>↻ Consolidate Duplicates</strong> to merge them automatically.`,
 
   sessions: `
     <h4>Overview</h4>
     Sessions are the core of your training log. Each session records the firearm used, rounds fired, drills practiced, self-ratings, malfunctions, and target images. You can log a session directly without planning one first.
     <h4>Planning a Session</h4>
-    Click <strong>📋 Plan Session</strong> to create a planned session before you go to the range. Fill in your intended ammo, drills, and location. Use the <strong>Gear Checklist</strong> inside the plan to select which firearms you are bringing and mark other gear as packed — check the firearms you are taking, then mark each as packed once it is in your bag. Planned sessions appear at the top of your session list with a blue banner and do not affect ammo inventory or round counts until converted to a logged session.
+    Tap <strong>📋 Plan Session</strong> to create a planned session before you go to the range. Fill in your intended ammo, drills, and location. Use the <strong>Gear Checklist</strong> inside the plan to select which firearms you are bringing and mark other gear as packed — check the firearms you are taking, then mark each as packed once it is in your bag. Planned sessions appear at the top of your session list with a blue banner and do not affect ammo inventory or round counts until converted to a logged session.
     <h4>Converting a Plan to a Logged Session</h4>
     On a planned session card, tap <strong>✓ Convert to Logged</strong> to open a pre-filled form. Adjust anything that changed and save — ammo will deduct and round counts will update at that point.
     <h4>Logging a Session</h4>
-    Click <strong>+ Log Session</strong>. Select session type, firearm, date, location, and ammo used. Add drills with optional times and scores.
+    Tap <strong>+ Log Session</strong>. Select session type, firearm, date, location, and ammo used. Add drills with optional times and scores.
     <h4>Session Types</h4>
     <ul>
       <li><strong>Practice</strong> — standard live-fire range session.</li>
@@ -1757,7 +1864,7 @@ const SECTION_HELP = {
     <h4>Overview</h4>
     Log USPSA matches, track classifiers, and monitor your classification progress.
     <h4>Matches</h4>
-    Click <strong>+ Add Match</strong> to log a match. Enter stage-level points, time, and percentage. Hit Factor is calculated automatically. Add a PractiScore link for easy reference.
+    Tap <strong>+ Add Match</strong> to log a match. Enter stage-level points, time, and percentage. Hit Factor is calculated automatically. Add a PractiScore link for easy reference.
     <h4>Round Counts</h4>
     Enter total rounds fired in the match. This credits the firearm's round count without requiring a separate session entry — do not log match rounds as a session too or they'll be double-counted.
     <h4>Classifiers</h4>
@@ -1783,7 +1890,7 @@ const SECTION_HELP = {
     <h4>Overview</h4>
     Track stoppages and reliability issues. Malfunctions can be logged inside a session or as standalone entries here.
     <h4>Logging a Malfunction</h4>
-    Click <strong>+ Log Malfunction</strong>. Select the firearm, type (failure to feed, failure to eject, etc.), round count at the time, and resolution steps.
+    Tap <strong>+ Log Malfunction</strong>. Select the firearm, type (failure to feed, failure to eject, etc.), round count at the time, and resolution steps.
     <h4>Analytics</h4>
     The summary cards show malfunction rate per 1,000 rounds by firearm, patterns by type, and correlation by magazine — helping you identify whether issues are gun-related, ammo-related, or magazine-related.
     <h4>Industry Standard</h4>
@@ -1793,7 +1900,7 @@ const SECTION_HELP = {
     <h4>Overview</h4>
     The Maintenance log tracks every cleaning and service event for each firearm.
     <h4>Logging Maintenance</h4>
-    Click <strong>+ Log Maintenance</strong> or use the button on any Firearm card. Select the task type and date.
+    Tap <strong>+ Log Maintenance</strong> or use the button on any Firearm card. Select the task type and date.
     <h4>Task Types</h4>
     <ul>
       <li><strong>Field Strip & Clean</strong> — after every live-fire session (Atlas guidance).</li>
@@ -1819,9 +1926,9 @@ const SECTION_HELP = {
     <h4>Overview</h4>
     The Help section contains guides for every part of the app. Use it when you need a refresher on how something works.
     <h4>Setup Wizard</h4>
-    Click <strong>Setup Wizard</strong> to replay the initial setup walkthrough — useful for new devices or after a data reset.
+    Tap <strong>Setup Wizard</strong> to replay the initial setup walkthrough — useful for new devices or after a data reset.
     <h4>Full Tour</h4>
-    Click <strong>Full Tour</strong> for a guided walkthrough of all 13 sections with tips at each stop.`,
+    Tap <strong>Full Tour</strong> for a guided walkthrough of all 13 sections with tips at each stop.`,
 
   settings: `
     <h4>Overview</h4>
@@ -1986,11 +2093,25 @@ function filterHelpSections(keyword) {
     s.style.display = match ? '' : 'none';
     if (match) {
       visibleCount++;
-      if (kw) s.setAttribute('open', ''); // auto-expand matching sections
+      if (kw) {
+        // Auto-expand matching sections when searching
+        const body = s.querySelector('.help-section-body');
+        const chevron = s.querySelector('.help-chevron');
+        if (body) body.hidden = false;
+        if (chevron) chevron.style.transform = 'rotate(90deg)';
+      }
     }
   });
   const noResults = document.getElementById('help-no-results');
   if (noResults) noResults.style.display = (kw && visibleCount === 0) ? 'block' : 'none';
+}
+
+function toggleHelpSection(btn) {
+  const body = btn.nextElementSibling;
+  const chevron = btn.querySelector('.help-chevron');
+  const isOpen = !body.hidden;
+  body.hidden = isOpen;
+  chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(90deg)';
 }
 
 function toggleSectionHelp(section, btn) {
@@ -2055,6 +2176,39 @@ function closeModal() {
 document.getElementById('modal-backdrop').addEventListener('click', e => {
   if (e.target.id === 'modal-backdrop') closeModal();
 });
+
+// Action Sheet — Apple HIG bottom sheet for secondary/destructive actions
+// actions: [{label, style:'default'|'danger', fn}]
+function showActionSheet(title, actions) {
+  let el = document.getElementById('action-sheet-backdrop');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'action-sheet-backdrop';
+    el.className = 'action-sheet-backdrop';
+    document.body.appendChild(el);
+    el.addEventListener('click', e => { if (e.target === el) closeActionSheet(); });
+  }
+  window._ashFns = {};
+  const rows = actions.map((a, i) => {
+    window._ashFns['a' + i] = a.fn;
+    return `<button class="action-sheet-btn${a.style === 'danger' ? ' danger' : ''}" onclick="window._ashFns['a${i}']&&window._ashFns['a${i}']();closeActionSheet()">${a.label}</button>`;
+  }).join('');
+  el.innerHTML = `
+    <div class="action-sheet">
+      <div class="action-sheet-group">
+        ${title ? `<div class="action-sheet-title">${title}</div>` : ''}
+        ${rows}
+      </div>
+      <div class="action-sheet-group">
+        <button class="action-sheet-btn cancel" onclick="closeActionSheet()">Cancel</button>
+      </div>
+    </div>`;
+  requestAnimationFrame(() => el.classList.add('show'));
+}
+function closeActionSheet() {
+  const el = document.getElementById('action-sheet-backdrop');
+  if (el) el.classList.remove('show');
+}
 
 /* ============================================================
    DASHBOARD
@@ -2130,10 +2284,10 @@ function renderDashboard() {
     <div class="view-header">
       <div>
         <h2>Dashboard ${sectionHelpBtn('dashboard')}</h2>
-        <div class="sub">${formatDate(new Date())} &middot; Training since January 2025</div>
+        <div class="sub">${formatDate(new Date())}${(() => { const dates = (DB.sessions||[]).filter(s=>!s.planned).map(s=>s.date).sort(); if (!dates.length) return ''; const d = new Date(dates[0]+'T00:00:00'); return ' &middot; Training since ' + d.toLocaleString('default',{month:'long',year:'numeric'}); })()}</div>
       </div>
       <div style="display:flex;gap:8px">
-        <button class="btn" style="background:#007AFF;border-color:#007AFF" onclick="openSessionModal('','plan')" title="Plan an upcoming range trip or class">&#128203; Plan Session</button>
+        <button class="btn" style="background:var(--info);border-color:var(--info)" onclick="openSessionModal('','plan')" title="Plan an upcoming range trip or class">&#128203; Plan Session</button>
         <button class="btn" onclick="openSessionModal()">+ Log Session</button>
       </div>
     </div>
@@ -2215,8 +2369,8 @@ function firearmStatusBlock(f) {
 }
 function recentSessionsTable() {
   const recent = [...DB.sessions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5);
-  if (!recent.length) return `<div class="empty"><div class="icon">&#9650;</div>No sessions logged yet.<br><br><button class="btn" onclick="openSessionModal()">Log first session</button></div>`;
-  return `<table>
+  if (!recent.length) return `<div class="empty"><div class="icon">📋</div>No sessions logged yet.<br><br><button class="btn" onclick="openSessionModal()">Log first session</button></div>`;
+  return `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table>
     <thead><tr><th>Date</th><th>Firearm</th><th>Rounds</th><th>Location</th></tr></thead>
     <tbody>${recent.map(s => {
       const firearmLabel = (s.firearmSplits && s.firearmSplits.length)
@@ -2227,7 +2381,7 @@ function recentSessionsTable() {
 }
 function topPRs() {
   const prs = personalRecords().filter(p => p.best).slice(0, 5);
-  if (!prs.length) return `<div class="empty"><div class="icon">&#9733;</div>Log drills with scores in your sessions to start tracking PRs.</div>`;
+  if (!prs.length) return `<div class="empty"><div class="icon">⭐</div>Log drills with scores in your sessions to start tracking PRs.</div>`;
   return prs.map(p => `
     <div class="pr-row">
       <div>
@@ -2272,7 +2426,7 @@ function getPoolMags(firearmId) {
 
 function renderMagazinesPane() {
   const mags = [...(DB.magazines || [])].sort((a, b) => a.label.localeCompare(b.label));
-  if (!mags.length) return `<div class="empty"><div class="icon">&#9632;</div>No magazines added yet.<br><br><button class="btn" onclick="openMagazineModal()">Add first magazine</button></div>`;
+  if (!mags.length) return `<div class="empty"><div class="icon">📦</div>No magazines added yet.<br><br><button class="btn" onclick="openMagazineModal()">Add first magazine</button></div>`;
 
   // Group by firearmIds key (join sorted ids as key)
   const groups = {};
@@ -2323,10 +2477,12 @@ function renderMagazinesPane() {
         <span style="font-size:13px;color:var(--text-dim)">${isCollapsed ? '▶ Show' : '▼ Hide'}</span>
       </div>
       <div id="${groupKey}" style="display:${isCollapsed ? 'none' : 'block'};margin-top:12px">
-        <table>
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+        <table style="min-width:540px">
           <thead><tr><th>Label</th><th>Total Rounds</th><th>Since Spring</th><th>Last Spring</th><th>Malfunctions</th><th>Notes</th><th></th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -2385,9 +2541,9 @@ function openMagazineModal(id) {
 function saveMagazine(id) {
   if (!DB.magazines) DB.magazines = [];
   const label = document.getElementById('mg-label').value.trim();
-  if (!label) { alert('Label is required.'); return; }
+  if (!label) { showToast('Label is required.'); return; }
   const firearmIds = [...document.querySelectorAll('.mg-fw-check:checked')].map(el => el.value);
-  if (!firearmIds.length) { alert('Select at least one firearm for this magazine.'); return; }
+  if (!firearmIds.length) { showToast('Select at least one firearm.'); return; }
   const data = {
     label,
     firearmIds,
@@ -2405,9 +2561,12 @@ function saveMagazine(id) {
 }
 
 function deleteMagazine(id) {
-  if (!confirm('Delete this magazine? Round history will be lost.')) return;
-  DB.magazines = (DB.magazines || []).filter(x => x.id !== id);
-  saveDB(); renderFirearms();
+  showActionSheet('Delete this magazine?', [
+    { label: 'Delete Magazine', style: 'danger', fn: () => {
+      DB.magazines = (DB.magazines || []).filter(x => x.id !== id);
+      saveDB(); renderFirearms();
+    }}
+  ]);
 }
 
 function openSpringModal(magId) {
@@ -2474,15 +2633,15 @@ function firearmCard(f) {
       <div class="grid grid-3">
         <div>
           <div class="text-dim" style="font-size:11px">Live-Fire Rounds ${tip('Total rounds fired since tracking started, including the starting round count. Dry-fire rounds shown separately below.')}</div>
-          <div style="font-size:20px;font-weight:600;color:var(--accent)">${live.toLocaleString()}</div>
+          <div style="font-size:22px;font-weight:600;color:var(--accent)">${live.toLocaleString()}</div>
           ${dryRoundsCalc > 0 ? `<div style="font-size:11px;color:var(--text-dim)">${dryRoundsCalc.toLocaleString()} dry-fire</div>` : ''}
         </div>
         <div>
           <div class="text-dim" style="font-size:11px">Sessions ${tip('Total live-fire sessions logged for this firearm, including multi-firearm sessions.')}</div>
-          <div style="font-size:20px;font-weight:600">${sessionsCount}</div>
+          <div style="font-size:22px;font-weight:600">${sessionsCount}</div>
           ${drySessionsCount > 0 ? `<div style="font-size:11px;color:var(--text-dim)">${drySessionsCount} dry-fire</div>` : ''}
         </div>
-        <div><div class="text-dim" style="font-size:11px">Since Deep Clean ${tip('Rounds fired since the last recorded deep clean. Deep clean is recommended every 10,000 rounds per Atlas guidance.')}</div><div style="font-size:20px;font-weight:600">${st.roundsSinceDeepClean.toLocaleString()}</div></div>
+        <div><div class="text-dim" style="font-size:11px">Since Deep Clean ${tip('Rounds fired since the last recorded deep clean. Deep clean is recommended every 10,000 rounds per Atlas guidance.')}</div><div style="font-size:22px;font-weight:600">${st.roundsSinceDeepClean.toLocaleString()}</div></div>
       </div>
       <div style="margin-top:12px">
         <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim)">
@@ -2536,9 +2695,11 @@ function firearmCard(f) {
       })()}
       <div class="row-actions" style="margin-top:14px">
         <button class="btn small secondary" onclick="openFirearmModal('${f.id}')">Edit</button>
-        <button class="btn small secondary" onclick="openMaintenanceModal(null,'${f.id}')">+ Log Maintenance</button>
-        <button class="btn small secondary" onclick="toggleInsurancePanel('${f.id}', this)">&#128274; Insurance</button>
-        <button class="btn small danger" onclick="deleteFirearm('${f.id}')">Delete</button>
+        <button class="btn small secondary" onclick="showActionSheet('${escapeHtml(f.name)}', [
+          {label:'+ Log Maintenance', fn: () => openMaintenanceModal(null,\'${f.id}\')},
+          {label:'🔒 Insurance', fn: () => toggleInsurancePanel(\'${f.id}\')},
+          {label:'Delete', style:'danger', fn: () => deleteFirearm(\'${f.id}\')}
+        ])">&#8943;</button>
       </div>
       <!-- Insurance panel (collapsed by default) -->
       <div id="ins-panel-${f.id}" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
@@ -2593,7 +2754,7 @@ function openFirearmModal(id) {
         </div>
       </div>
       <hr>
-      <strong style="font-size:13px">Barrel Tracking <span class="badge neutral" style="margin-left:6px;font-size:11px">optional</span></strong>
+      <div style="font-size:13px;font-weight:600;color:var(--text);padding:6px 0 4px">Barrel Tracking <span class="badge neutral" style="margin-left:6px;font-size:11px">optional</span></div>
       <div class="help-text" style="margin-bottom:8px">Record the current barrel so round counts can be tracked per barrel when you swap.</div>
       <div class="form-grid-3">
         <div class="form-row"><label>Current Barrel Name</label><input id="fa-barrel-name" value="${escapeHtml(f.barrelName||'')}" placeholder="e.g. Factory, KKM Match"></div>
@@ -2624,7 +2785,7 @@ function saveFirearm(id) {
     serialNumber: document.getElementById('fa-serial').value.trim(),
     notes: document.getElementById('fa-notes').value.trim()
   };
-  if (!data.name) { alert('Name required'); return; }
+  if (!data.name) { showToast('Name required'); return; }
   const isNew = !id;
   if (id) Object.assign(getFirearm(id), data);
   else DB.firearms.push({ id: uid('fa'), ...data });
@@ -2697,7 +2858,6 @@ function saveMaintenanceSchedule(firearmId) {
   saveDB(); closeModal(); renderFirearms();
 }
 function deleteFirearm(id) {
-  if (!confirm('Delete this firearm? Sessions linked to it will keep historical record but lose firearm reference.')) return;
   const f = getFirearm(id);
   if (f) for (const imgId of (f.insurancePhotos || [])) deleteImage(imgId);
   DB.firearms = DB.firearms.filter(f => f.id !== id);
@@ -2712,22 +2872,41 @@ function toggleInsurancePanel(firearmId, btn) {
   if (!panel) return;
   const isOpen = panel.style.display !== 'none';
   panel.style.display = isOpen ? 'none' : 'block';
-  btn.style.background = isOpen ? '' : 'var(--accent)';
-  btn.style.color = isOpen ? '' : '#fff';
+  if (btn) { btn.style.background = isOpen ? '' : 'var(--accent)'; btn.style.color = isOpen ? '' : '#fff'; }
 }
 
 function editSerialNumber(firearmId) {
   const f = getFirearm(firearmId);
   if (!f) return;
   const current = f.serialNumber || '';
-  const val = prompt('Enter serial number:', current);
-  if (val === null) return; // cancelled
-  f.serialNumber = val.trim();
+  openModal(`
+    <div class="modal-header"><h3>Serial Number</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <label>Serial Number</label>
+        <input id="sn-input-${firearmId}" type="text" value="${escapeHtml(current)}" placeholder="e.g. US12345678" style="font-family:ui-monospace,monospace">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn" onclick="saveSerialNumber('${firearmId}')">Save</button>
+    </div>
+  `);
+  setTimeout(() => { const el = document.getElementById('sn-input-${firearmId}'); if (el) el.focus(); }, 100);
+}
+
+function saveSerialNumber(firearmId) {
+  const f = getFirearm(firearmId);
+  if (!f) return;
+  const input = document.getElementById('sn-input-' + firearmId);
+  if (!input) return;
+  f.serialNumber = input.value.trim();
   saveDB();
+  closeModal();
   const display = document.getElementById('ins-sn-display-' + firearmId);
   if (display) display.innerHTML = f.serialNumber
     ? escapeHtml(f.serialNumber)
-    : '<span style="color:var(--text-dim);font-style:italic">Not recorded — click to add</span>';
+    : '<span style="color:var(--text-dim);font-style:italic">Not recorded — tap to add</span>';
 }
 
 function addInsurancePhoto(firearmId, input) {
@@ -2764,13 +2943,16 @@ function buildInsurancePhotosHTML(f) {
 function deleteInsurancePhoto(firearmId, index) {
   const f = getFirearm(firearmId);
   if (!f || !f.insurancePhotos) return;
-  if (!confirm('Remove this photo?')) return;
-  const id = f.insurancePhotos[index];
-  deleteImage(id); // async fire-and-forget
-  f.insurancePhotos.splice(index, 1);
-  saveDB();
-  const container = document.getElementById('ins-photos-' + firearmId);
-  if (container) container.innerHTML = buildInsurancePhotosHTML(f);
+  showActionSheet('Remove this photo?', [
+    { label: 'Remove Photo', style: 'danger', fn: () => {
+      const id = f.insurancePhotos[index];
+      deleteImage(id); // async fire-and-forget
+      f.insurancePhotos.splice(index, 1);
+      saveDB();
+      const container = document.getElementById('ins-photos-' + firearmId);
+      if (container) container.innerHTML = buildInsurancePhotosHTML(f);
+    }}
+  ]);
 }
 
 function viewInsurancePhoto(firearmId, index) {
@@ -2848,6 +3030,7 @@ function renderOptics() {
       </div>
     ` : `
       <div class="card" style="padding:0">
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
         <table>
           <thead><tr><th>Part</th><th>Firearm</th><th>Qty</th><th>Part #</th><th>Purchased</th><th>Notes</th><th></th></tr></thead>
           <tbody>${parts.map(p => {
@@ -2866,6 +3049,7 @@ function renderOptics() {
             </tr>`;
           }).join('')}</tbody>
         </table>
+        </div>
       </div>
     `}
   `;
@@ -2947,7 +3131,7 @@ function openOpticModal(id) {
       <div class="form-row"><label>Settings Snapshot ${tip('Record your current brightness setting, mode, or any custom adjustments. Useful after a battery change to restore your preferred settings quickly.')}</label><textarea id="op-settings" rows="3" placeholder="Brightness level, mode, any custom notes about your sight settings...">${escapeHtml(o.settingsSnapshot||'')}</textarea></div>
       <div class="form-row"><label>Notes</label><textarea id="op-notes" rows="2" placeholder="Any additional notes...">${escapeHtml(o.notes||'')}</textarea></div>
     </div>
-    <div class="modal-footer"><button class="btn" onclick="saveOptic('${id||''}')">Save</button></div>
+    <div class="modal-footer"><button class="btn secondary" onclick="closeModal()">Cancel</button><button class="btn" onclick="saveOptic('${id||''}')">Save</button></div>
   `);
 }
 
@@ -2965,7 +3149,7 @@ function saveOptic(id) {
     settingsSnapshot: document.getElementById('op-settings').value.trim(),
     notes: document.getElementById('op-notes').value.trim()
   };
-  if (!data.make && !data.model) { alert('Make or Model required'); return; }
+  if (!data.make && !data.model) { showToast('Make or Model required'); return; }
   if (id) {
     const existing = DB.optics.find(o => o.id === id);
     if (existing) Object.assign(existing, data);
@@ -2976,9 +3160,12 @@ function saveOptic(id) {
 }
 
 function deleteOptic(id) {
-  if (!confirm('Delete this optic?')) return;
-  DB.optics = (DB.optics || []).filter(o => o.id !== id);
-  saveDB(); renderOptics();
+  showActionSheet('Delete this optic?', [
+    { label: 'Delete Optic', style: 'danger', fn: () => {
+      DB.optics = (DB.optics || []).filter(o => o.id !== id);
+      saveDB(); renderOptics();
+    }}
+  ]);
 }
 
 function logBattery(opticId) {
@@ -2991,7 +3178,7 @@ function logBattery(opticId) {
       <div class="form-row"><label>Date</label><input id="bt-date" type="date" value="${todayISO()}"></div>
       <div class="form-row"><label>Notes (optional)</label><input id="bt-notes" placeholder="e.g. Annual replacement, battery died mid-match"></div>
     </div>
-    <div class="modal-footer"><button class="btn" onclick="saveBattery('${opticId}')">Save</button></div>
+    <div class="modal-footer"><button class="btn secondary" onclick="closeModal()">Cancel</button><button class="btn" onclick="saveBattery('${opticId}')">Save</button></div>
   `);
 }
 
@@ -3020,7 +3207,7 @@ function openPartModal(id) {
       <div class="form-row"><label>Date Purchased (optional)</label><input id="pt-date" type="date" value="${p.datePurchased||''}"></div>
       <div class="form-row"><label>Notes</label><textarea id="pt-notes" rows="2" placeholder="Source, condition, any other info...">${escapeHtml(p.notes||'')}</textarea></div>
     </div>
-    <div class="modal-footer"><button class="btn" onclick="savePart('${id||''}')">Save</button></div>
+    <div class="modal-footer"><button class="btn secondary" onclick="closeModal()">Cancel</button><button class="btn" onclick="savePart('${id||''}')">Save</button></div>
   `);
 }
 
@@ -3034,7 +3221,7 @@ function savePart(id) {
     datePurchased: document.getElementById('pt-date').value,
     notes: document.getElementById('pt-notes').value.trim()
   };
-  if (!data.name) { alert('Part name required'); return; }
+  if (!data.name) { showToast('Part name required'); return; }
   if (id) {
     const existing = DB.parts.find(p => p.id === id);
     if (existing) Object.assign(existing, data);
@@ -3045,9 +3232,12 @@ function savePart(id) {
 }
 
 function deletePart(id) {
-  if (!confirm('Delete this part?')) return;
-  DB.parts = (DB.parts || []).filter(p => p.id !== id);
-  saveDB(); renderOptics();
+  showActionSheet('Delete this part?', [
+    { label: 'Delete Part', style: 'danger', fn: () => {
+      DB.parts = (DB.parts || []).filter(p => p.id !== id);
+      saveDB(); renderOptics();
+    }}
+  ]);
 }
 
 /* ============================================================
@@ -3094,7 +3284,7 @@ function renderAmmo() {
             </td>
           </tr>`;
         }).join('')}</tbody>
-      </table>` : `<div class="empty"><div class="icon">&#9679;</div>No ammunition tracked yet.<br><br><button class="btn" onclick="openAmmoModal()">Add first ammo</button></div>`}
+      </table>` : `<div class="empty"><div class="icon">🎯</div>No ammunition tracked yet.<br><br><button class="btn" onclick="openAmmoModal()">Add first ammo</button></div>`}
     </div>
   `;
 }
@@ -3138,7 +3328,7 @@ function saveAmmo(id) {
     costPerRound: parseFloat(document.getElementById('am-cost').value) || '',
     notes: document.getElementById('am-notes').value.trim()
   };
-  if (!data.brand) { alert('Brand required'); return; }
+  if (!data.brand) { showToast('Brand required'); return; }
   if (id) Object.assign(getAmmo(id), data);
   else DB.ammunition.push({ id: uid('am'), ...data });
   saveDB(); closeModal(); renderAmmo();
@@ -3148,13 +3338,16 @@ function deleteAmmo(id) {
   const purchaseRefs = (DB.purchases || []).filter(p => p.ammoId === id);
   let msg = 'Delete this ammunition record?';
   if (sessionRefs.length > 0) {
-    msg = `This ammo SKU is referenced by ${sessionRefs.length} session${sessionRefs.length > 1 ? 's' : ''}. Those sessions will show "ammo deleted" after removal.\n\nDelete anyway?`;
+    msg = `Referenced by ${sessionRefs.length} session${sessionRefs.length > 1 ? 's' : ''}. Sessions will show "ammo deleted."`;
   } else if (purchaseRefs.length > 0) {
-    msg = `This ammo SKU is linked to ${purchaseRefs.length} purchase record${purchaseRefs.length > 1 ? 's' : ''}. Delete anyway?`;
+    msg = `Linked to ${purchaseRefs.length} purchase record${purchaseRefs.length > 1 ? 's' : ''}.`;
   }
-  if (!confirm(msg)) return;
-  DB.ammunition = DB.ammunition.filter(a => a.id !== id);
-  saveDB(); renderAmmo();
+  showActionSheet(msg, [
+    { label: 'Delete Ammunition', style: 'danger', fn: () => {
+      DB.ammunition = DB.ammunition.filter(a => a.id !== id);
+      saveDB(); renderAmmo();
+    }}
+  ]);
 }
 
 /* Build a normalized SKU key from an ammunition record. Used for matching duplicates. */
@@ -3175,7 +3368,7 @@ function ammoSkuKey(a) {
  * can edit afterward); per-purchase history is in Costs and is not affected.
  */
 function consolidateAmmoDuplicates() {
-  if (!DB.ammunition.length) { alert('No ammunition to consolidate.'); return; }
+  if (!DB.ammunition.length) { showToast('No ammunition to consolidate.'); return; }
 
   // 1) Group by SKU key
   const groups = {};
@@ -3197,7 +3390,7 @@ function consolidateAmmoDuplicates() {
   }
 
   if (!merges.length) {
-    alert('No duplicates found — your ammunition is already consolidated.');
+    showToast('No duplicates found — already consolidated.');
     return;
   }
 
@@ -3208,16 +3401,11 @@ function consolidateAmmoDuplicates() {
     return `• ${label}: ${1 + m.dupes.length} rows → 1 row (${totalQty.toLocaleString()} rounds)`;
   }).join('\n');
 
-  if (!confirm(
-    `Consolidate ammunition?\n\n` +
-    `Will merge ${dupCount} duplicate row${dupCount !== 1 ? 's' : ''} into ${merges.length} ammo can${merges.length !== 1 ? 's' : ''}:\n\n` +
-    `${summary}\n\n` +
-    `Quantities will be summed. Cost-per-round keeps the first row's value (editable after). ` +
-    `Session ammo references will be redirected automatically so historical data stays correct.\n\n` +
-    `Costs / Purchase history is in a separate ledger and is NOT touched.\n\n` +
-    `Proceed?`
-  )) return;
-
+  showActionSheet(`Merge ${dupCount} duplicate${dupCount !== 1 ? 's' : ''} into ${merges.length} row${merges.length !== 1 ? 's' : ''}?`, [
+    { label: 'Consolidate Duplicates', style: 'danger', fn: () => { _doConsolidateAmmo(merges); } }
+  ]);
+}
+function _doConsolidateAmmo(merges) {
   // 4) Build remap, sum quantities, weighted-average cost-per-round
   // Cost/round is a quantity-weighted average across the rows being merged so the
   // displayed price reflects what's in the can, not just the first row's stored price.
@@ -3284,10 +3472,7 @@ function consolidateAmmoDuplicates() {
 
   saveDB();
   renderAmmo();
-  alert(
-    `Consolidated ${dupCount} duplicate row${dupCount !== 1 ? 's' : ''} into ${merges.length} ammo can${merges.length !== 1 ? 's' : ''}. ` +
-    `${repointCount} session reference${repointCount !== 1 ? 's' : ''} updated.`
-  );
+  showToast(`Consolidated ${dupCount} duplicate row${dupCount !== 1 ? 's' : ''} — ${repointCount} session reference${repointCount !== 1 ? 's' : ''} updated.`);
 }
 
 /* ============================================================
@@ -3385,7 +3570,7 @@ function renderSessions() {
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         ${maintItems.length ? `<button class="btn secondary" onclick="document.getElementById('maint-alert-bar').scrollIntoView({behavior:'smooth'})" title="View maintenance items due">&#9881; ${maintItems.length} Maintenance Item${maintItems.length!==1?'s':''} Due</button>` : ''}
         <button class="btn secondary" onclick="printSessionRange()" title="Print all sessions matching current filters">&#128438; Print Report</button>
-        <button class="btn" style="background:#007AFF;border-color:#007AFF" onclick="openSessionModal('','plan')" title="Plan an upcoming range trip or class">&#128203; Plan Session</button>
+        <button class="btn" style="background:var(--info);border-color:var(--info)" onclick="openSessionModal('','plan')" title="Plan an upcoming range trip or class">&#128203; Plan Session</button>
         <button class="btn" onclick="openSessionModal()">+ Log Session</button>
       </div>
     </div>
@@ -3444,7 +3629,7 @@ function renderSessions() {
         </div>`).join('')}
     </div>` : ''}
     ${recentlyDeletedCard('session')}
-    ${filtered.length ? filtered.map(s => sessionCard(s)).join('') : `<div class="empty"><div class="icon">&#9650;</div>${hasFilter ? 'No sessions match the current filters.' : 'No sessions yet.'}<br><br>${hasFilter ? `<button class="btn secondary" onclick="clearSessionFilter()">Clear Filters</button>` : `<button class="btn" onclick="openSessionModal()">Log first session</button>`}</div>`}
+    ${filtered.length ? filtered.map(s => sessionCard(s)).join('') : `<div class="empty"><div class="icon">📋</div>${hasFilter ? 'No sessions match the current filters.' : 'No sessions yet.'}<br><br>${hasFilter ? `<button class="btn secondary" onclick="clearSessionFilter()">Clear Filters</button>` : `<button class="btn" onclick="openSessionModal()">Log first session</button>`}</div>`}
   `;
 }
 
@@ -3505,14 +3690,14 @@ function sessionCard(s) {
   }).join('');
   const isPlanned = !!s.planned;
   return `
-    <div class="card">${isPlanned ? `<div style="background:#007AFF;margin:-20px -20px 14px -20px;padding:6px 16px;border-radius:12px 12px 0 0;font-size:13px;font-weight:600;color:#fff">&#128203; Planned Session</div>` : ''}
+    <div class="card">${isPlanned ? `<div style="background:var(--info);margin:-20px -20px 14px -20px;padding:6px 16px;border-radius:12px 12px 0 0;font-size:13px;font-weight:600;color:#fff">&#128203; Planned Session</div>` : ''}
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
           <div style="font-size:17px;font-weight:600">${formatDate(s.date)} <span class="badge ${{practice:'neutral',competition:'info',class:'success',dry_fire:'neutral'}[s.type||'practice']||'neutral'}">${({'practice':'Practice','competition':'Competition','class':'Class / Training','dry_fire':'Dry Fire'}[s.type||'practice']||escapeHtml(s.type||'practice'))}</span></div>
           <div class="text-dim" style="font-size:13px;margin-top:6px">${((s.firearmSplits && s.firearmSplits.length) || plannedFwIds.length > 1) ? firearmDisplay + ' &middot; ' : escapeHtml(f ? f.name : '—') + ' &middot; '}${escapeHtml(s.location || 'Location not set')}</div>
         </div>
         <div style="text-align:right">
-          ${s.type === 'dry_fire' && !isPlanned ? `<div style="font-size:15px;font-weight:600;color:var(--text-dim)">Dry Fire</div>` : `<div style="font-size:24px;font-weight:600;color:${isPlanned ? '#007AFF' : 'var(--accent)'}">${isPlanned ? '~' : ''}${(s.totalRounds||0).toLocaleString()}</div><div class="text-dim" style="font-size:11px">${isPlanned ? 'planned rds' : 'rounds'}</div>`}
+          ${s.type === 'dry_fire' && !isPlanned ? `<div style="font-size:15px;font-weight:600;color:var(--text-dim)">Dry Fire</div>` : `<div style="font-size:24px;font-weight:600;color:${isPlanned ? 'var(--info)' : 'var(--accent)'}">${isPlanned ? '~' : ''}${(s.totalRounds||0).toLocaleString()}</div><div class="text-dim" style="font-size:11px">${isPlanned ? 'planned rds' : 'rounds'}</div>`}
         </div>
       </div>
       ${ammoLines.length ? `<hr><div style="font-size:13px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap"><div><strong style="color:var(--text-dim)">Ammo:</strong> ${ammoLines.join(' &middot; ')}</div>${(() => {
@@ -3554,20 +3739,24 @@ function sessionCard(s) {
         const toTake = allItems.filter(i => (cl.items||{})[i.id]?.take).length;
         const packed = allItems.filter(i => (cl.items||{})[i.id]?.packed).length;
         if (!toTake) return '';
-        const color = packed === toTake ? '#34C759' : '#007AFF';
+        const color = packed === toTake ? '#34C759' : 'var(--info)';
         const text = packed === toTake ? `✓ All packed (${packed}/${toTake})` : `${packed} / ${toTake} packed`;
         return `<div style="margin-top:10px;font-size:13px;color:${color}">&#9745; ${text}</div>`;
       })() : ''}
       <div class="row-actions" style="margin-top:14px">
         ${isPlanned ? `
-          <button class="btn small" style="background:#007AFF;border-color:#007AFF" onclick="convertPlannedSession('${s.id}')" title="Opens a pre-filled form based on your plan. Edit anything that changed, then save to record the actual session. Ammo deducts and round counts update at this point.">&#10003; Convert to Logged</button>
-          <button class="btn small" style="background:#007AFF;border-color:#007AFF" onclick="openChecklistModal('${s.id}')" title="Opens your gear checklist for this session. Review what you planned to bring and mark items as packed.">&#9745; Checklist</button>
-          <button class="btn small secondary" onclick="openSessionModal('${s.id}')">Edit Plan</button>
-          <button class="btn small danger" onclick="deleteSession('${s.id}')">Delete</button>
+          <button class="btn small" style="background:var(--info);border-color:var(--info)" onclick="convertPlannedSession('${s.id}')" title="Opens a pre-filled form based on your plan. Edit anything that changed, then save to record the actual session. Ammo deducts and round counts update at this point.">&#10003; Convert to Logged</button>
+          <button class="btn small secondary" onclick="showActionSheet('Planned Session', [
+            {label:'&#9745; Checklist', fn: () => openChecklistModal('${s.id}')},
+            {label:'Edit Plan', fn: () => openSessionModal('${s.id}')},
+            {label:'Delete', style:'danger', fn: () => deleteSession('${s.id}')}
+          ])">&#8943;</button>
         ` : `
           <button class="btn small secondary" onclick="openSessionModal('${s.id}')">Edit</button>
-          <button class="btn small secondary" onclick="printSession('${s.id}')">&#128438; Print</button>
-          <button class="btn small danger" onclick="deleteSession('${s.id}')">Delete</button>
+          <button class="btn small secondary" onclick="showActionSheet('Session', [
+            {label:'&#128438; Print', fn: () => printSession('${s.id}')},
+            {label:'Delete', style:'danger', fn: () => deleteSession('${s.id}')}
+          ])">&#8943;</button>
         `}
       </div>
     </div>
@@ -3696,7 +3885,7 @@ function renderChecklistInModal() {
   const toTake = allItems.filter(i => (cl.items[i.id]||{}).take).length + fwTake;
   const packed = allItems.filter(i => (cl.items[i.id]||{}).packed).length + fwPacked;
   const pct = toTake > 0 ? Math.round(packed/toTake*100) : 0;
-  const color = toTake > 0 && packed === toTake ? '#34C759' : '#007AFF';
+  const color = toTake > 0 && packed === toTake ? '#34C759' : 'var(--info)';
   const progressText = toTake === 0 ? 'Select items to bring' : packed === toTake ? `✓ All packed (${packed}/${toTake})` : `${packed} / ${toTake} packed`;
 
   // Update summary line and print button
@@ -3850,7 +4039,7 @@ function printChecklistFromModal() {
   </body></html>`;
 
   const win = window.open('', '_blank');
-  if (!win) { alert('Pop-up blocked. Please allow pop-ups for this page.'); return; }
+  if (!win) { showToast('Pop-ups blocked — please allow pop-ups and try again.'); return; }
   win.document.write(html);
   win.document.close();
   win.focus();
@@ -3911,7 +4100,7 @@ function openChecklistModal(sessionId) {
     const packed = allItems.filter(i => (cl.items[i.id]||{}).packed).length + fwPacked;
     if (!toTake) return '';
     const pct = Math.round(packed/toTake*100);
-    const color = packed === toTake ? '#34C759' : '#007AFF';
+    const color = packed === toTake ? '#34C759' : 'var(--info)';
     const text = packed === toTake ? `✓ All packed (${packed}/${toTake})` : `${packed} / ${toTake} packed`;
     return `<div style="margin-bottom:12px;padding:8px 12px;background:var(--panel-2);border-radius:8px;display:flex;align-items:center;gap:10px">
       <div style="flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
@@ -4066,7 +4255,7 @@ function printChecklist(sessionId) {
   </body></html>`;
 
   const win = window.open('', '_blank');
-  if (!win) { alert('Pop-up blocked. Please allow pop-ups for this page.'); return; }
+  if (!win) { showToast('Pop-ups blocked — please allow pop-ups and try again.'); return; }
   win.document.write(html);
   win.document.close();
   win.focus();
@@ -4083,13 +4272,13 @@ function printSession(id) {
 }
 function printSessionRange() {
   const filtered = applySessionFilter([...DB.sessions].sort((a, b) => a.date.localeCompare(b.date)));
-  if (!filtered.length) { alert('No sessions match the current filters.'); return; }
+  if (!filtered.length) { showToast('No sessions match the current filters.'); return; }
   openPrintWindow(filtered);
 }
 function openPrintWindow(sessions) {
   const html = buildPrintDocument(sessions);
   const win = window.open('', '_blank');
-  if (!win) { alert('Pop-up blocked. Please allow pop-ups for this page and try again.'); return; }
+  if (!win) { showToast('Pop-ups blocked — please allow pop-ups and try again.'); return; }
   win.document.write(html);
   win.document.close();
   win.focus();
@@ -4247,7 +4436,7 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
         selfRating: { focus: 5, fundamentals: 5, satisfaction: 5 },
         planned: planned
       };
-  if (!DB.firearms.length) { alert('Add at least one firearm first.'); return; }
+  if (!DB.firearms.length) { showToast('Add at least one firearm first.'); return; }
   if (!s.selfRating) s.selfRating = { focus: 5, fundamentals: 5, satisfaction: 5 };
 
   const modalTitle = converting ? '📋 Log Session (from plan)'
@@ -4261,13 +4450,15 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
     <div class="modal-body" style="max-height:70vh;overflow-y:auto;overflow-x:hidden">
       <div class="form-grid-3">
         <div class="form-row"><label>Date</label><input id="se-date" type="date" value="${s.date}"></div>
-        <div class="form-row"><label>Type</label>
-          <select id="se-type">
-            <option value="practice" ${s.type==='practice'?'selected':''}>Practice</option>
-            <option value="competition" ${s.type==='competition'?'selected':''}>Competition</option>
-            <option value="class" ${s.type==='class'?'selected':''}>Class / Training</option>
-            <option value="dry_fire" ${s.type==='dry_fire'?'selected':''}>Dry Fire</option>
-          </select>
+        <div class="form-row"><label>Session Type</label>
+          <div class="seg-ctrl" role="group" aria-label="Session type">
+            <button type="button" class="seg-btn${(s.type||'practice')==='practice'?' active':''}" data-type="practice" onclick="setSessionType('practice')">Practice</button>
+            <button type="button" class="seg-btn${(s.type||'practice')==='dry_fire'?' active':''}" data-type="dry_fire" onclick="setSessionType('dry_fire')">Dry Fire</button>
+            <button type="button" class="seg-btn${(s.type||'practice')==='competition'?' active':''}" data-type="competition" onclick="setSessionType('competition')">Comp</button>
+            <button type="button" class="seg-btn${(s.type||'practice')==='class'?' active':''}" data-type="class" onclick="setSessionType('class')">Class</button>
+          </div>
+          <div id="se-type-desc" style="font-size:11px;color:var(--text-dim);margin-top:5px;min-height:14px">${{practice:'Live-fire range session. Range fee tracked.',dry_fire:'No rounds fired. No maintenance reminder triggered.',competition:'Match or stage. Entry fee tracked.',class:'Structured training class. Class fee tracked.'}[s.type||'practice']||''}</div>
+          <input type="hidden" id="se-type" value="${s.type||'practice'}">
         </div>
         <div class="form-row"><label>Firearm</label>
           <select id="se-firearm" onchange="updateSessionMagSection();syncPlanFirearmToChecklist(this.value)" >${DB.firearms.map(f => `<option value="${f.id}" ${s.firearmId===f.id?'selected':''}>${escapeHtml(f.name)}</option>`).join('')}</select>
@@ -4294,7 +4485,7 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
         <button class="btn small secondary" onclick="addAmmoRow()">+ Add</button>
       </div>
       <div id="se-ammo-rows"></div>
-      <div id="se-ammo-mismatch" style="display:none;margin-top:6px;font-size:13px;background:rgba(255,149,0,0.1);border:1px solid var(--warn);border-radius:10px;padding:8px 12px;line-height:1.5"></div>
+      <div id="se-ammo-mismatch" style="display:none;margin-top:6px;font-size:13px;background:var(--warn-bg);border:1px solid var(--warn);border-radius:10px;padding:8px 12px;line-height:1.5"></div>
 
       <hr>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
@@ -4649,6 +4840,14 @@ function recalcTotal() {
   checkAmmoSplitMismatch();
 }
 
+function setSessionType(val) {
+  const input = document.getElementById('se-type');
+  if (input) { input.value = val; input.dispatchEvent(new Event('change')); }
+  document.querySelectorAll('.seg-btn[data-type]').forEach(b => b.classList.toggle('active', b.dataset.type === val));
+  const descs = { practice: 'Live-fire range session. Range fee tracked.', dry_fire: 'No rounds fired. No maintenance reminder triggered.', competition: 'Match or stage. Entry fee tracked.', class: 'Structured training class. Class fee tracked.' };
+  const d = document.getElementById('se-type-desc');
+  if (d) d.textContent = descs[val] || '';
+}
 function renderDrillRows() {
   const c = document.getElementById('se-drill-rows');
   // Determine session type to filter drills
@@ -4800,11 +4999,14 @@ function showLightbox(idOrUrl, sessionId, imgIndex) {
 let _annotateCircles = [];
 let _annotateColor = '#ff4444';
 let _annotateDrawing = null;
+let _annotateLastRadius = 20;
 let _annotateSessionId = null;
 let _annotateImgIndex = null;
 
 function openAnnotateTool(src, sessionId, imgIndex) {
   document.getElementById('lightbox').classList.remove('show');
+  const annBtnEl = document.getElementById('lightbox-annotate-btn');
+  if (annBtnEl) annBtnEl.style.display = 'none';
   _annotateCircles = [];
   _annotateSessionId = sessionId;
   _annotateImgIndex = imgIndex;
@@ -4813,14 +5015,14 @@ function openAnnotateTool(src, sessionId, imgIndex) {
   if (!overlay) {
     overlay = document.createElement('div');
     overlay.id = 'annotate-overlay';
-    overlay.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:10002;flex-direction:column;align-items:center;justify-content:flex-start;overflow:auto;padding:12px';
+    overlay.style.cssText = 'display:none;position:fixed;inset:0;background:var(--bg);z-index:10002;flex-direction:column;align-items:center;justify-content:flex-start;overflow:auto;padding:12px';
     overlay.innerHTML = `
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;background:rgba(255,255,255,0.06);padding:8px 14px;border-radius:8px">
-        <span style="color:#aaa;font-size:13px;margin-right:4px">Circle color:</span>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;background:var(--panel);border:1px solid var(--border);padding:8px 14px;border-radius:10px">
+        <span style="color:var(--text-dim);font-size:13px;margin-right:4px">Circle color:</span>
         ${[['#ff4444','Red'],['#ffee44','Yellow'],['#44dd66','Green'],['#4a9eff','Blue'],['#ffffff','White']].map(([c,n]) =>
           `<button onclick="setAnnotateColor('${c}')" id="ann-col-${c.replace('#','')}" style="width:24px;height:24px;border-radius:50%;background:${c};border:2px solid transparent;cursor:pointer;transition:border 0.15s" title="${n}"></button>`
         ).join('')}
-        <span style="color:#aaa;font-size:13px;margin:0 4px">Size:</span>
+        <span style="color:var(--text-dim);font-size:13px;margin:0 4px">Size:</span>
         <input id="ann-radius" type="range" min="5" max="80" value="20" style="width:80px">
         <button class="btn small secondary" onclick="clearAnnotations()">Clear All</button>
         <button class="btn small danger" onclick="undoAnnotation()">Undo</button>
@@ -4831,7 +5033,7 @@ function openAnnotateTool(src, sessionId, imgIndex) {
         <img id="annotate-img" style="max-width:90vw;max-height:75vh;display:block;user-select:none">
         <canvas id="annotate-canvas" style="position:absolute;top:0;left:0;cursor:crosshair"></canvas>
       </div>
-      <div style="color:#888;font-size:11px;margin-top:8px">Click and drag to draw a circle. Right-click to remove last circle.</div>
+      <div style="color:var(--text-dim);font-size:11px;margin-top:8px">Tap and drag to draw a circle. Tap Undo to remove the last circle.</div>
     `;
     document.body.appendChild(overlay);
 
@@ -4843,7 +5045,7 @@ function openAnnotateTool(src, sessionId, imgIndex) {
     // Touch support
     canvas.addEventListener('touchstart', e => { e.preventDefault(); const t = e.touches[0]; annotateMouseDown({ clientX: t.clientX, clientY: t.clientY }); }, { passive: false });
     canvas.addEventListener('touchmove',  e => { e.preventDefault(); const t = e.touches[0]; annotateMouseMove({ clientX: t.clientX, clientY: t.clientY }); }, { passive: false });
-    canvas.addEventListener('touchend',   e => { e.preventDefault(); annotateMouseUp({}); }, { passive: false });
+    canvas.addEventListener('touchend',   e => { e.preventDefault(); const t = e.changedTouches[0]; annotateMouseUp({ clientX: t.clientX, clientY: t.clientY }); }, { passive: false });
   }
   overlay.style.display = 'flex';
   setAnnotateColor('#ff4444');
@@ -4862,7 +5064,7 @@ function setAnnotateColor(c) {
   _annotateColor = c;
   document.querySelectorAll('[id^="ann-col-"]').forEach(b => b.style.border = '2px solid transparent');
   const btn = document.getElementById('ann-col-' + c.replace('#', ''));
-  if (btn) btn.style.border = '2px solid white';
+  if (btn) btn.style.border = '2px solid var(--accent)';
 }
 function getAnnotateRadius() {
   const inp = document.getElementById('ann-radius');
@@ -4871,36 +5073,38 @@ function getAnnotateRadius() {
   const scale = img ? img.offsetWidth / img.naturalWidth : 1;
   return inp ? parseInt(inp.value) : 20;
 }
+function annotateCanvasCoords(canvas, clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+}
 function annotateMouseDown(e) {
   const canvas = document.getElementById('annotate-canvas');
-  const rect = canvas.getBoundingClientRect();
-  _annotateDrawing = { startX: e.clientX - rect.left, startY: e.clientY - rect.top };
+  const { x, y } = annotateCanvasCoords(canvas, e.clientX, e.clientY);
+  _annotateDrawing = { startX: x, startY: y };
+  _annotateLastRadius = 20;
 }
 function annotateMouseMove(e) {
   if (!_annotateDrawing) return;
   const canvas = document.getElementById('annotate-canvas');
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left, y = e.clientY - rect.top;
+  const { x, y } = annotateCanvasCoords(canvas, e.clientX, e.clientY);
   const r = Math.sqrt((x - _annotateDrawing.startX) ** 2 + (y - _annotateDrawing.startY) ** 2);
+  _annotateLastRadius = r;
   redrawAnnotations();
   const ctx = canvas.getContext('2d');
   drawCircle(ctx, _annotateDrawing.startX, _annotateDrawing.startY, r, _annotateColor, true);
 }
 function annotateMouseUp(e) {
   if (!_annotateDrawing) return;
-  const canvas = document.getElementById('annotate-canvas');
-  const rect = canvas.getBoundingClientRect();
-  let r;
-  if (e.clientX != null) {
-    const x = e.clientX - rect.left, y = e.clientY - rect.top;
-    r = Math.sqrt((x - _annotateDrawing.startX) ** 2 + (y - _annotateDrawing.startY) ** 2);
-  } else {
-    r = getAnnotateRadius();
-  }
+  // Use the radius saved from the last move — this matches the preview the user saw.
+  // Fall back to the slider only if no move occurred (tap without drag).
+  const r = _annotateLastRadius > 3 ? _annotateLastRadius : getAnnotateRadius();
   if (r > 3) {
     _annotateCircles.push({ x: _annotateDrawing.startX, y: _annotateDrawing.startY, r, color: _annotateColor });
   }
   _annotateDrawing = null;
+  _annotateLastRadius = 20;
   redrawAnnotations();
 }
 function drawCircle(ctx, x, y, r, color, preview) {
@@ -4973,7 +5177,7 @@ function saveSession(id, sourcePlanId) {
     const _cl = t.checklist || {};
     const _ci = _cl.items || {};
     const _fwIds = DB.firearms.filter(fw => (_ci[`f_${fw.id}`]||{}).take).map(fw => fw.id);
-    if (!_fwIds.length) { alert('Select at least one firearm in the Firearms checklist.'); return; }
+    if (!_fwIds.length) { showToast('Select at least one firearm in the checklist.'); return; }
     t.firearmId = _fwIds[0];
     t.firearmSplits = [];
     t.multiFirearm = false;
@@ -5026,8 +5230,8 @@ function saveSession(id, sourcePlanId) {
     t.totalRounds = t.ammoUsage.reduce((s, u) => s + u.rounds, 0);
   }
 
-  if (!t.date) { alert('Date required'); return; }
-  if (!t.firearmId) { alert('Firearm required'); return; }
+  if (!t.date) { showToast('Date required'); return; }
+  if (!t.firearmId) { showToast('Firearm required'); return; }
 
   // Read selected mags from the session modal checkboxes
   const selectedMagIds = [...document.querySelectorAll('.se-mag-check:checked')].map(el => el.value);
@@ -5184,13 +5388,16 @@ function cancelInlineMatchPct(id) {
 }
 function deleteSession(id) {
   const s = DB.sessions.find(x => x.id === id);
-  const rangeFeeNote = s && s.planned && parseFloat(s.rangeFee) > 0 ? ` Any range/class fee ($${parseFloat(s.rangeFee).toFixed(2)}) will be removed from your Costs.` : '';
+  const rangeFeeNote = s && s.planned && parseFloat(s.rangeFee) > 0 ? ` Range fee ($${parseFloat(s.rangeFee).toFixed(2)}) will be removed from Costs.` : '';
   const msg = s && s.planned
-    ? `Delete this planned session? No ammunition inventory changes will be made.${rangeFeeNote}`
-    : 'Move this session to Recently Deleted? Ammo will be returned to inventory.';
-  if (!confirm(msg)) return;
-  softDelete('session', id);
-  renderSessions();
+    ? `Delete this planned session?${rangeFeeNote}`
+    : 'Move this session to Recently Deleted?';
+  showActionSheet(msg, [
+    { label: s && s.planned ? 'Delete Plan' : 'Move to Recently Deleted', style: 'danger', fn: () => {
+      softDelete('session', id);
+      renderSessions();
+    }}
+  ]);
 }
 
 /* ============================================================
@@ -5231,7 +5438,7 @@ function renderPRsPane() {
   const prs = personalRecords();
   const recs = allDrillRecords();
   if (!recs.length) {
-    return `<div class="card"><div class="empty"><div class="icon">&#9733;</div>No drill data yet. Log a session with drill scores to start tracking PRs.</div></div>`;
+    return `<div class="card"><div class="empty"><div class="icon">⭐</div>No drill data yet. Log a session with drill scores to start tracking PRs.</div></div>`;
   }
   return `
     <div class="grid grid-2">
@@ -5290,9 +5497,9 @@ function renderGoalsPane() {
         <button class="btn" onclick="openGoalModal()">+ Add Goal</button>
       </div>
       <hr>
-      <strong style="font-size:13px;font-weight:600;color:var(--text-dim)">Open (${open.length})</strong>
+      <div style="font-size:13px;font-weight:600;color:var(--text-dim);padding:6px 0 4px">Open (${open.length})</div>
       ${open.length ? open.map(g => goalRow(g)).join('') : '<div class="empty">No open goals. Set one to give your training direction.</div>'}
-      ${done.length ? `<hr><strong style="font-size:13px;font-weight:600;color:var(--text-dim)">Achieved (${done.length})</strong>${done.map(g => goalRow(g)).join('')}` : ''}
+      ${done.length ? `<hr><div style="font-size:13px;font-weight:600;color:var(--text-dim);padding:6px 0 4px">Achieved (${done.length})</div>${done.map(g => goalRow(g)).join('')}` : ''}
     </div>
     <div class="card">
       <h3>Suggested Goals to Get Started</h3>
@@ -5344,7 +5551,7 @@ function openGoalModal() {
 }
 function saveGoal() {
   const text = document.getElementById('g-text').value.trim();
-  if (!text) { alert('Goal text required'); return; }
+  if (!text) { showToast('Goal text required'); return; }
   DB.goals.push({
     id: uid('g'),
     text,
@@ -5364,9 +5571,12 @@ function toggleGoal(id) {
   saveDB(); renderProgress();
 }
 function deleteGoal(id) {
-  if (!confirm('Delete this goal?')) return;
-  DB.goals = DB.goals.filter(g => g.id !== id);
-  saveDB(); renderProgress();
+  showActionSheet('Delete this goal?', [
+    { label: 'Delete Goal', style: 'danger', fn: () => {
+      DB.goals = DB.goals.filter(g => g.id !== id);
+      saveDB(); renderProgress();
+    }}
+  ]);
 }
 
 function renderSkillsPane() {
@@ -5460,9 +5670,12 @@ function saveAssessment() {
   saveDB(); closeModal(); renderProgress();
 }
 function deleteAssessment(id) {
-  if (!confirm('Delete this assessment?')) return;
-  DB.skillAssessments = DB.skillAssessments.filter(a => a.id !== id);
-  saveDB(); renderProgress();
+  showActionSheet('Delete this assessment?', [
+    { label: 'Delete Assessment', style: 'danger', fn: () => {
+      DB.skillAssessments = DB.skillAssessments.filter(a => a.id !== id);
+      saveDB(); renderProgress();
+    }}
+  ]);
 }
 
 function renderTrendsPane() {
@@ -5700,7 +5913,7 @@ function renderMatchesPane() {
     return true;
   });
   const hasFilter = mf.dateFrom || mf.dateTo || mf.firearmId || mf.matchType || mf.keyword;
-  if (!allMatches.length) return `<div class="card"><div class="empty"><div class="icon">&#9819;</div>No matches logged yet.<br><br><button class="btn" onclick="openMatchModal()">Log first match</button></div></div>`;
+  if (!allMatches.length) return `<div class="card"><div class="empty"><div class="icon">🏆</div>No matches logged yet.<br><br><button class="btn" onclick="openMatchModal()">Log first match</button></div></div>`;
 
   // Cost rollup (always from allMatches for accurate totals)
   const thisYear = new Date().getFullYear();
@@ -5718,29 +5931,29 @@ function renderMatchesPane() {
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end">
         <div>
           <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">From</label>
-          <input type="date" value="${mf.dateFrom}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMatchFilter('dateFrom',this.value)">
+          <input type="date" value="${mf.dateFrom}" style="width:100%;height:34px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMatchFilter('dateFrom',this.value)">
         </div>
         <div>
           <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">To</label>
-          <input type="date" value="${mf.dateTo}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMatchFilter('dateTo',this.value)">
+          <input type="date" value="${mf.dateTo}" style="width:100%;height:34px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMatchFilter('dateTo',this.value)">
         </div>
         <div>
           <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">Firearm</label>
-          <select style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateMatchFilter('firearmId',this.value)">
+          <select style="width:100%;height:34px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateMatchFilter('firearmId',this.value)">
             <option value="">All firearms</option>
             ${DB.firearms.map(fw => `<option value="${fw.id}" ${mf.firearmId===fw.id?'selected':''}>${escapeHtml(fw.name)}</option>`).join('')}
           </select>
         </div>
         <div>
           <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">Match Type</label>
-          <select style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateMatchFilter('matchType',this.value)">
+          <select style="width:100%;height:34px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateMatchFilter('matchType',this.value)">
             <option value="">All types</option>
             ${['USPSA','IDPA','Three-Gun','Steel Challenge','Sporting Clays','Other'].map(t => `<option value="${t}" ${mf.matchType===t?'selected':''}>${t}</option>`).join('')}
           </select>
         </div>
         <div>
           <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">Search</label>
-          <input type="search" placeholder="Name, location, division…" value="${escapeHtml(mf.keyword)}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMatchFilter('keyword',this.value)">
+          <input type="search" placeholder="Name, location, division…" value="${escapeHtml(mf.keyword)}" style="width:100%;height:34px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMatchFilter('keyword',this.value)">
         </div>
         <div style="display:flex;align-items:flex-end">
           ${hasFilter ? `<button class="btn small secondary" onclick="clearMatchFilter()" style="width:100%">&#10005; Clear</button>` : '<div></div>'}
@@ -5772,7 +5985,7 @@ function renderMatchesPane() {
       </div>`;
     })()}
 
-    ${matches.length ? matches.map(m => matchCard(m)).join('') : `<div class="card"><div class="empty"><div class="icon">&#9819;</div>No matches match the current filters.<br><br><button class="btn secondary" onclick="clearMatchFilter()">Clear Filters</button></div></div>`}
+    ${matches.length ? matches.map(m => matchCard(m)).join('') : `<div class="card"><div class="empty"><div class="icon">🏆</div>No matches match the current filters.<br><br><button class="btn secondary" onclick="clearMatchFilter()">Clear Filters</button></div></div>`}
   `;
 }
 
@@ -5875,7 +6088,7 @@ function stageTimelineChart(matches) {
     const tx2 = xFor(points[n - 1].date);
     const trendDir = slope > 0.3 ? '↑ Improving' : slope < -0.3 ? '↓ Declining' : '→ Stable';
     const trendColor = slope > 0.3 ? 'var(--success)' : slope < -0.3 ? 'var(--danger)' : 'var(--text-dim)';
-    grid += `<line x1="${tx1.toFixed(1)}" y1="${ty1.toFixed(1)}" x2="${tx2.toFixed(1)}" y2="${ty2.toFixed(1)}" stroke="#4a9eff" stroke-width="1.5" opacity="0.7"/>`;
+    grid += `<line x1="${tx1.toFixed(1)}" y1="${ty1.toFixed(1)}" x2="${tx2.toFixed(1)}" y2="${ty2.toFixed(1)}" stroke="var(--info)" stroke-width="1.5" opacity="0.7"/>`;
     grid += `<text x="${W - padR}" y="${padT + 8}" text-anchor="end" fill="${trendColor}" font-size="10">${trendDir}</text>`;
   }
 
@@ -5891,7 +6104,7 @@ function stageTimelineChart(matches) {
 
   const legend = `<text x="${padL}" y="${H - 2}" fill="var(--text-dim)" font-size="8">● Stage %</text>
     <text x="${padL + 48}" y="${H - 2}" fill="var(--accent)" font-size="8">● Match %</text>
-    <text x="${padL + 96}" y="${H - 2}" fill="#4a9eff" font-size="8">— Trend</text>`;
+    <text x="${padL + 96}" y="${H - 2}" fill="var(--info)" font-size="8">— Trend</text>`;
 
   return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto" xmlns="http://www.w3.org/2000/svg">
     ${grid}${stageDots}${matchPath ? `<path d="${matchPath}" stroke="var(--accent)" stroke-width="1.5" fill="none" opacity="0.5"/>` : ''}${matchDots}${legend}
@@ -5911,7 +6124,7 @@ function matchCard(m) {
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
-          <div style="font-size:18px;font-weight:600">${escapeHtml(m.name || 'Match')}</div>
+          <div style="font-size:17px;font-weight:600">${escapeHtml(m.name || 'Match')}</div>
           <div class="text-dim" style="font-size:13px;margin-top:2px">${formatDate(m.date)} &middot; ${escapeHtml(m.location || '—')} &middot; ${escapeHtml(m.matchType || 'USPSA')}</div>
         </div>
         <div style="text-align:right">
@@ -5938,7 +6151,12 @@ function matchCard(m) {
       ${m.cost != null && m.cost !== '' ? `<div style="font-size:13px;color:var(--text-dim);margin-bottom:8px"><strong style="color:var(--text)">Cost:</strong> $${Number(m.cost).toFixed(2)}</div>` : ''}
       ${finishLabel ? `<div style="font-size:13px;color:var(--text-dim);margin-bottom:8px"><strong style="color:var(--text)">Finish:</strong> ${finishLabel}</div>` : ''}
       ${m.practiScoreUrl ? `<div style="margin-bottom:10px"><a href="${escapeHtml(m.practiScoreUrl)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;color:var(--accent);font-size:13px;font-weight:600;text-decoration:none;border:1px solid var(--accent);border-radius:6px;padding:5px 12px">&#9654; View PractiScore Results</a></div>` : ''}
-      ${stages.length ? `<details><summary class="text-accent">Stage breakdown (${stages.length})</summary><div style="padding-top:8px"><table><thead><tr><th>#</th><th>Name</th><th>Points</th><th>Time</th><th>HF</th><th>Stage %</th></tr></thead><tbody>${stages.map(st => `<tr><td>${st.number||''}</td><td>${escapeHtml(st.name||'')}</td><td>${st.points||'—'}</td><td>${st.time||'—'}</td><td>${(st.hitFactor!=null && !isNaN(st.hitFactor)) ? Number(st.hitFactor).toFixed(3) : (calcHitFactor(st.points,st.time)||0).toFixed(3)}</td><td>${st.stagePercent!=null ? Number(st.stagePercent).toFixed(2)+'%' : '—'}</td></tr>`).join('')}</tbody></table></div></details>` : ''}
+      ${stages.length ? `<div style="margin-top:8px">
+        <button onclick="(function(b){var body=b.nextElementSibling,ch=b.querySelector('.mcard-chev');body.hidden=!body.hidden;ch.style.transform=body.hidden?'rotate(0deg)':'rotate(90deg)'})(this)" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--accent);padding:0 0 6px">
+          <span class="mcard-chev" style="transition:transform 0.2s;display:inline-block">›</span> Stage breakdown (${stages.length})
+        </button>
+        <div hidden style="overflow:hidden"><table><thead><tr><th>#</th><th>Name</th><th>Points</th><th>Time</th><th>HF</th><th>Stage %</th></tr></thead><tbody>${stages.map(st => `<tr><td>${st.number||''}</td><td>${escapeHtml(st.name||'')}</td><td>${st.points||'—'}</td><td>${st.time||'—'}</td><td>${(st.hitFactor!=null && !isNaN(st.hitFactor)) ? Number(st.hitFactor).toFixed(3) : (calcHitFactor(st.points,st.time)||0).toFixed(3)}</td><td>${st.stagePercent!=null ? Number(st.stagePercent).toFixed(2)+'%' : '—'}</td></tr>`).join('')}</tbody></table></div>
+      </div>` : ''}
       ${m.notes ? `<div style="margin-top:10px;font-size:13px;color:var(--text-dim);white-space:pre-wrap">${escapeHtml(m.notes)}</div>` : ''}
       <div class="row-actions" style="margin-top:14px">
         <button class="btn small secondary" onclick="openMatchModal('${m.id}')">Edit</button>
@@ -5950,33 +6168,33 @@ function matchCard(m) {
 
 function renderClassifiersPane() {
   const list = [...(DB.classifiers || [])].sort((a, b) => b.date.localeCompare(a.date));
-  if (!list.length) return `<div class="card"><div class="empty"><div class="icon">&#9658;</div>No classifiers logged yet.<br><br><button class="btn" onclick="openClassifierModal()">Log first classifier</button></div></div>`;
-  return `<div class="card"><table>
-    <thead><tr><th>Date</th><th>Code</th><th>Name</th><th>Division</th><th>PF</th><th>Points</th><th>Time</th><th>HF</th><th>HHF</th><th>%</th><th>Class</th><th></th></tr></thead>
+  if (!list.length) return `<div class="card"><div class="empty"><div class="icon">📊</div>No classifiers logged yet.<br><br><button class="btn" onclick="openClassifierModal()">Log first classifier</button></div></div>`;
+  return `<div class="card"><div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table>
+    <thead><tr><th>Date</th><th>Code</th><th class="col-desktop">Name</th><th class="col-desktop">Division</th><th class="col-desktop">PF</th><th class="col-desktop">Points</th><th class="col-desktop">Time</th><th class="col-desktop">HF</th><th class="col-desktop">HHF</th><th>%</th><th>Class</th><th></th></tr></thead>
     <tbody>${list.map(c => {
       const cls = classFromPercent(c.classifierPercent);
       const clsBadge = c.classifierPercent >= 95 ? 'pr' : c.classifierPercent >= 75 ? 'success' : c.classifierPercent >= 60 ? 'info' : 'neutral';
       return `<tr>
         <td>${formatDate(c.date)}</td>
         <td><strong>${escapeHtml(c.classifierCode || '')}</strong></td>
-        <td>${escapeHtml(c.classifierName || '')}</td>
-        <td>${escapeHtml(c.division || '')}</td>
-        <td>${escapeHtml(c.powerFactor || '')}</td>
-        <td>${c.points != null ? c.points : '—'}</td>
-        <td>${c.time != null ? Number(c.time).toFixed(2) : '—'}</td>
-        <td>${c.hitFactor != null ? Number(c.hitFactor).toFixed(3) : '—'}</td>
-        <td>${c.highHitFactor || '—'}</td>
+        <td class="col-desktop">${escapeHtml(c.classifierName || '')}</td>
+        <td class="col-desktop">${escapeHtml(c.division || '')}</td>
+        <td class="col-desktop">${escapeHtml(c.powerFactor || '')}</td>
+        <td class="col-desktop">${c.points != null ? c.points : '—'}</td>
+        <td class="col-desktop">${c.time != null ? Number(c.time).toFixed(2) : '—'}</td>
+        <td class="col-desktop">${c.hitFactor != null ? Number(c.hitFactor).toFixed(3) : '—'}</td>
+        <td class="col-desktop">${c.highHitFactor || '—'}</td>
         <td><strong>${c.classifierPercent != null ? Number(c.classifierPercent).toFixed(2) + '%' : '—'}</strong></td>
         <td><span class="badge ${clsBadge}">${cls}</span></td>
         <td class="row-actions"><button class="btn small secondary" onclick="openClassifierModal('${c.id}')">Edit</button><button class="btn small danger" onclick="deleteClassifier('${c.id}')">&times;</button></td>
       </tr>`;
     }).join('')}</tbody>
-  </table></div>`;
+  </table></div></div>`;
 }
 
 function renderClassificationPane() {
   const divs = divisionsWithClassifiers();
-  if (!divs.length) return `<div class="card"><div class="empty"><div class="icon">&#9733;</div>No classifiers logged yet. Add a classifier to see your classification.</div></div>`;
+  if (!divs.length) return `<div class="card"><div class="empty"><div class="icon">⭐</div>No classifiers logged yet. Add a classifier to see your classification.</div></div>`;
   return `
     <div class="alert info" style="margin-bottom:16px">&#9432; Classification estimates use the standard "best 4 of last 8 classifiers" rule per division. Official USPSA classification numbers come from your USPSA member portal.</div>
     <div class="grid grid-2">
@@ -5988,14 +6206,14 @@ function renderClassificationPane() {
         return `<div class="card">
           <h3>${escapeHtml(d)}</h3>
           <div style="display:flex;justify-content:space-between;align-items:center">
-            <div><div style="font-size:36px;font-weight:600;color:var(--accent)">${c.percent.toFixed(2)}%</div><div class="text-dim" style="font-size:13px">Best ${c.used.length} of last ${c.poolSize} ${need}</div></div>
-            <div style="font-size:42px;font-weight:600"><span class="badge ${tier}" style="font-size:24px;padding:6px 14px">${c.class}</span></div>
+            <div><div style="font-size:28px;font-weight:600;color:var(--accent)">${c.percent.toFixed(2)}%</div><div class="text-dim" style="font-size:13px">Best ${c.used.length} of last ${c.poolSize} ${need}</div></div>
+            <div><span class="badge ${tier}" style="font-size:22px;padding:6px 16px">${c.class}</span></div>
           </div>
           <hr>
           <div style="font-size:13px;color:var(--text-dim);line-height:1.8">
             <strong style="color:var(--text)">Class thresholds:</strong> GM ≥ 95% &middot; M ≥ 85% &middot; A ≥ 75% &middot; B ≥ 60% &middot; C ≥ 40% &middot; D < 40%
           </div>
-          <div style="margin-top:12px"><strong style="font-size:13px;color:var(--text-dim)">Scores Used</strong><div style="margin-top:6px">${c.used.map(x => `<div style="font-size:13px;padding:4px 0;border-bottom:1px dotted var(--border)"><span class="text-dim">${formatDate(x.date)}</span> &middot; ${escapeHtml(x.classifierCode||'')} &middot; <strong style="color:var(--accent)">${x.classifierPercent.toFixed(2)}%</strong></div>`).join('')}</div></div>
+          <div style="margin-top:12px"><div style="font-size:13px;font-weight:600;color:var(--text-dim);padding:6px 0 4px">Scores Used</div><div style="margin-top:6px">${c.used.map(x => `<div style="font-size:13px;padding:4px 0;border-bottom:1px dotted var(--border)"><span class="text-dim">${formatDate(x.date)}</span> &middot; ${escapeHtml(x.classifierCode||'')} &middot; <strong style="color:var(--accent)">${x.classifierPercent.toFixed(2)}%</strong></div>`).join('')}</div></div>
         </div>`;
       }).join('')}
     </div>
@@ -6044,23 +6262,23 @@ function bestPerClassifierTable() {
   });
   rows.sort((a, b) => b.best.classifierPercent - a.best.classifierPercent);
   return `<table>
-    <thead><tr><th>Code</th><th>Name</th><th>Division</th><th>Attempts</th><th>Best %</th><th>Best Class</th><th>Date of Best</th><th>Improvement</th></tr></thead>
+    <thead><tr><th>Code</th><th class="col-desktop">Name</th><th class="col-desktop">Division</th><th class="col-desktop">Attempts</th><th>Best %</th><th>Best Class</th><th class="col-desktop">Date of Best</th><th class="col-desktop">Improvement</th></tr></thead>
     <tbody>${rows.map(r => {
       const cls = classFromPercent(r.best.classifierPercent);
       const clsBadge = r.best.classifierPercent >= 95 ? 'pr' : r.best.classifierPercent >= 75 ? 'success' : r.best.classifierPercent >= 60 ? 'info' : 'neutral';
       const impLabel = r.improvement == null ? '<span class="text-dim">—</span>' : (r.improvement > 0 ? `<span class="text-success">+${r.improvement.toFixed(2)}%</span>` : `<span class="text-dim">${r.improvement.toFixed(2)}%</span>`);
       return `<tr>
         <td><strong>${escapeHtml(r.code)}</strong></td>
-        <td>${escapeHtml(r.name)}</td>
-        <td>${escapeHtml(r.division)}</td>
-        <td>${r.attempts}</td>
+        <td class="col-desktop">${escapeHtml(r.name)}</td>
+        <td class="col-desktop">${escapeHtml(r.division)}</td>
+        <td class="col-desktop">${r.attempts}</td>
         <td><strong>${r.best.classifierPercent.toFixed(2)}%</strong></td>
         <td><span class="badge ${clsBadge}">${cls}</span></td>
-        <td>${formatDate(r.best.date)}</td>
-        <td>${impLabel}</td>
+        <td class="col-desktop">${formatDate(r.best.date)}</td>
+        <td class="col-desktop">${impLabel}</td>
       </tr>`;
     }).join('')}</tbody>
-  </table>`;
+  </table></div>`;
 }
 
 function classifierProgressChart() {
@@ -6071,7 +6289,7 @@ function classifierProgressChart() {
   const maxD = new Date(all[all.length-1].date).getTime() || minD + 1;
   const xFor = d => padL + ((new Date(d).getTime() - minD) / Math.max(1, maxD - minD)) * (W - padL - padR);
   const yFor = v => H - padB - (Math.min(120, v) / 120) * (H - padT - padB);
-  const palette = ['var(--accent)','var(--info)','var(--success)','var(--warn)','#bb86fc','#03dac6'];
+  const palette = ['var(--accent)','var(--info)','var(--success)','var(--warn)','#AF52DE','#FF6B00'];
   const divs = divisionsWithClassifiers();
   let lines = '';
   let legend = '';
@@ -6106,7 +6324,7 @@ function openMatchModal(id) {
     practiScoreUrl: '',
     notes: '', stages: [{ number: 1, name: '', points: '', time: '', hitFactor: '', stagePercent: '', notes: '' }]
   };
-  if (!DB.firearms.length) { alert('Add a firearm first.'); return; }
+  if (!DB.firearms.length) { showToast('Add a firearm first.'); return; }
   openModal(`
     <div class="modal-header"><h3>${id?'Edit':'Log'} Match</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
     <div class="modal-body" style="max-height:70vh;overflow-y:auto">
@@ -6144,12 +6362,12 @@ function openMatchModal(id) {
       </div>
       <hr>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <strong>Stages</strong>
+        <div style="font-size:13px;font-weight:600;color:var(--text-dim)">Stages</div>
         <button class="btn small secondary" onclick="addStageRow()">+ Add Stage</button>
       </div>
       <div id="mt-stages"></div>
       <hr>
-      <strong>Final Results (fill in after match posts)</strong>
+      <div style="font-size:13px;font-weight:600;color:var(--text-dim);margin-top:4px">Final Results <span style="font-weight:400;color:var(--text-dim)">(fill in after match posts)</span></div>
       <div class="form-grid-2" style="margin-top:8px">
         <div class="form-row"><label>Match Percentage ${tip('Your score as a percentage of the match winner\'s score. Found on your PractiScore results page after the match posts.')}</label><input id="mt-matchpct" type="number" step="0.01" value="${m.matchPercentage}" placeholder="e.g. 78.45"></div>
         <div class="form-row"><label>Division Percentage ${tip('Your score as a percentage of the division winner\'s score. May differ from match % if the division winner isn\'t the match winner.')}</label><input id="mt-divpct" type="number" step="0.01" value="${m.divisionPercentage}" placeholder="e.g. 82.30"></div>
@@ -6237,7 +6455,7 @@ function saveMatch(id) {
     stagePercent: parseFloat(s.stagePercent) || null,
     number: parseInt(s.number) || null
   }));
-  if (!t.date) { alert('Date required'); return; }
+  if (!t.date) { showToast('Date required'); return; }
   if (!DB.matches) DB.matches = [];
   if (id) {
     const idx = DB.matches.findIndex(x => x.id === id);
@@ -6252,9 +6470,12 @@ function saveMatch(id) {
   saveDB(); closeModal(); renderCompetition();
 }
 function deleteMatch(id) {
-  if (!confirm('Delete this match record?')) return;
-  DB.matches = (DB.matches || []).filter(x => x.id !== id);
-  saveDB(); renderCompetition();
+  showActionSheet('Delete this match record?', [
+    { label: 'Delete Match', style: 'danger', fn: () => {
+      DB.matches = (DB.matches || []).filter(x => x.id !== id);
+      saveDB(); renderCompetition();
+    }}
+  ]);
 }
 
 /* ----- Stage Timeline ----- */
@@ -6277,7 +6498,7 @@ function renderStageTimelinePane() {
   points.sort((a, b) => a.date.localeCompare(b.date));
 
   if (points.length < 2) {
-    return `<div class="card"><div class="empty"><div class="icon">&#9819;</div>Need at least 2 stages with percentages logged across your matches to display the timeline.<br><br>Enter Stage % values when logging match results.</div></div>`;
+    return `<div class="card"><div class="empty"><div class="icon">🏆</div>Need at least 2 stages with percentages logged across your matches to display the timeline.<br><br>Enter Stage % values when logging match results.</div></div>`;
   }
 
   const W = 700, H = 240, padL = 44, padB = 36, padT = 20, padR = 16;
@@ -6371,7 +6592,7 @@ function openClassifierModal(id) {
     A: '', C: '', D: '', M: '', NS: '', procedurals: '',
     matchId: '', notes: ''
   };
-  if (!DB.firearms.length) { alert('Add a firearm first.'); return; }
+  if (!DB.firearms.length) { showToast('Add a firearm first.'); return; }
   openModal(`
     <div class="modal-header"><h3>${id?'Edit':'Log'} Classifier</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
     <div class="modal-body" style="max-height:70vh;overflow-y:auto">
@@ -6409,7 +6630,7 @@ function openClassifierModal(id) {
         <input id="cl-pct" readonly value="${c.classifierPercent != null && c.classifierPercent !== '' ? Number(c.classifierPercent).toFixed(2) + '%' : ''}" style="background:var(--panel-2);font-size:17px;font-weight:600;color:var(--accent)">
       </div>
       <hr>
-      <strong>Hit Breakdown (optional)</strong>
+      <div style="font-size:13px;font-weight:600;color:var(--text-dim)">Hit Breakdown <span style="font-weight:400">(optional)</span></div>
       <div class="form-grid-3" style="margin-top:8px">
         <div class="form-row"><label>A</label><input id="cl-A" type="number" min="0" value="${c.A}"></div>
         <div class="form-row"><label>C</label><input id="cl-C" type="number" min="0" value="${c.C}"></div>
@@ -6490,7 +6711,7 @@ function saveClassifier(id) {
     procedurals: parseInt(document.getElementById('cl-proc').value) || null,
     notes: document.getElementById('cl-notes').value.trim()
   };
-  if (!data.date) { alert('Date required'); return; }
+  if (!data.date) { showToast('Date required'); return; }
   if (!DB.classifiers) DB.classifiers = [];
   if (id) {
     const idx = DB.classifiers.findIndex(x => x.id === id);
@@ -6504,9 +6725,12 @@ function saveClassifier(id) {
   saveDB(); closeModal(); renderCompetition();
 }
 function deleteClassifier(id) {
-  if (!confirm('Delete this classifier record?')) return;
-  DB.classifiers = (DB.classifiers || []).filter(x => x.id !== id);
-  saveDB(); renderCompetition();
+  showActionSheet('Delete this classifier record?', [
+    { label: 'Delete Classifier', style: 'danger', fn: () => {
+      DB.classifiers = (DB.classifiers || []).filter(x => x.id !== id);
+      saveDB(); renderCompetition();
+    }}
+  ]);
 }
 
 /* ============================================================
@@ -6880,7 +7104,7 @@ function renderCostsLog() {
           .map(s => ({ s, cost: sessionAmmoCost(s) }))
           .filter(x => x.cost > 0 || (parseFloat(x.s.rangeFee) || 0) > 0);
         if (!rows.length) return `<div class="empty">No session cost data yet. Add a cost/round to your ammo records, then it will appear here.</div>`;
-        return `<table>
+        return `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table>
           <thead><tr><th>Date</th><th>Firearm</th><th>Location</th><th>Rounds</th><th>Ammo Cost</th><th>Range Fee</th><th>Session Total</th></tr></thead>
           <tbody>${rows.map(({ s, cost }) => {
             const f = getFirearm(s.firearmId);
@@ -6895,7 +7119,7 @@ function renderCostsLog() {
               <td><strong>$${(cost + rf).toFixed(2)}</strong></td>
             </tr>`;
           }).join('')}</tbody>
-        </table>`;
+        </table></div>`;
       })()}
     </div>
 
@@ -6905,7 +7129,7 @@ function renderCostsLog() {
         <button class="btn small" onclick="openPurchaseModal()">+ Add Purchase</button>
       </div>
       ${(DB.purchases || []).length ? `
-        <table>
+        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table>
           <thead><tr><th>Date</th><th>Category</th><th>Item</th><th>Vendor</th><th>Cost</th><th>Notes</th><th></th></tr></thead>
           <tbody>${[...(DB.purchases || [])].sort((a, b) => b.date.localeCompare(a.date)).map(p => `
             <tr>
@@ -6921,8 +7145,8 @@ function renderCostsLog() {
               </td>
             </tr>
           `).join('')}</tbody>
-        </table>
-      ` : `<div class="empty"><div class="icon">&#9654;</div>No purchases logged yet.<br><br><button class="btn" onclick="openPurchaseModal()">Add first purchase</button></div>`}
+        </table></div>
+      ` : `<div class="empty"><div class="icon">💰</div>No purchases logged yet.<br><br><button class="btn" onclick="openPurchaseModal()">Add first purchase</button></div>`}
     </div>
   `;
 }
@@ -7008,7 +7232,7 @@ function savePurchase(id) {
     data.ammoId = document.getElementById('pu-ammoId').value || '';
     data.addToInventory = !!document.getElementById('pu-addToInv').checked;
   }
-  if (!data.item) { alert('Item name required'); return; }
+  if (!data.item) { showToast('Item name required'); return; }
   if (!DB.purchases) DB.purchases = [];
 
   // Capture previous version (for edit) so we can reverse a prior inventory bump
@@ -7036,14 +7260,17 @@ function savePurchase(id) {
 
 /** Delete a purchase record by id. Reverses any inventory bump it added. */
 function deletePurchase(id) {
-  if (!confirm('Delete this purchase record?')) return;
-  const p = (DB.purchases || []).find(x => x.id === id);
-  if (p && p.category === 'Ammo Purchase' && p.addToInventory && p.ammoId && p.rounds) {
-    const a = getAmmo(p.ammoId);
-    if (a) a.quantity = Math.max(0, (a.quantity || 0) - parseFloat(p.rounds));
-  }
-  DB.purchases = (DB.purchases || []).filter(x => x.id !== id);
-  saveDB(); renderCosts();
+  showActionSheet('Delete this purchase record?', [
+    { label: 'Delete Purchase', style: 'danger', fn: () => {
+      const p = (DB.purchases || []).find(x => x.id === id);
+      if (p && p.category === 'Ammo Purchase' && p.addToInventory && p.ammoId && p.rounds) {
+        const a = getAmmo(p.ammoId);
+        if (a) a.quantity = Math.max(0, (a.quantity || 0) - parseFloat(p.rounds));
+      }
+      DB.purchases = (DB.purchases || []).filter(x => x.id !== id);
+      saveDB(); renderCosts();
+    }}
+  ]);
 }
 
 /* ============================================================
@@ -7057,20 +7284,25 @@ function renderHelp() {
   function helpSection(icon, title, content) {
     // Strip HTML tags for search indexing
     const searchText = (title + ' ' + content.replace(/<[^>]+>/g, ' ')).toLowerCase();
-    return `<details class="help-section" data-search="${searchText.replace(/"/g,'&quot;')}" style="margin-bottom:10px" open>
-      <summary style="font-size:15px;font-weight:600">${icon} ${escapeHtml(title)}</summary>
-      <div style="padding:12px 0 4px 16px;font-size:13px;color:var(--text-dim);line-height:1.8">${content}</div>
-    </details>`;
+    return `<div class="help-section" data-search="${searchText.replace(/"/g,'&quot;')}" style="margin-bottom:0">
+      <button class="help-section-toggle" onclick="toggleHelpSection(this)">
+        <span>${icon} ${escapeHtml(title)}</span>
+        <span class="help-chevron">›</span>
+      </button>
+      <div class="help-section-body" hidden>
+        <div style="padding:12px 0 12px 4px;font-size:13px;color:var(--text-dim);line-height:1.8">${content}</div>
+      </div>
+    </div>`;
   }
 
   v.innerHTML = `
     <div class="view-header">
       <div><h2>Help &amp; Guide ${sectionHelpBtn('help')}</h2><div class="sub">How to use every section of Pistol Tracker</div></div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn secondary" onclick="startOnboarding()">&#9881; Setup Wizard</button>
-        <button class="btn secondary" onclick="startFullTour()">&#128506; Full Tour</button>
-        <button class="btn secondary" onclick="startTour()">&#9654; Quick Tour</button>
-      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
+      <button class="btn secondary" onclick="startOnboarding()">&#9881; Setup Wizard</button>
+      <button class="btn secondary" onclick="startFullTour()">&#128506; Full Tour</button>
+      <button class="btn secondary" onclick="startTour()">&#9654; Quick Tour</button>
     </div>
     ${sectionHelpPanel('help')}
     <!-- Help search bar -->
@@ -7083,7 +7315,7 @@ function renderHelp() {
     </div>
     <div id="help-no-results" style="display:none;text-align:center;padding:24px;color:var(--text-dim)">No help topics match your search.</div>
     <div class="card">
-      ${helpSection('&#9678;', 'Getting Started', `
+      ${helpSection('🏁', 'Getting Started', `
         <strong style="color:var(--text)">First time?</strong> Your four firearms are already loaded. Here's the recommended setup order:
         <ol style="padding-left:20px;margin-top:8px">
           <li>Go to <strong>Firearms</strong> and fill in Date Acquired and starting round counts if you have rounds on the guns already.</li>
@@ -7094,22 +7326,22 @@ function renderHelp() {
         <div style="margin-top:8px"><strong style="color:var(--text)">Your data</strong> lives only in this browser's localStorage. Use <strong>Settings → Download JSON Backup</strong> regularly to avoid data loss.</div>
       `)}
 
-      ${helpSection('&#9679;', 'Ammunition', `
+      ${helpSection('🎯', 'Ammunition', `
         <strong style="color:var(--text)">Inventory</strong> is decremented automatically each time you save a session. If you delete a session, rounds are returned to inventory.<br><br>
         <strong style="color:var(--text)">Cost per round</strong> — enter this (e.g. <code>0.285</code>) to unlock automatic ammo cost calculations in the Costs & Purchases section.<br><br>
         <strong style="color:var(--text)">Low ammo alert</strong> — a Dashboard warning appears when any ammo SKU drops to 50 rounds or below.
       `)}
 
-      ${helpSection('&#9650;', 'Sessions', `
+      ${helpSection('📋', 'Sessions', `
         <strong style="color:var(--text)">Session types:</strong> Practice, Competition, Class / Training, Dry Fire. Dry Fire sessions only show dry-compatible drills.<br><br>
         <strong style="color:var(--text)">Range Fee</strong> — the optional lane or entry fee for this session. This feeds the Costs summary.<br><br>
         <strong style="color:var(--text)">Drills</strong> — select from the library, enter a distance, and optionally log a time and/or score. Scores create Personal Records automatically.<br><br>
         <strong style="color:var(--text)">Self-Assessment sliders</strong> (Focus / Fundamentals / Satisfaction) are quick gut-checks that build your session trend chart in Progress → Trends.<br><br>
         <strong style="color:var(--text)">Field Strip prompt</strong> — after saving a new session, the app will offer to log a field strip for the firearm you just used (Atlas guidance: clean after every session).<br><br>
-        <strong style="color:var(--text)">Search &amp; Filter bar</strong> — at the top of the Sessions list, use the date range, firearm, type, and keyword fields to narrow your sessions. Keyword searches location, drills, notes, and firearm name. All filters apply instantly. Click <em>Clear</em> to reset. Filters stay active while you're on the page.
+        <strong style="color:var(--text)">Search &amp; Filter bar</strong> — at the top of the Sessions list, use the date range, firearm, type, and keyword fields to narrow your sessions. Keyword searches location, drills, notes, and firearm name. All filters apply instantly. Tap <em>Clear</em> to reset. Filters stay active while you're on the page.
       `)}
 
-      ${helpSection('&#9733;', 'Progress', `
+      ${helpSection('📈', 'Progress', `
         <strong style="color:var(--text)">Personal Records</strong> are auto-derived from your drill history. Time-based drills: lowest time wins. Score-based: highest score wins.<br><br>
         <strong style="color:var(--text)">Goals</strong> — set a goal with a target metric (e.g. "Bill Drill under 2.0s"). Check it off when achieved.<br><br>
         <strong style="color:var(--text)">Skill Assessment</strong> — rate yourself periodically (every 1–2 months) across 8 skill areas. Snapshots generate a trend chart once you have 2+ assessments.<br><br>
@@ -7117,7 +7349,7 @@ function renderHelp() {
         <strong style="color:var(--text)">Calendar</strong> — a 52-week training frequency heatmap (GitHub-style grid). Each square is one day; the orange intensity shows how many sessions you logged. Hover over any square to see the date and session count. Below the grid: sessions this year, total sessions, active training days, most-used firearm, and a 6-month bar chart.
       `)}
 
-      ${helpSection('&#9819;', 'Competition', `
+      ${helpSection('🏆', 'Competition', `
         <strong style="color:var(--text)">Matches tab</strong> — log each USPSA, IDPA, or steel match. Enter stage-level points, time, and stage % (% of stage winner). Hit Factor is calculated automatically.<br><br>
         <strong style="color:var(--text)">Rounds Fired</strong> — optional field on matches. Enter this to include match rounds in your all-in cost-per-round calculation in the Costs & Purchases section. <em>Do not also log these rounds as a session or they will be double-counted.</em><br><br>
         <strong style="color:var(--text)">Classifiers tab</strong> — log each USPSA classifier. Enter your points, time, and the division's High Hit Factor (HHF) from the USPSA classifier portal. Your percentage and equivalent class are calculated automatically.<br><br>
@@ -7125,7 +7357,7 @@ function renderHelp() {
         <strong style="color:var(--text)">Stage Performance chart</strong> — appears once you have match data with stage percentages. Green dots = stages above your match average; red = below.
       `)}
 
-      ${helpSection('&#9654;', 'Costs & Purchases', `
+      ${helpSection('💰', 'Costs & Purchases', `
         <strong style="color:var(--text)">Four cost sources are tracked:</strong><br>
         <ol style="padding-left:20px;margin-top:4px">
           <li><strong>Ammo</strong> — auto-calculated from sessions (rounds fired × cost/round). Set cost/round on each ammo record in the Ammunition section.</li>
@@ -7136,13 +7368,13 @@ function renderHelp() {
         <br>The <strong>All-In Cost per Round</strong> divides your grand total by session rounds + any match rounds you've entered.
       `)}
 
-      ${helpSection('&#9888;', 'Malfunctions', `
+      ${helpSection('⚠️', 'Malfunctions', `
         <strong style="color:var(--text)">Log malfunctions inside a session</strong> (via the Malfunctions section of the Log Session form) or as standalone entries from the Malfunctions page.<br><br>
         The <strong>Per 1,000 Rounds</strong> rate is the primary reliability metric. Industry standard for a competition gun is under 1 malfunction per 1,000 rounds.<br><br>
         Patterns by type and by firearm help you identify whether issues are ammo-related, gun-related, or magazine-related.
       `)}
 
-      ${helpSection('&#9881;', 'Maintenance', `
+      ${helpSection('🔧', 'Maintenance', `
         <strong style="color:var(--text)">Field Strip &amp; Clean</strong> — Atlas recommends after every range session. The Sessions page shows a prompt and quick-log button after each session.<br><br>
         <strong style="color:var(--text)">Deep Clean</strong> — every 10,000 cumulative rounds. Progress bar on each firearm card tracks this.<br><br>
         <strong style="color:var(--text)">Annual Inspection</strong> — once per calendar year. A Dashboard alert appears if overdue.<br><br>
@@ -7150,19 +7382,19 @@ function renderHelp() {
         <strong style="color:var(--text)">Magazine Springs</strong> — time-based, every 6 months by default. Schedule start date and interval are configurable in Settings.
       `)}
 
-      ${helpSection('&#9432;', 'Atlas Reference', `
+      ${helpSection('📖', 'Atlas Reference', `
         The <strong>Atlas Reference</strong> section contains an embedded maintenance schedule table, the 2011 field strip checklist, and links to Atlas Gunworks video guides for cleaning and maintenance.
       `)}
 
-      ${helpSection('&#9776;', 'Settings & Data', `
+      ${helpSection('⚙️', 'Settings & Data', `
         <strong style="color:var(--accent)">iCloud Sync</strong> — keeps your iPhone and Mac in sync via iCloud Drive. On Mac (Chrome/Edge), use <strong>Set Up Auto-Sync</strong> to sync automatically on every change. On iPhone/Safari, tap the <strong>&#8679;</strong> button in the top bar to export, save to <strong>iCloud Drive → Pistol Tracker</strong>, then tap <strong>Import Sync File</strong> on your Mac. Always uses the fixed filename <code>pistol-tracker-sync.json</code>.<br><br>
-        <strong style="color:var(--text)">Export JSON Backup</strong> — downloads a full timestamped backup. The app tracks the last backup date and shows a reminder on the Dashboard if 30 days have passed. Click <em>Backup Now</em> on that alert, or <em>Remind Me Later</em> to snooze for 7 days.<br><br>
+        <strong style="color:var(--text)">Export JSON Backup</strong> — downloads a full timestamped backup. The app tracks the last backup date and shows a reminder on the Dashboard if 30 days have passed. Tap <em>Backup Now</em> on that alert, or <em>Remind Me Later</em> to snooze for 7 days.<br><br>
         <strong style="color:var(--text)">Import JSON Backup</strong> — restores from a previous backup. <em>This will overwrite all current data.</em><br><br>
         <strong style="color:var(--text)">Export Sessions / Maintenance CSV</strong> — spreadsheet-friendly exports for external analysis.<br><br>
         <strong style="color:var(--text)">Drill Library</strong> — add or remove drills that appear in the session drill picker. Built-in drills can be removed; they'll no longer appear in new sessions but historical data is preserved.<br><br>
         <strong style="color:var(--text)">Magazine Spring Schedule</strong> — set a start date and interval here. The schedule drives the reminder shown on Dashboard and Maintenance.
       `)}
-      ${helpSection('&#9678;', 'Optics & Gear (v1.7)', `
+      ${helpSection('🔭', 'Optics & Gear (v1.7)', `
         Track your optics (red dots, iron sights, scopes) in the <strong>Optics</strong> section in the sidebar. Each optic stores:<br>
         <ul style="padding-left:20px;margin-top:6px">
           <li><strong>Make, Model, Dot/Reticle size</strong> — identification</li>
@@ -7178,7 +7410,7 @@ function renderHelp() {
         When you train with more than one gun in a single range trip, check <strong>"Multiple firearms used this session"</strong> in the Log Session form. Enter the round count for each firearm separately. The totals roll up correctly into each firearm's round count and maintenance schedule — no more splitting trips manually.
       `)}
       ${helpSection('&#9734;', 'UI Features (v1.7)', `
-        <strong style="color:var(--text)">Light / Dark mode</strong> — click the <em>&#9790; Light</em> button at the bottom of the sidebar to switch themes. Your choice is saved automatically.<br><br>
+        <strong style="color:var(--text)">Light / Dark mode</strong> — tap the <em>&#9790; Light</em> button at the bottom of the sidebar to switch themes. Your choice is saved automatically.<br><br>
         <strong style="color:var(--text)">Keyboard shortcuts</strong> — when no text field is focused:<br>
         <ul style="padding-left:20px;margin-top:4px">
           <li><kbd style="background:var(--panel-2);padding:1px 5px;border-radius:3px;border:1px solid var(--border)">S</kbd> — Log a new session</li>
@@ -7187,7 +7419,7 @@ function renderHelp() {
           <li><kbd style="background:var(--panel-2);padding:1px 5px;border-radius:3px;border:1px solid var(--border)">?</kbd> — Open Help</li>
           <li><kbd style="background:var(--panel-2);padding:1px 5px;border-radius:3px;border:1px solid var(--border)">Esc</kbd> — Close any open dialog</li>
         </ul><br>
-        <strong style="color:var(--text)">App Tour</strong> — click <strong>&#9654; Take the Tour</strong> at the top of this Help page any time to replay the guided walkthrough of all app features.
+        <strong style="color:var(--text)">App Tour</strong> — tap <strong>&#9654; Take the Tour</strong> at the top of this Help page any time to replay the guided walkthrough of all app features.
       `)}
     </div>
   `;
@@ -7258,29 +7490,29 @@ function renderMalfunctions() {
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end">
         <div>
           <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">From</label>
-          <input type="date" value="${f.dateFrom}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMalfFilter('dateFrom',this.value)">
+          <input type="date" value="${f.dateFrom}" style="width:100%;height:34px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMalfFilter('dateFrom',this.value)">
         </div>
         <div>
           <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">To</label>
-          <input type="date" value="${f.dateTo}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMalfFilter('dateTo',this.value)">
+          <input type="date" value="${f.dateTo}" style="width:100%;height:34px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMalfFilter('dateTo',this.value)">
         </div>
         <div>
           <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">Firearm</label>
-          <select style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateMalfFilter('firearmId',this.value)">
+          <select style="width:100%;height:34px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateMalfFilter('firearmId',this.value)">
             <option value="">All firearms</option>
             ${DB.firearms.map(fw => `<option value="${fw.id}" ${f.firearmId===fw.id?'selected':''}>${escapeHtml(fw.name)}</option>`).join('')}
           </select>
         </div>
         <div>
           <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">Type</label>
-          <select style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateMalfFilter('type',this.value)">
+          <select style="width:100%;height:34px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateMalfFilter('type',this.value)">
             <option value="">All types</option>
             ${['Failure to Feed','Failure to Eject','Failure to Extract','Stovepipe','Double Feed','Failure to Return to Battery','Light Strike','Mag Issue','Slide Lock (early)','Other'].map(t => `<option value="${t}" ${f.type===t?'selected':''}>${t}</option>`).join('')}
           </select>
         </div>
         <div>
           <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">Search</label>
-          <input type="search" placeholder="Type, notes, resolution…" value="${escapeHtml(f.keyword)}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMalfFilter('keyword',this.value)">
+          <input type="search" placeholder="Type, notes, resolution…" value="${escapeHtml(f.keyword)}" style="width:100%;height:34px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMalfFilter('keyword',this.value)">
         </div>
         <div style="display:flex;align-items:flex-end">
           ${hasFilter ? `<button class="btn small secondary" onclick="clearMalfFilter()" style="width:100%">&#10005; Clear</button>` : '<div></div>'}
@@ -7381,14 +7613,14 @@ function renderMalfunctions() {
             <td class="row-actions">${m.source !== 'session' ? `<button class="btn small danger" onclick="deleteMalfunction('${m.id}')">Delete</button>` : '<span class="text-dim" style="font-size:11px">in session</span>'}</td>
           </tr>`;
         }).join('')}</tbody>
-      </table>` : `<div class="empty"><div class="icon">&#9888;</div>${hasFilter ? 'No malfunctions match the current filters.' : "No malfunctions logged. That's a good thing!"}<br><br>${hasFilter ? `<button class="btn secondary" onclick="clearMalfFilter()">Clear Filters</button>` : '<div class="text-dim" style="font-size:13px">Log them inside sessions or as standalone entries.</div>'}</div>`}
+      </table>` : `<div class="empty"><div class="icon">⚠️</div>${hasFilter ? 'No malfunctions match the current filters.' : "No malfunctions logged. That's a good thing!"}<br><br>${hasFilter ? `<button class="btn secondary" onclick="clearMalfFilter()">Clear Filters</button>` : '<div class="text-dim" style="font-size:13px">Log them inside sessions or as standalone entries.</div>'}</div>`}
     </div>
     ${recentlyDeletedCard('malfunction')}
   `;
 }
 
 function openStandaloneMalfunctionModal() {
-  if (!DB.firearms.length) { alert('Add a firearm first.'); return; }
+  if (!DB.firearms.length) { showToast('Add a firearm first.'); return; }
   const firstFwId = DB.firearms[0].id;
   openModal(`
     <div class="modal-header"><h3>Log Malfunction</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
@@ -7447,9 +7679,12 @@ function saveStandaloneMalfunction() {
   saveDB(); closeModal(); renderMalfunctions();
 }
 function deleteMalfunction(id) {
-  if (!confirm('Move this malfunction to Recently Deleted?')) return;
-  softDelete('malfunction', id);
-  renderMalfunctions();
+  showActionSheet('Move this malfunction to Recently Deleted?', [
+    { label: 'Move to Recently Deleted', style: 'danger', fn: () => {
+      softDelete('malfunction', id);
+      renderMalfunctions();
+    }}
+  ]);
 }
 
 /* ============================================================
@@ -7469,7 +7704,8 @@ function renderMaintenance() {
     ${sectionHelpPanel('maintenance')}
     <div class="card">
       <h3>Schedule by Firearm</h3>
-      <table>
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+      <table style="min-width:700px">
         <thead><tr><th>Firearm</th><th>Total Rounds</th><th>Since Deep Clean</th><th>Recoil Spring</th><th>Last Field Strip</th><th>Last Deep Clean</th><th>Last Inspection</th><th>Status</th></tr></thead>
         <tbody>${DB.firearms.map(f => {
           const st = maintenanceStatus(f.id);
@@ -7494,6 +7730,7 @@ function renderMaintenance() {
           </tr>`;
         }).join('')}</tbody>
       </table>
+      </div>
     </div>
 
     <div class="card">
@@ -7523,22 +7760,22 @@ function renderMaintenance() {
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;align-items:end">
         <div>
           <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">From</label>
-          <input type="date" value="${mf.dateFrom}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMaintenanceFilter('dateFrom',this.value)">
+          <input type="date" value="${mf.dateFrom}" style="width:100%;height:34px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMaintenanceFilter('dateFrom',this.value)">
         </div>
         <div>
           <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">To</label>
-          <input type="date" value="${mf.dateTo}" style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMaintenanceFilter('dateTo',this.value)">
+          <input type="date" value="${mf.dateTo}" style="width:100%;height:34px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" oninput="updateMaintenanceFilter('dateTo',this.value)">
         </div>
         <div>
           <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">Firearm</label>
-          <select style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateMaintenanceFilter('firearmId',this.value)">
+          <select style="width:100%;height:34px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateMaintenanceFilter('firearmId',this.value)">
             <option value="">All firearms</option>
             ${DB.firearms.map(fw => `<option value="${fw.id}" ${mf.firearmId===fw.id?'selected':''}>${escapeHtml(fw.name)}</option>`).join('')}
           </select>
         </div>
         <div>
           <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:3px">Task Type</label>
-          <select style="width:100%;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateMaintenanceFilter('type',this.value)">
+          <select style="width:100%;height:34px;padding:6px 8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px" onchange="updateMaintenanceFilter('type',this.value)">
             <option value="">All types</option>
             <option value="field_strip" ${mf.type==='field_strip'?'selected':''}>Field Strip</option>
             <option value="deep_clean" ${mf.type==='deep_clean'?'selected':''}>Deep Clean</option>
@@ -7613,10 +7850,12 @@ function openMaintenanceModal(id, firearmId) {
       <div class="form-row"><label>Parts Replaced (optional)</label><input id="ma-parts" value="${escapeHtml(m.partsReplaced||'')}" placeholder="e.g. recoil spring, firing pin"></div>
       <div class="form-row"><label>Notes</label><textarea id="ma-notes">${escapeHtml(m.notes)}</textarea></div>
 
-      <details style="margin-top:8px">
-        <summary class="text-accent">Show Atlas-recommended steps for this type</summary>
-        <div id="ma-recs"></div>
-      </details>
+      <div style="margin-top:8px">
+        <button onclick="(function(b){var body=b.nextElementSibling,ch=b.querySelector('.marecs-chev');body.hidden=!body.hidden;ch.style.transform=body.hidden?'rotate(0deg)':'rotate(90deg)'})(this)" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--accent);padding:4px 0">
+          <span class="marecs-chev" style="transition:transform 0.2s;display:inline-block">›</span> Show Atlas-recommended steps for this type
+        </button>
+        <div id="ma-recs" hidden></div>
+      </div>
     </div>
     <div class="modal-footer">
       <button class="btn secondary" onclick="closeModal()">Cancel</button>
@@ -7712,7 +7951,7 @@ function saveMaintenance(id) {
     partsReplaced: document.getElementById('ma-parts').value.trim(),
     notes: document.getElementById('ma-notes').value.trim()
   };
-  if (!data.date) { alert('Date required'); return; }
+  if (!data.date) { showToast('Date required'); return; }
   if (id) {
     const idx = DB.maintenance.findIndex(x => x.id === id);
     DB.maintenance[idx] = { ...DB.maintenance[idx], ...data };
@@ -7722,9 +7961,12 @@ function saveMaintenance(id) {
   saveDB(); closeModal(); renderMaintenance(); renderSessions();
 }
 function deleteMaintenance(id) {
-  if (!confirm('Move this maintenance record to Recently Deleted?')) return;
-  softDelete('maintenance', id);
-  renderMaintenance();
+  showActionSheet('Move this maintenance record to Recently Deleted?', [
+    { label: 'Move to Recently Deleted', style: 'danger', fn: () => {
+      softDelete('maintenance', id);
+      renderMaintenance();
+    }}
+  ]);
 }
 
 /* ============================================================
@@ -7860,7 +8102,7 @@ function renderSettings() {
           </div>
         </div>
         ${autoSyncStatus.connected ? `
-          <div style="background:rgba(52,199,89,0.1);border:1px solid var(--success);border-radius:10px;padding:12px;font-size:13px">
+          <div style="background:var(--success-bg);border:1px solid var(--success);border-radius:10px;padding:12px;font-size:13px">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
               <div>
                 <strong style="color:var(--success)">&#10003; Auto-sync ON</strong>
@@ -7874,9 +8116,9 @@ function renderSettings() {
             </div>
           </div>
         ` : (autoSyncStatus.filename ? `
-          <div style="background:rgba(255,149,0,0.1);border:1px solid var(--warn);border-radius:10px;padding:12px;font-size:13px">
+          <div style="background:var(--warn-bg);border:1px solid var(--warn);border-radius:10px;padding:12px;font-size:13px">
             <strong style="color:var(--warn)">Auto-sync needs to be reconnected</strong>
-            <div style="font-size:13px;color:var(--text-dim);margin-top:4px">Browser permission was lost (this happens after browser restarts). Click below to re-grant write access to <strong>${escapeHtml(autoSyncStatus.filename)}</strong>.</div>
+            <div style="font-size:13px;color:var(--text-dim);margin-top:4px">Browser permission was lost (this happens after browser restarts). Tap below to re-grant write access to <strong>${escapeHtml(autoSyncStatus.filename)}</strong>.</div>
             <div style="margin-top:10px;display:flex;gap:8px">
               <button class="btn small" onclick="reconnectAutoSync()">Reconnect</button>
               <button class="btn small secondary" onclick="connectAutoSync()">Pick a different file</button>
@@ -7890,7 +8132,7 @@ function renderSettings() {
       ` : `
         <hr style="margin:20px 0">
         <div class="text-dim" style="font-size:13px">
-          <strong>Auto-sync available in Chrome/Edge on Mac.</strong> This browser doesn't support the File System Access API, so use the manual Export/Import buttons above. Your data still syncs reliably — it just takes two clicks instead of being automatic.
+          <strong>Auto-sync available in Chrome/Edge on Mac.</strong> This browser doesn't support the File System Access API, so use the manual Export/Import buttons above. Your data still syncs reliably — it just takes two taps instead of being automatic.
         </div>
       `}
     </div>
@@ -7906,7 +8148,7 @@ function renderSettings() {
           Import JSON Backup
           <input type="file" accept=".json" style="display:none" onchange="importJSON(event)">
         </label>
-        ${(DB.settings.sampleDataIds||[]).length ? `<button class="btn secondary" onclick="if(confirm('Remove all sample data?')){removeSampleData();renderSettings();showToast('Sample data removed.');}">Remove Sample Data</button>` : ''}
+        ${(DB.settings.sampleDataIds||[]).length ? `<button class="btn secondary" onclick="showActionSheet('Remove all sample data?',[{label:'Remove Sample Data',style:'danger',fn:()=>{removeSampleData();renderSettings();showToast('Sample data removed.');}}])">Remove Sample Data</button>` : ''}
       </div>
     </div>
 
@@ -7927,7 +8169,7 @@ function renderSettings() {
       <p class="text-dim" style="font-size:13px">Time-based reminder for replacing magazine springs across all firearms.</p>
       <div class="form-grid-2" style="margin-top:12px">
         <div class="form-row"><label>Schedule Start Date</label>
-          <input id="ms-start" type="date" value="${(DB.settings.magazineSpringSchedule||{}).startDate || '2026-06-01'}">
+          <input id="ms-start" type="date" value="${(DB.settings.magazineSpringSchedule||{}).startDate || todayISO()}">
         </div>
         <div class="form-row"><label>Interval (months)</label>
           <input id="ms-interval" type="number" min="1" value="${(DB.settings.magazineSpringSchedule||{}).intervalMonths || 6}">
@@ -7978,11 +8220,11 @@ function renderSettings() {
 }
 function saveMagSpringSchedule() {
   if (!DB.settings.magazineSpringSchedule) DB.settings.magazineSpringSchedule = {};
-  DB.settings.magazineSpringSchedule.startDate = document.getElementById('ms-start').value || '2026-06-01';
+  DB.settings.magazineSpringSchedule.startDate = document.getElementById('ms-start').value || todayISO();
   DB.settings.magazineSpringSchedule.intervalMonths = parseInt(document.getElementById('ms-interval').value) || 6;
   saveDB();
   renderSettings();
-  alert('Magazine spring schedule saved.');
+  showToast('Magazine spring schedule saved.');
 }
 
 function addDrill() {
@@ -8080,7 +8322,7 @@ let autoSyncDebounce = null;
 
 async function connectAutoSync() {
   if (!autoSyncSupported()) {
-    alert('Your browser does not support auto-sync. Use Export/Import below instead.\n\nTip: Chrome on Mac and Edge support auto-sync. iOS Safari does not.');
+    showToast('Auto-sync not supported in this browser. Use Export/Import instead.');
     return;
   }
   try {
@@ -8089,7 +8331,7 @@ async function connectAutoSync() {
       types: [{ description: 'Pistol Tracker sync file', accept: { 'application/json': ['.json'] } }]
     });
     const perm = await handle.requestPermission({ mode: 'readwrite' });
-    if (perm !== 'granted') { alert('Write permission required.'); return; }
+    if (perm !== 'granted') { showToast('Write permission required.'); return; }
     await idbSetHandle(handle);
     autoSyncHandle = handle;
     autoSyncStatus.connected = true;
@@ -8100,11 +8342,11 @@ async function connectAutoSync() {
     saveDB();
     renderSettings();
   } catch (err) {
-    if (err.name !== 'AbortError') alert('Could not connect auto-sync: ' + err.message);
+    if (err.name !== 'AbortError') showToast('Could not connect auto-sync: ' + err.message);
   }
 }
 async function reconnectAutoSync() {
-  if (!autoSyncSupported()) { alert('Browser does not support auto-sync.'); return; }
+  if (!autoSyncSupported()) { showToast('Auto-sync not supported in this browser.'); return; }
   try {
     if (!autoSyncHandle) autoSyncHandle = await idbGetHandle();
     if (!autoSyncHandle) { connectAutoSync(); return; }
@@ -8114,20 +8356,23 @@ async function reconnectAutoSync() {
       autoSyncStatus.filename = autoSyncHandle.name;
       renderSettings();
     } else {
-      alert('Permission denied.');
+      showToast('Permission denied.');
     }
   } catch (err) {
-    alert('Reconnect failed: ' + err.message);
+    showToast('Reconnect failed: ' + err.message);
   }
 }
 async function disconnectAutoSync() {
-  if (!confirm('Disconnect auto-sync? You can reconnect anytime — your local data stays.')) return;
-  await idbClearHandle();
-  autoSyncHandle = null;
-  autoSyncStatus = { connected: false, filename: '', lastWrite: null, lastError: '' };
-  if (DB.settings) delete DB.settings.autoSyncFilename;
-  saveDB();
-  renderSettings();
+  showActionSheet('Disconnect auto-sync? Your local data stays.', [
+    { label: 'Disconnect', style: 'danger', fn: async () => {
+      await idbClearHandle();
+      autoSyncHandle = null;
+      autoSyncStatus = { connected: false, filename: '', lastWrite: null, lastError: '' };
+      if (DB.settings) delete DB.settings.autoSyncFilename;
+      saveDB();
+      renderSettings();
+    }}
+  ]);
 }
 async function writeAutoSync() {
   if (!autoSyncHandle || !autoSyncStatus.connected) return;
@@ -8235,22 +8480,25 @@ function importSyncFile(evt) {
     try {
       const parsed = JSON.parse(e.target.result);
       if (!parsed.sessions || !parsed.firearms) {
-        alert('This doesn\'t look like a valid Pistol Tracker sync file. Please select pistol-tracker-sync.json.');
+        showToast('Not a valid sync file — select pistol-tracker-sync.json.');
         return;
       }
-      if (!confirm('Import sync file? Your current data will be replaced with the imported data.')) return;
-      // Move any inline base64 images into IndexedDB
-      await restoreImagesFromImport(parsed);
-      if (!parsed.settings) parsed.settings = {};
-      parsed.settings.lastSyncImportDate = todayISO();
-      DB = parsed;
-      DB._lastModified = Date.now();
-      saveDB();
-      await loadAllImagesToCache();
-      renderSettings();
-      alert('Sync complete — your data is now up to date.');
+      showActionSheet('Replace current data with this sync file?', [
+        { label: 'Import & Replace', style: 'danger', fn: async () => {
+          // Move any inline base64 images into IndexedDB
+          await restoreImagesFromImport(parsed);
+          if (!parsed.settings) parsed.settings = {};
+          parsed.settings.lastSyncImportDate = todayISO();
+          DB = parsed;
+          DB._lastModified = Date.now();
+          saveDB();
+          await loadAllImagesToCache();
+          renderSettings();
+          showToast('Sync complete — data is up to date.');
+        }}
+      ]);
     } catch (err) {
-      alert('Could not read that file. Make sure you selected pistol-tracker-sync.json.');
+      showToast('Could not read that file.');
     }
   };
   reader.readAsText(file);
@@ -8289,24 +8537,27 @@ function importJSON(evt) {
   reader.onload = async e => {
     try {
       let parsed = JSON.parse(e.target.result);
-      if (!confirm('This will overwrite all current data. Continue?')) return;
-      // Move any inline base64 images into IndexedDB
-      await restoreImagesFromImport(parsed);
-      // Run migrations on imported data before saving
-      if (!parsed.settings) parsed.settings = {};
-      if (!Array.isArray(parsed.settings.migrationsRun)) parsed.settings.migrationsRun = [];
-      for (const key of Object.keys(SEED)) {
-        if (parsed[key] === undefined) parsed[key] = JSON.parse(JSON.stringify(SEED[key]));
-      }
-      parsed.settings.version = '1.9';
-      DB = parsed;
-      DB._lastModified = Date.now();
-      saveDB();
-      await loadAllImagesToCache(); // refresh cache with newly imported images
-      renderSettings();
-      alert('Import complete.');
+      showActionSheet('This will overwrite all current data.', [
+        { label: 'Import & Overwrite', style: 'danger', fn: async () => {
+          // Move any inline base64 images into IndexedDB
+          await restoreImagesFromImport(parsed);
+          // Run migrations on imported data before saving
+          if (!parsed.settings) parsed.settings = {};
+          if (!Array.isArray(parsed.settings.migrationsRun)) parsed.settings.migrationsRun = [];
+          for (const key of Object.keys(SEED)) {
+            if (parsed[key] === undefined) parsed[key] = JSON.parse(JSON.stringify(SEED[key]));
+          }
+          parsed.settings.version = '1.9';
+          DB = parsed;
+          DB._lastModified = Date.now();
+          saveDB();
+          await loadAllImagesToCache(); // refresh cache with newly imported images
+          renderSettings();
+          showToast('Import complete.');
+        }}
+      ]);
     } catch (err) {
-      alert('Invalid backup file.');
+      showToast('Invalid backup file.');
     }
   };
   reader.readAsText(file);
@@ -8376,9 +8627,10 @@ function loadRangeReadyCSV(evt) {
 function renderRRPreview(headers, rows) {
   const preview = document.getElementById('rr-preview');
   if (!preview) return;
+  const rrFieldLabels = { date:'Date', firearm:'Firearm', rounds:'Rounds', location:'Location', drill:'Drill', notes:'Notes', type:'Type' };
   const selectors = Object.entries(_rrMapping).map(([field, col]) => `
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px">
-      <span style="width:80px;color:var(--text-dim);font-size:11px">${field}</span>
+      <span style="width:80px;color:var(--text-dim);font-size:11px">${rrFieldLabels[field] || field}</span>
       <select onchange="_rrMapping['${field}']=this.value;renderRRPreview(${JSON.stringify(headers)}, _rrRows)" style="flex:1;padding:4px 6px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px">
         <option value="">— not mapped —</option>
         ${headers.map(h => `<option value="${escapeHtml(h)}" ${col===h?'selected':''}>${escapeHtml(h)}</option>`).join('')}
@@ -8397,12 +8649,12 @@ function renderRRPreview(headers, rows) {
 
   preview.innerHTML = `
     <div style="margin-bottom:12px">
-      <strong>Column Mapping</strong>
+      <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px">Column Mapping</div>
       <div class="text-dim" style="font-size:13px;margin-bottom:10px">Auto-detected from headers. Adjust if needed.</div>
       ${selectors}
     </div>
     <div style="margin-bottom:12px">
-      <strong>Preview (first 5 rows)</strong>
+      <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px">Preview (first 5 rows)</div>
       <table style="margin-top:8px"><thead><tr><th>Date</th><th>Firearm</th><th>Rounds</th><th>Location</th></tr></thead>
       <tbody>${previewRows}</tbody></table>
     </div>
@@ -8543,7 +8795,7 @@ function roundsChart() {
     const yLive = H - padB - hLive;
     const yDry  = yLive - hDry;
     if (hLive > 0) bars += `<rect x="${x}" y="${yLive.toFixed(1)}" width="${barW}" height="${hLive.toFixed(1)}" fill="var(--accent)" rx="2"/>`;
-    if (hDry  > 0) bars += `<rect x="${x}" y="${yDry.toFixed(1)}"  width="${barW}" height="${hDry.toFixed(1)}"  fill="#4a9eff" rx="2"/>`;
+    if (hDry  > 0) bars += `<rect x="${x}" y="${yDry.toFixed(1)}"  width="${barW}" height="${hDry.toFixed(1)}"  fill="var(--info)" rx="2"/>`;
     bars += `<text x="${(x + barW/2).toFixed(1)}" y="${H - 8}" text-anchor="middle" fill="var(--text-dim)" font-size="10">${m.label}</text>`;
     const total = m.live + m.dry;
     if (total > 0) bars += `<text x="${(x + barW/2).toFixed(1)}" y="${Math.min(yDry, yLive) - 3}" text-anchor="middle" fill="var(--text)" font-size="10">${total}</text>`;
@@ -8555,7 +8807,7 @@ function roundsChart() {
     grid += `<line x1="${padL}" x2="${W-padR}" y1="${y}" y2="${y}" stroke="var(--border)" stroke-dasharray="2,3"/>`;
     grid += `<text x="${padL-6}" y="${y+3}" text-anchor="end" fill="var(--text-dim)" font-size="10">${val}</text>`;
   }
-  const legend = `<text x="${padL}" y="${H-1}" fill="var(--accent)" font-size="9">&#9632; Live-fire</text><text x="${padL+60}" y="${H-1}" fill="#4a9eff" font-size="9">&#9632; Dry-fire</text>`;
+  const legend = `<text x="${padL}" y="${H-1}" fill="var(--accent)" font-size="9">&#9632; Live-fire</text><text x="${padL+60}" y="${H-1}" fill="var(--info)" font-size="9">&#9632; Dry-fire</text>`;
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${grid}${bars}${legend}</svg>`;
 }
 
@@ -8592,11 +8844,11 @@ function cumulativeRoundsChart() {
   // Second line for total (all sessions) when dry-fire rounds exist
   const pathAll = hasDry ? pointsAll.map((p,i) => `${i?'L':'M'} ${xFor(p.date).toFixed(1)} ${yFor(p.cum).toFixed(1)}`).join(' ') : '';
   const legend = hasDry
-    ? `<text x="${padL}" y="${H-2}" fill="var(--accent)" font-size="9">&#9632; Live-fire</text><text x="${padL+60}" y="${H-2}" fill="#4a9eff" font-size="9">&#9632; All (incl. dry)</text>`
+    ? `<text x="${padL}" y="${H-2}" fill="var(--accent)" font-size="9">&#9632; Live-fire</text><text x="${padL+60}" y="${H-2}" fill="var(--info)" font-size="9">&#9632; All (incl. dry)</text>`
     : `<text x="${padL}" y="${H-2}" fill="var(--accent)" font-size="9">&#9632; Live-fire rounds</text>`;
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
     ${grid}
-    ${hasDry ? `<path d="${pathAll}" stroke="#4a9eff" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/>` : ''}
+    ${hasDry ? `<path d="${pathAll}" stroke="var(--info)" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/>` : ''}
     <path d="${pathLive}" stroke="var(--accent)" stroke-width="2" fill="none"/>
     ${dots}
     ${legend}
@@ -8637,7 +8889,7 @@ function skillTrendChart() {
   const maxD = new Date(assess[assess.length-1].date).getTime() || minD + 1;
   const xFor = d => padL + ((new Date(d).getTime() - minD) / Math.max(1, maxD - minD)) * (W - padL - padR);
   const yFor = v => H - padB - (v / 10) * (H - padT - padB);
-  const palette = ['var(--accent)','var(--info)','var(--success)','var(--warn)','var(--danger)','#bb86fc','#03dac6','#ffb74d'];
+  const palette = ['var(--accent)','var(--info)','var(--success)','var(--warn)','var(--danger)','#AF52DE','#FF6B00','#FFD60A'];
   let lines = '';
   let legend = '';
   SKILL_AREAS.forEach((sa, i) => {
@@ -8724,7 +8976,7 @@ function toggleTheme() {
   applyTheme(next);
 }
 // Apply saved theme on load
-applyTheme(DB.settings.theme || 'dark');
+applyTheme(DB.settings.theme || 'light');
 
 /* ============================================================
    KEYBOARD SHORTCUTS
@@ -8780,7 +9032,7 @@ function showTourStep() {
       <button class="modal-close" onclick="closeModal()">&times;</button>
     </div>
     <div class="modal-body" style="min-height:120px">
-      <h3 style="font-size:18px;margin-bottom:12px;color:var(--accent)">${step.title}</h3>
+      <h3 style="font-size:17px;margin-bottom:12px;color:var(--accent)">${step.title}</h3>
       <p style="line-height:1.7;white-space:pre-wrap">${step.body}</p>
     </div>
     <div class="modal-footer" style="justify-content:space-between">
@@ -9079,7 +9331,7 @@ function renderWizardStep() {
 
 function wizSaveFirearm() {
   const name = document.getElementById('wz-fa-name').value.trim();
-  if (!name) { alert('Please enter a name for your firearm.'); return; }
+  if (!name) { showToast('Firearm name required.'); return; }
   const id = uid('fa');
   DB.firearms.push({
     id, name,
@@ -9096,7 +9348,7 @@ function wizSaveFirearm() {
 
 function wizSaveAmmo() {
   const brand = document.getElementById('wz-am-brand').value.trim();
-  if (!brand) { alert('Please enter a brand name.'); return; }
+  if (!brand) { showToast('Brand name required.'); return; }
   const id = uid('am');
   if (!DB.ammunition) DB.ammunition = [];
   DB.ammunition.push({
@@ -9177,7 +9429,7 @@ const FULL_TOUR_STEPS = [
     title: 'Firearms',
     icon: '◆',
     body: 'Every gun you own is registered here with its cumulative round count, maintenance status, and barrel tracking. The Magazines tab (top of the page) is where you add and manage individual magazines with round counts and spring history.',
-    tips: ['Round counts include both session rounds and match rounds.', 'The deep-clean progress bar fills as rounds accumulate — turns red when overdue.', 'Click Magazines tab to track individual mag IDs, lifetime rounds, and spring replacements.']
+    tips: ['Round counts include both session rounds and match rounds.', 'The deep-clean progress bar fills as rounds accumulate — turns red when overdue.', 'Tap Magazines tab to track individual mag IDs, lifetime rounds, and spring replacements.']
   },
   {
     view: 'optics',
@@ -9197,8 +9449,8 @@ const FULL_TOUR_STEPS = [
     view: 'sessions',
     title: 'Sessions',
     icon: '▲',
-    body: 'The heart of the app. Log every range session with firearm, ammo, drills, distances, self-ratings, malfunctions, holster, and target photos. The filter bar lets you search by date range, firearm, type, or keyword. Click 🖨 Print on any card for a formatted training journal page.',
-    tips: ['Self-ratings (Focus, Fundamentals, Satisfaction) feed the trend charts in Progress.', 'Click the 📍 location on any card to edit it inline — no modal needed.', 'The Print Report button (top right) prints all currently filtered sessions at once.']
+    body: 'The heart of the app. Log every range session with firearm, ammo, drills, distances, self-ratings, malfunctions, holster, and target photos. The filter bar lets you search by date range, firearm, type, or keyword. Tap 🖨 Print on any card for a formatted training journal page.',
+    tips: ['Self-ratings (Focus, Fundamentals, Satisfaction) feed the trend charts in Progress.', 'Tap the 📍 location on any card to edit it inline — no modal needed.', 'The Print Report button (top right) prints all currently filtered sessions at once.']
   },
   {
     view: 'progress',
@@ -9270,7 +9522,7 @@ function startFullTour() {
   if (!bar) {
     bar = document.createElement('div');
     bar.id = 'full-tour-bar';
-    bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:10005;background:var(--panel);border-top:3px solid var(--accent);box-shadow:0 -4px 24px rgba(0,0,0,0.4);padding:0';
+    bar.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:10005;background:var(--panel);border-top:3px solid var(--accent);box-shadow:0 -4px 24px rgba(0,0,0,0.4);padding:0 0 max(0px,env(safe-area-inset-bottom)) 0';
     document.body.appendChild(bar);
   }
   bar.style.display = 'block';
@@ -9301,18 +9553,16 @@ function renderFullTourStep() {
     <div style="height:3px;background:var(--border)">
       <div style="height:3px;background:var(--accent);width:${pct}%;transition:width 0.3s"></div>
     </div>
-    <div style="display:flex;align-items:flex-start;gap:20px;padding:14px 20px;flex-wrap:wrap">
-      <div style="flex:1;min-width:200px">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <span style="font-size:11px;color:var(--text-dim)">Step ${_tourB.step + 1} of ${total}</span>
-          <span style="color:var(--accent);font-weight:700;font-size:15px">${escapeHtml(s.title)}</span>
-        </div>
-        <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:8px">${escapeHtml(s.body)}</div>
-        <div style="display:flex;flex-wrap:wrap;gap:6px">
-          ${s.tips.map(t => `<div style="font-size:11px;color:var(--text-dim);background:var(--panel-2);border-radius:4px;padding:3px 8px;line-height:1.5">💡 ${escapeHtml(t)}</div>`).join('')}
-        </div>
+    <div style="padding:12px 20px 8px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <span style="font-size:13px;font-weight:600;color:var(--accent)">${_tourB.step + 1} / ${total}</span>
+        <span style="font-size:15px;font-weight:700;color:var(--text)">${escapeHtml(s.title)}</span>
       </div>
-      <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;padding-top:4px">
+      <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:8px">${escapeHtml(s.body)}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">
+        ${s.tips.map(t => `<div style="font-size:11px;color:var(--text-dim);background:var(--panel-2);border-radius:4px;padding:3px 8px;line-height:1.5">💡 ${escapeHtml(t)}</div>`).join('')}
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
         ${_tourB.step > 0 ? `<button class="btn small secondary" onclick="fullTourNav(-1)">← Back</button>` : ''}
         ${_tourB.step < total - 1
           ? `<button class="btn" onclick="fullTourNav(1)">Next →</button>`
@@ -9328,6 +9578,8 @@ function renderFullTourStep() {
    Registers sw.js when the app is served over HTTPS or localhost.
    No-ops silently when opened as a local file:// URL.
    ============================================================ */
+document.addEventListener('DOMContentLoaded', () => setView('dashboard'));
+
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js')
