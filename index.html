@@ -221,6 +221,8 @@
     box-shadow: var(--shadow);
   }
   .card h3 { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 12px; }
+  .card-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .card-header h3 { margin: 0; }
   #se-total::-webkit-outer-spin-button, #se-total::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   #se-total { -moz-appearance: textfield; }
 
@@ -2301,7 +2303,7 @@ function renderMagazinesPane() {
     const isCollapsed = window._collapsedMagGroups && window._collapsedMagGroups[groupKey];
     return `<div class="card" style="margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="toggleMagGroup('${groupKey}')">
-        <h3 style="margin:0">${escapeHtml(poolNames)} — ${g.mags.length} magazine${g.mags.length!==1?'s':''}</h3>
+        <h3>${escapeHtml(poolNames)} — ${g.mags.length} magazine${g.mags.length!==1?'s':''}</h3>
         <span style="font-size:13px;color:var(--text-dim)">${isCollapsed ? '▶ Show' : '▼ Hide'}</span>
       </div>
       <div id="${groupKey}" style="display:${isCollapsed ? 'none' : 'block'};margin-top:12px">
@@ -5254,8 +5256,8 @@ function renderGoalsPane() {
   const done = DB.goals.filter(g => g.achieved);
   return `
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <h3 style="margin-bottom:0">Goals</h3>
+      <div class="card-header">
+        <h3>Goals</h3>
         <button class="btn" onclick="openGoalModal()">+ Add Goal</button>
       </div>
       <hr>
@@ -5342,8 +5344,8 @@ function renderSkillsPane() {
   const latest = [...DB.skillAssessments].sort((a,b) => b.date.localeCompare(a.date))[0];
   return `
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <h3 style="margin-bottom:0">Skill Self-Assessment</h3>
+      <div class="card-header">
+        <h3>Skill Self-Assessment</h3>
         <button class="btn" onclick="openSkillAssessment()">+ New Assessment</button>
       </div>
       <hr>
@@ -6306,8 +6308,8 @@ function renderStageTimelinePane() {
 
   return `
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px">
-        <h3 style="margin-bottom:0">Stage % Over Time</h3>
+      <div class="card-header">
+        <h3>Stage % Over Time</h3>
         <div style="font-size:13px;color:var(--text-dim);display:flex;gap:16px">
           <span>Average: <strong style="color:var(--text)">${avg}%</strong></span>
           <span>Trend: <strong style="color:${trendColor}">${trend}</strong></span>
@@ -6869,8 +6871,8 @@ function renderCostsLog() {
     </div>
 
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <h3 style="margin-bottom:0">Purchases & Gear Log</h3>
+      <div class="card-header">
+        <h3>Purchases & Gear Log</h3>
         <button class="btn small" onclick="openPurchaseModal()">+ Add Purchase</button>
       </div>
       ${(DB.purchases || []).length ? `
