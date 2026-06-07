@@ -1611,6 +1611,13 @@ function formatDrillScore(r, scoring) {
 /* ============================================================
    ROUTING
    ============================================================ */
+const VIEW_LABELS = {
+  dashboard: 'Dashboard', firearms: 'Firearms', optics: 'Optics',
+  ammo: 'Ammunition', sessions: 'Sessions', progress: 'Progress',
+  competition: 'Competition', costs: 'Costs & Purchases',
+  malfunctions: 'Malfunctions', maintenance: 'Maintenance',
+  atlas: 'Atlas Reference', help: 'Help', settings: 'Settings & Data'
+};
 function setView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
   document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
@@ -1618,6 +1625,8 @@ function setView(name) {
   const link = document.querySelector(`nav a[data-view="${name}"]`);
   if (view) view.classList.add('active');
   if (link) link.classList.add('active');
+  const titleEl = document.querySelector('.mobile-header .brand-title');
+  if (titleEl) titleEl.textContent = VIEW_LABELS[name] || 'Pistol Tracker';
   renderView(name);
 }
 /* ============================================================
