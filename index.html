@@ -63,7 +63,7 @@
     padding: 20px 0; display: flex; flex-direction: column;
   }
   .brand { padding: 0 20px 20px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
-  .brand h1 { font-size: 18px; font-weight: 600; }
+  .brand h1 { font-size: 17px; font-weight: 600; }
   .brand .sub { font-size: 11px; color: var(--text-dim); }
   nav { flex: 1; }
   nav a {
@@ -71,11 +71,11 @@
     padding: 10px 14px; margin: 1px 8px;
     color: var(--text-dim); border-radius: 8px;
     text-decoration: none; cursor: pointer;
-    font-size: 14px;
+    font-size: 15px;
   }
   nav a:hover { background: var(--panel-2); color: var(--text); }
   nav a.active { background: var(--accent); color: #fff; }
-  nav .icon { font-size: 16px; width: 20px; text-align: center; }
+  nav .icon { font-size: 15px; width: 20px; text-align: center; }
   .sidebar-footer { padding: 12px 20px; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-dim); }
 
   /* Global search */
@@ -103,7 +103,7 @@
     box-shadow: 0 20px 50px rgba(0,0,0,0.6); overflow: hidden;
   }
   .search-overlay-input {
-    width: 100%; padding: 16px 20px; font-size: 16px;
+    width: 100%; padding: 16px 20px; font-size: 17px;
     background: transparent; border: none; color: var(--text);
     border-bottom: 1px solid var(--border);
   }
@@ -116,9 +116,9 @@
     padding: 10px 16px; cursor: pointer; display: flex; flex-direction: column; gap: 2px;
   }
   .search-result-item:hover { background: var(--panel-2); }
-  .search-result-item .title { font-size: 14px; font-weight: 500; }
-  .search-result-item .subtitle { font-size: 12px; color: var(--text-dim); }
-  .search-empty { padding: 32px; text-align: center; color: var(--text-dim); font-size: 14px; }
+  .search-result-item .title { font-size: 15px; font-weight: 500; }
+  .search-result-item .subtitle { font-size: 13px; color: var(--text-dim); }
+  .search-empty { padding: 32px; text-align: center; color: var(--text-dim); font-size: 13px; }
   main { flex: 1; overflow-y: auto; padding: 24px 32px; }
   .view { display: none; }
   .view.active { display: block; }
@@ -141,7 +141,7 @@
   .btn.secondary { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); }
   .btn.secondary:hover { background: var(--border); }
   .btn.danger { background: var(--danger); }
-  .btn.small { padding: 5px 10px; font-size: 12px; }
+  .btn.small { padding: 5px 10px; font-size: 11px; }
   .btn.success { background: var(--success); }
 
   /* Tooltips */
@@ -150,7 +150,7 @@
     justify-content: center; width: 16px; height: 16px;
     border-radius: 50%; background: var(--panel-2);
     border: 1px solid var(--border); color: var(--text-dim);
-    font-size: 10px; font-weight: 700; cursor: default;
+    font-size: 11px; font-weight: 700; cursor: default;
     vertical-align: middle; margin-left: 4px; flex-shrink: 0;
     line-height: 1;
   }
@@ -161,7 +161,7 @@
     background: var(--panel); color: var(--text);
     border: 1px solid var(--border);
     border-radius: 8px; padding: 7px 10px;
-    font-size: 12px; font-weight: 400; line-height: 1.5;
+    font-size: 13px; font-weight: 400; line-height: 1.5;
     text-transform: none; letter-spacing: normal;
     white-space: normal; width: 220px; text-align: left;
     box-shadow: 0 4px 12px rgba(0,0,0,0.5);
@@ -206,7 +206,7 @@
     display: none;
   }
   .section-help-panel.open { display: block; }
-  .section-help-panel h4 { font-size: 12px; font-weight: 600; color: var(--accent); margin: 12px 0 4px; }
+  .section-help-panel h4 { font-size: 13px; font-weight: 600; color: var(--accent); margin: 12px 0 4px; }
   .section-help-panel h4:first-child { margin-top: 0; }
   .section-help-panel ul { padding-left: 18px; margin: 4px 0; }
   .section-help-panel li { margin-bottom: 3px; }
@@ -232,7 +232,7 @@
   .stat .label { font-size: 11px; color: var(--text-dim); }
   .stat .value { font-size: 28px; font-weight: 600; margin-top: 6px; }
   .stat .value.accent { color: var(--accent); }
-  .stat .delta { font-size: 12px; color: var(--success); margin-top: 4px; }
+  .stat .delta { font-size: 11px; color: var(--success); margin-top: 4px; }
 
   table { width: 100%; border-collapse: collapse; }
   th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); font-size: 13px; }
@@ -268,8 +268,8 @@
     padding: 18px 24px; border-bottom: 1px solid var(--border);
     display: flex; justify-content: space-between; align-items: center;
   }
-  .modal-header h3 { font-size: 16px; }
-  .modal-close { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 20px; }
+  .modal-header h3 { font-size: 17px; }
+  .modal-close { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 22px; }
   .modal-body { padding: 24px; }
   .modal-footer {
     padding: 16px 24px; border-top: 1px solid var(--border);
@@ -277,7 +277,7 @@
   }
 
   .form-row { margin-bottom: 14px; }
-  .form-row label { display: block; font-size: 12px; color: var(--text-dim); margin-bottom: 4px; }
+  .form-row label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 4px; }
   .form-row input, .form-row select, .form-row textarea {
     width: 100%; padding: 8px 10px;
     background: var(--bg); border: 1px solid var(--border);
@@ -328,7 +328,7 @@
   .chip-list { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
   .chip {
     background: var(--panel-2); border: 1px solid var(--border);
-    padding: 4px 12px; border-radius: 100px; font-size: 12px;
+    padding: 4px 12px; border-radius: 100px; font-size: 13px;
   }
 
   .chart-container { padding: 12px 0; }
@@ -336,7 +336,7 @@
 
   .empty {
     text-align: center; padding: 40px 20px;
-    color: var(--text-dim); font-size: 14px;
+    color: var(--text-dim); font-size: 13px;
   }
   .empty .icon { font-size: 36px; margin-bottom: 12px; opacity: 0.5; }
 
@@ -359,13 +359,13 @@
   .lightbox-close:hover { background: rgba(255,255,255,0.3); }
   .lightbox-hint {
     position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-    color: rgba(255,255,255,0.4); font-size: 12px;
+    color: rgba(255,255,255,0.4); font-size: 11px;
     pointer-events: none; letter-spacing: 0.5px; white-space: nowrap;
   }
 
   hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
 
-  .help-text { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+  .help-text { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
   .text-dim { color: var(--text-dim); }
   .text-accent { color: var(--accent); }
   .text-success { color: var(--success); }
@@ -394,7 +394,7 @@
   .pr-row:last-child { border-bottom: none; }
   .pr-row .name { font-weight: 500; }
   .pr-row .meta { font-size: 11px; color: var(--text-dim); }
-  .pr-row .score { font-size: 18px; font-weight: 600; color: var(--accent); }
+  .pr-row .score { font-size: 17px; font-weight: 600; color: var(--accent); }
 
   .goal-item {
     display: flex; gap: 12px; padding: 10px 0;
@@ -406,7 +406,7 @@
     width: 18px; height: 18px; accent-color: var(--success);
     margin-top: 2px;
   }
-  .goal-item .text { flex: 1; font-size: 14px; }
+  .goal-item .text { flex: 1; font-size: 15px; }
   .goal-item .meta { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
 
   .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
@@ -509,7 +509,7 @@
 
     /* View header wraps gracefully */
     .view-header { flex-wrap: wrap; gap: 10px; }
-    .view-header h2 { font-size: 18px; }
+    .view-header h2 { font-size: 17px; }
 
     /* Slightly smaller stat values */
     .stat .value { font-size: 22px; }
@@ -552,7 +552,7 @@
     <button class="hamburger" id="hamburger-btn" onclick="toggleSidebar()" aria-label="Open menu">&#9776;</button>
     <span class="brand-title">Pistol Tracker</span>
     <div style="display:flex;gap:6px;align-items:center">
-      <button class="btn small secondary" onclick="exportSyncFile()" title="Export sync file to iCloud Drive" style="font-size:16px;padding:4px 9px">&#8679;</button>
+      <button class="btn small secondary" onclick="exportSyncFile()" title="Export sync file to iCloud Drive" style="font-size:17px;padding:4px 9px">&#8679;</button>
       <button class="btn small" onclick="openSessionModal()">+ Session</button>
     </div>
   </div>
@@ -1133,7 +1133,7 @@ function recentlyDeletedCard(type) {
   const uid = 'rdc-' + type;
   return `<div style="margin-bottom:16px">
     <button onclick="const b=document.getElementById('${uid}');b.style.display=b.style.display==='none'?'block':'none'" style="width:100%;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-dim);padding:10px 16px;background:var(--panel);border:1px solid var(--border);border-radius:8px;cursor:pointer;text-align:left">
-      <span style="font-size:16px">🗑</span>
+      <span style="font-size:17px">🗑</span>
       <span>Recently Deleted (${items.length}) — tap to expand &middot; auto-purge after ${TRASH_TTL_DAYS} days</span>
     </button>
     <div id="${uid}" style="display:none">
@@ -1928,7 +1928,7 @@ function runGlobalSearch(kw) {
           <div class="subtitle">${escapeHtml(item.subtitle)}</div>
         </div>
       `).join('')}
-      ${items.length > 5 ? `<div style="padding:6px 16px;font-size:12px;color:var(--text-dim)">${items.length - 5} more — refine your search to narrow results</div>` : ''}
+      ${items.length > 5 ? `<div style="padding:6px 16px;font-size:13px;color:var(--text-dim)">${items.length - 5} more — refine your search to narrow results</div>` : ''}
     </div>
   `).join('');
 
@@ -2116,7 +2116,7 @@ function renderDashboard() {
         // Show top division by classifier %
         const top = divs.map(d => ({ d, c: classificationForDivision(d) })).filter(x => x.c).sort((a,b) => b.c.percent - a.c.percent)[0];
         if (!top) return `<div class="stat"><div class="label">Open Goals</div><div class="value">${openGoals}</div></div>`;
-        return `<div class="stat"><div class="label">${escapeHtml(top.d)} class</div><div class="value accent">${top.c.class}<span style="font-size:14px;color:var(--text-dim);margin-left:6px">${top.c.percent.toFixed(1)}%</span></div></div>`;
+        return `<div class="stat"><div class="label">${escapeHtml(top.d)} class</div><div class="value accent">${top.c.class}<span style="font-size:15px;color:var(--text-dim);margin-left:6px">${top.c.percent.toFixed(1)}%</span></div></div>`;
       })()}
     </div>${(() => {
       const divs = divisionsWithClassifiers();
@@ -2124,7 +2124,7 @@ function renderDashboard() {
       // If multi-division, show all of them in a compact row
       const cards = divs.map(d => ({ d, c: classificationForDivision(d) })).filter(x => x.c);
       if (cards.length <= 1) return '';
-      return `<div class="grid grid-4" style="margin-top:8px">${cards.map(x => `<div class="stat"><div class="label">${escapeHtml(x.d)}</div><div class="value">${x.c.class} <span style="font-size:14px;color:var(--text-dim)">${x.c.percent.toFixed(1)}%</span></div></div>`).join('')}</div>`;
+      return `<div class="grid grid-4" style="margin-top:8px">${cards.map(x => `<div class="stat"><div class="label">${escapeHtml(x.d)}</div><div class="value">${x.c.class} <span style="font-size:15px;color:var(--text-dim)">${x.c.percent.toFixed(1)}%</span></div></div>`).join('')}</div>`;
     })()}
 
     <div class="grid grid-2" style="margin-top:16px">
@@ -2168,7 +2168,7 @@ function firearmStatusBlock(f) {
     <div style="padding:10px 0;border-bottom:1px solid var(--border)">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <strong>${escapeHtml(f.name)}</strong>
-        <span class="text-dim" style="font-size:12px">${live.toLocaleString()} live${dryRounds > 0 ? ` · ${dryRounds.toLocaleString()} dry` : ''}</span>
+        <span class="text-dim" style="font-size:13px">${live.toLocaleString()} live${dryRounds > 0 ? ` · ${dryRounds.toLocaleString()} dry` : ''}</span>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);margin-top:6px">
         <span>Deep clean: ${st.roundsSinceDeepClean.toLocaleString()} / ${DEEP_CLEAN_INTERVAL.toLocaleString()}</span>
@@ -2430,8 +2430,8 @@ function firearmCard(f) {
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
-          <div style="font-size:18px;font-weight:600">${escapeHtml(f.name)}</div>
-          <div class="text-dim" style="font-size:12px">${escapeHtml(f.manufacturer)} &middot; ${escapeHtml(f.caliber)}${f.dateAcquired ? ' &middot; Acquired ' + formatDate(f.dateAcquired) : ''}</div>
+          <div style="font-size:17px;font-weight:600">${escapeHtml(f.name)}</div>
+          <div class="text-dim" style="font-size:13px">${escapeHtml(f.manufacturer)} &middot; ${escapeHtml(f.caliber)}${f.dateAcquired ? ' &middot; Acquired ' + formatDate(f.dateAcquired) : ''}</div>
         </div>
         ${statusBadge}
       </div>
@@ -2468,25 +2468,25 @@ function firearmCard(f) {
       })()}
       ${f.barrelName ? (() => {
         const barrelRounds = total - (f.barrelStartRounds || 0);
-        return `<div style="margin-top:10px;font-size:12px;color:var(--text-dim)">
+        return `<div style="margin-top:10px;font-size:13px;color:var(--text-dim)">
           Barrel: <strong style="color:var(--text)">${escapeHtml(f.barrelName)}</strong>
           &middot; <span style="color:var(--accent)">${Math.max(0,barrelRounds).toLocaleString()} rds since install</span>
           ${f.barrelInstallDate ? ' &middot; installed ' + formatDate(f.barrelInstallDate) : ''}
         </div>`;
       })() : ''}
       <hr>
-      <div style="font-size:12px;color:var(--text-dim);line-height:1.8">
+      <div style="font-size:13px;color:var(--text-dim);line-height:1.8">
         Last field strip: <strong style="color:var(--text)">${st.lastFieldStrip ? formatDate(st.lastFieldStrip.date) : 'Never'}</strong><br>
         Last deep clean: <strong style="color:var(--text)">${st.lastDeepClean ? formatDate(st.lastDeepClean.date) : 'Never'}</strong><br>
         Last annual inspection: <strong style="color:var(--text)">${st.lastAnnual ? formatDate(st.lastAnnual.date) : 'Never'}</strong><br>
         Last recoil spring: <strong style="color:var(--text)">${(() => { const lr = lastMaintenance(f.id, 'recoil_spring'); return lr ? formatDate(lr.date) : 'Never'; })()}</strong>
       </div>
-      ${f.notes ? `<hr><div style="font-size:12px;color:var(--text-dim)">${escapeHtml(f.notes)}</div>` : ''}
+      ${f.notes ? `<hr><div style="font-size:13px;color:var(--text-dim)">${escapeHtml(f.notes)}</div>` : ''}
       ${(() => {
         const isAtlas = (f.manufacturer || '').toLowerCase().includes('atlas');
         const hasSchedule = f.maintenanceSchedule;
         if (!isAtlas) {
-          return `<div style="margin-top:10px;padding:8px 10px;background:var(--panel-2);border-radius:6px;border:1px solid var(--border);font-size:12px">
+          return `<div style="margin-top:10px;padding:8px 10px;background:var(--panel-2);border-radius:6px;border:1px solid var(--border);font-size:13px">
             <span style="color:var(--text-dim)">&#9881; Maintenance Schedule: </span>
             ${hasSchedule
               ? `<span style="color:var(--success)">Configured</span>
@@ -2507,21 +2507,21 @@ function firearmCard(f) {
       </div>
       <!-- Insurance panel (collapsed by default) -->
       <div id="ins-panel-${f.id}" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
-        <div style="font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:10px">&#128274; Insurance Documentation</div>
+        <div style="font-size:13px;font-weight:600;color:var(--text-dim);margin-bottom:10px">&#128274; Insurance Documentation</div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
-          <span style="font-size:12px;color:var(--text-dim);white-space:nowrap">Serial Number:</span>
+          <span style="font-size:13px;color:var(--text-dim);white-space:nowrap">Serial Number:</span>
           <span id="ins-sn-display-${f.id}" style="font-size:13px;font-family:monospace;color:var(--text);cursor:pointer" onclick="editSerialNumber('${f.id}')" title="Click to edit">${f.serialNumber ? escapeHtml(f.serialNumber) : '<span style="color:var(--text-dim);font-style:italic">Not recorded — click to add</span>'}</span>
         </div>
         <div style="margin-bottom:10px">
-          <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Photos (firearm + serial number)</div>
+          <div style="font-size:13px;color:var(--text-dim);margin-bottom:8px">Photos (firearm + serial number)</div>
           <div id="ins-photos-${f.id}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
             ${(f.insurancePhotos || []).map((id, i) => `
               <div style="position:relative">
                 <img src="${imgSrc(id)}" style="width:80px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer" onclick="viewInsurancePhoto('${f.id}',${i})">
-                <button onclick="deleteInsurancePhoto('${f.id}',${i})" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--danger);border:none;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">&times;</button>
+                <button onclick="deleteInsurancePhoto('${f.id}',${i})" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--danger);border:none;color:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">&times;</button>
               </div>
             `).join('')}
-            <label style="width:80px;height:60px;border:1px dashed var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim);font-size:20px" title="Add photo">
+            <label style="width:80px;height:60px;border:1px dashed var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim);font-size:22px" title="Add photo">
               +<input type="file" accept="image/*" style="display:none" onchange="addInsurancePhoto('${f.id}',this)">
             </label>
           </div>
@@ -2558,7 +2558,7 @@ function openFirearmModal(id) {
         </div>
       </div>
       <hr>
-      <strong style="font-size:13px">Barrel Tracking <span class="badge neutral" style="margin-left:6px;font-size:10px">optional</span></strong>
+      <strong style="font-size:13px">Barrel Tracking <span class="badge neutral" style="margin-left:6px;font-size:11px">optional</span></strong>
       <div class="help-text" style="margin-bottom:8px">Record the current barrel so round counts can be tracked per barrel when you swap.</div>
       <div class="form-grid-3">
         <div class="form-row"><label>Current Barrel Name</label><input id="fa-barrel-name" value="${escapeHtml(f.barrelName||'')}" placeholder="e.g. Factory, KKM Match"></div>
@@ -2718,10 +2718,10 @@ function buildInsurancePhotosHTML(f) {
   return (f.insurancePhotos || []).map((id, i) => `
     <div style="position:relative">
       <img src="${imgSrc(id)}" style="width:80px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer" onclick="viewInsurancePhoto('${f.id}',${i})">
-      <button onclick="deleteInsurancePhoto('${f.id}',${i})" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--danger);border:none;color:#fff;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">&times;</button>
+      <button onclick="deleteInsurancePhoto('${f.id}',${i})" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--danger);border:none;color:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">&times;</button>
     </div>
   `).join('') + `
-    <label style="width:80px;height:60px;border:1px dashed var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim);font-size:20px" title="Add photo">
+    <label style="width:80px;height:60px;border:1px dashed var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim);font-size:22px" title="Add photo">
       +<input type="file" accept="image/*" style="display:none" onchange="addInsurancePhoto('${f.id}',this)">
     </label>`;
 }
@@ -2770,7 +2770,7 @@ function printInsuranceRecord(firearmId) {
     <tr><td>Manufacturer</td><td>${escapeHtml(f.manufacturer || '—')}</td></tr>
     <tr><td>Model</td><td>${escapeHtml(f.model || '—')}</td></tr>
     <tr><td>Caliber</td><td>${escapeHtml(f.caliber || '—')}</td></tr>
-    <tr><td>Serial Number</td><td><strong style="font-family:monospace;font-size:16px">${escapeHtml(f.serialNumber || 'NOT RECORDED')}</strong></td></tr>
+    <tr><td>Serial Number</td><td><strong style="font-family:monospace;font-size:15px">${escapeHtml(f.serialNumber || 'NOT RECORDED')}</strong></td></tr>
     <tr><td>Date Acquired</td><td>${f.dateAcquired ? new Date(f.dateAcquired).toLocaleDateString() : '—'}</td></tr>
     <tr><td>Notes</td><td>${escapeHtml(f.notes || '—')}</td></tr>
   </table>
@@ -2798,7 +2798,7 @@ function renderOptics() {
     ${optics.length === 0 ? `
       <div class="card" style="text-align:center;padding:40px;color:var(--text-dim)">
         <div style="font-size:32px;margin-bottom:12px">&#9678;</div>
-        <div style="font-size:16px;margin-bottom:6px">No optics logged yet</div>
+        <div style="font-size:17px;margin-bottom:6px">No optics logged yet</div>
         <div style="font-size:13px">Track your red dots and sights, log battery changes, and save your zero and settings.</div>
       </div>
     ` : `<div class="grid grid-2">${optics.map(op => opticCard(op)).join('')}</div>`}
@@ -2820,7 +2820,7 @@ function renderOptics() {
             return `<tr>
               <td><strong>${escapeHtml(p.name)}</strong></td>
               <td>${fw ? escapeHtml(fw.name) : '<span class="text-dim">Any</span>'}</td>
-              <td><span style="font-size:16px;font-weight:600;color:var(--accent)">${p.quantity || 0}</span></td>
+              <td><span style="font-size:17px;font-weight:600;color:var(--accent)">${p.quantity || 0}</span></td>
               <td>${p.partNumber ? escapeHtml(p.partNumber) : '<span class="text-dim">—</span>'}</td>
               <td>${p.datePurchased ? formatDate(p.datePurchased) : '<span class="text-dim">—</span>'}</td>
               <td>${p.notes ? escapeHtml(p.notes) : '<span class="text-dim">—</span>'}</td>
@@ -2847,25 +2847,25 @@ function opticCard(op) {
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
           <div style="font-size:17px;font-weight:600">${escapeHtml(op.make)} ${escapeHtml(op.model)}</div>
-          <div class="text-dim" style="font-size:12px">${fw ? escapeHtml(fw.name) : 'Unassigned'}${op.installDate ? ' &middot; installed ' + formatDate(op.installDate) : ''}</div>
+          <div class="text-dim" style="font-size:13px">${fw ? escapeHtml(fw.name) : 'Unassigned'}${op.installDate ? ' &middot; installed ' + formatDate(op.installDate) : ''}</div>
         </div>
         ${batteryWarn ? '<span class="badge warn">Battery due</span>' : '<span class="badge success">Active</span>'}
       </div>
       <hr>
-      <div class="grid grid-2" style="font-size:12px;gap:8px">
+      <div class="grid grid-2" style="font-size:13px;gap:8px">
         ${op.zeroDist ? `<div><span class="text-dim">Zero:</span> <strong>${escapeHtml(op.zeroDist)}</strong></div>` : ''}
         ${op.mountHeight ? `<div><span class="text-dim">Mount:</span> <strong>${escapeHtml(op.mountHeight)}</strong></div>` : ''}
         ${op.torqueSpec ? `<div><span class="text-dim">Torque:</span> <strong>${escapeHtml(op.torqueSpec)}</strong></div>` : ''}
         ${op.dotSize ? `<div><span class="text-dim">Dot size:</span> <strong>${escapeHtml(op.dotSize)}</strong></div>` : ''}
       </div>
-      ${op.settingsSnapshot ? `<div style="margin-top:8px;font-size:12px;background:var(--bg);border-radius:6px;padding:8px;color:var(--text-dim)"><span style="color:var(--text);font-weight:600">Settings snapshot:</span><br>${escapeHtml(op.settingsSnapshot)}</div>` : ''}
+      ${op.settingsSnapshot ? `<div style="margin-top:8px;font-size:13px;background:var(--bg);border-radius:6px;padding:8px;color:var(--text-dim)"><span style="color:var(--text);font-weight:600">Settings snapshot:</span><br>${escapeHtml(op.settingsSnapshot)}</div>` : ''}
       <div style="margin-top:12px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-          <span style="font-size:12px;font-weight:600">Battery Log</span>
+          <span style="font-size:13px;font-weight:600">Battery Log</span>
           <button class="btn small secondary" onclick="logBattery('${op.id}')">+ Log Change</button>
         </div>
-        ${batteries.length === 0 ? `<div style="font-size:12px;color:var(--text-dim)">No battery changes logged.</div>` : `
-          <div style="font-size:12px">
+        ${batteries.length === 0 ? `<div style="font-size:13px;color:var(--text-dim)">No battery changes logged.</div>` : `
+          <div style="font-size:13px">
             ${[...batteries].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,3).map(b =>
               `<div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--border);padding:4px 0">
                 <span>${formatDate(b.date)}</span>
@@ -2879,7 +2879,7 @@ function opticCard(op) {
           </div>
         `}
       </div>
-      ${op.notes ? `<div style="margin-top:10px;font-size:12px;color:var(--text-dim)">${escapeHtml(op.notes)}</div>` : ''}
+      ${op.notes ? `<div style="margin-top:10px;font-size:13px;color:var(--text-dim)">${escapeHtml(op.notes)}</div>` : ''}
       <div class="row-actions" style="margin-top:14px">
         <button class="btn small secondary" onclick="openOpticModal('${op.id}')">Edit</button>
         <button class="btn small danger" onclick="deleteOptic('${op.id}')">Delete</button>
@@ -3391,13 +3391,13 @@ function renderSessions() {
           ${hasFilter ? `<button class="btn small secondary" onclick="clearSessionFilter()" style="width:100%">&#10005; Clear</button>` : '<div></div>'}
         </div>
       </div>
-      ${hasFilter ? `<div style="margin-top:8px;font-size:12px;color:var(--text-dim)">Showing ${filtered.length} of ${allSessions.length} session${allSessions.length!==1?'s':''}</div>` : ''}
+      ${hasFilter ? `<div style="margin-top:8px;font-size:13px;color:var(--text-dim)">Showing ${filtered.length} of ${allSessions.length} session${allSessions.length!==1?'s':''}</div>` : ''}
     </div>
 
     ${maintItems.length ? `<div id="maint-alert-bar" class="alert ${maintItems.some(i=>i.level==='danger')?'danger':maintItems.some(i=>i.level==='warn')?'warn':'info'}" style="flex-direction:column;align-items:stretch;cursor:pointer" onclick="openMaintAction('${maintItems[0].firearm.id}','${maintItems[0].mtype}')">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
         <strong style="font-size:13px">&#9888; ${maintItems.length} Maintenance Item${maintItems.length!==1?'s':''} Due</strong>
-        <span style="color:var(--text-dim);font-size:12px">Click any item to log it.</span>
+        <span style="color:var(--text-dim);font-size:13px">Click any item to log it.</span>
       </div>
       ${maintItems.map(item => `
         <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-top:1px solid rgba(255,255,255,0.08);gap:8px">
@@ -3470,11 +3470,11 @@ function sessionCard(s) {
   }).join('');
   const isPlanned = !!s.planned;
   return `
-    <div class="card">${isPlanned ? `<div style="background:#007AFF;margin:-20px -20px 14px -20px;padding:6px 16px;border-radius:12px 12px 0 0;font-size:12px;font-weight:600;color:#fff">&#128203; Planned Session</div>` : ''}
+    <div class="card">${isPlanned ? `<div style="background:#007AFF;margin:-20px -20px 14px -20px;padding:6px 16px;border-radius:12px 12px 0 0;font-size:13px;font-weight:600;color:#fff">&#128203; Planned Session</div>` : ''}
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
-          <div style="font-size:16px;font-weight:600">${formatDate(s.date)} <span class="badge ${isPlanned ? '' : (s.type==='competition'?'info':'neutral')}" ${isPlanned ? 'style="background:rgba(0,122,255,0.12);color:#007AFF;border:1px solid rgba(0,122,255,0.3)"' : ''}>${({'practice':'Practice','competition':'Competition','class':'Class / Training','dry_fire':'Dry Fire'}[s.type||'practice']||escapeHtml(s.type||'practice'))}</span></div>
-          <div class="text-dim" style="font-size:12px;margin-top:6px">${((s.firearmSplits && s.firearmSplits.length) || plannedFwIds.length > 1) ? firearmDisplay + ' &middot; ' : escapeHtml(f ? f.name : '—') + ' &middot; '}${escapeHtml(s.location || 'Location not set')}</div>
+          <div style="font-size:17px;font-weight:600">${formatDate(s.date)} <span class="badge ${isPlanned ? '' : (s.type==='competition'?'info':'neutral')}" ${isPlanned ? 'style="background:rgba(0,122,255,0.12);color:#007AFF;border:1px solid rgba(0,122,255,0.3)"' : ''}>${({'practice':'Practice','competition':'Competition','class':'Class / Training','dry_fire':'Dry Fire'}[s.type||'practice']||escapeHtml(s.type||'practice'))}</span></div>
+          <div class="text-dim" style="font-size:13px;margin-top:6px">${((s.firearmSplits && s.firearmSplits.length) || plannedFwIds.length > 1) ? firearmDisplay + ' &middot; ' : escapeHtml(f ? f.name : '—') + ' &middot; '}${escapeHtml(s.location || 'Location not set')}</div>
         </div>
         <div style="text-align:right">
           ${s.type === 'dry_fire' && !isPlanned ? `<div style="font-size:15px;font-weight:600;color:var(--text-dim)">Dry Fire</div>` : `<div style="font-size:24px;font-weight:600;color:${isPlanned ? '#007AFF' : 'var(--accent)'}">${isPlanned ? '~' : ''}${(s.totalRounds||0).toLocaleString()}</div><div class="text-dim" style="font-size:11px">${isPlanned ? 'planned rds' : 'rounds'}</div>`}
@@ -3486,11 +3486,11 @@ function sessionCard(s) {
         if (cpr == null && !cost) return '';
         return `<div style="text-align:right;white-space:nowrap"><strong style="color:var(--accent)">${cpr != null ? '$' + cpr.toFixed(3) + '/rd' : ''}</strong>${cost ? ` &middot; <span class="text-dim">$${cost.toFixed(2)} total</span>` : ''}</div>`;
       })()}</div>` : ''}
-      ${drillsHtml ? `<div style="margin-top:10px"><strong style="color:var(--text-dim);font-size:12px">Drills</strong><div class="chip-list">${drillsHtml}</div></div>` : ''}
+      ${drillsHtml ? `<div style="margin-top:10px"><strong style="color:var(--text-dim);font-size:13px">Drills</strong><div class="chip-list">${drillsHtml}</div></div>` : ''}
       ${s.distances ? `<div style="margin-top:10px;font-size:13px"><strong style="color:var(--text-dim)">Distances:</strong> ${escapeHtml(s.distances)}</div>` : ''}
       ${s.holster ? `<div style="margin-top:6px;font-size:13px"><strong style="color:var(--text-dim)">Holster:</strong> ${escapeHtml(s.holster)}</div>` : ''}
-      ${(s.malfunctions && s.malfunctions.length) ? `<div style="margin-top:10px"><strong style="color:var(--danger);font-size:12px">Malfunctions (${s.malfunctions.length})</strong><div class="chip-list">${s.malfunctions.map(m => `<span class="chip" style="border-color:var(--danger);color:var(--danger)">${escapeHtml(m.type)}${m.roundCount ? ' @ ' + m.roundCount : ''}</span>`).join('')}</div></div>` : ''}
-      <div style="margin-top:8px;display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text-dim)">
+      ${(s.malfunctions && s.malfunctions.length) ? `<div style="margin-top:10px"><strong style="color:var(--danger);font-size:13px">Malfunctions (${s.malfunctions.length})</strong><div class="chip-list">${s.malfunctions.map(m => `<span class="chip" style="border-color:var(--danger);color:var(--danger)">${escapeHtml(m.type)}${m.roundCount ? ' @ ' + m.roundCount : ''}</span>`).join('')}</div></div>` : ''}
+      <div style="margin-top:8px;display:flex;gap:16px;flex-wrap:wrap;font-size:13px;color:var(--text-dim)">
         <span title="Click to edit location" onclick="inlineEditSessionField('${s.id}','location')" style="cursor:text;padding:2px 4px;border-radius:3px;transition:background 0.15s" onmouseenter="this.style.background='var(--panel-2)'" onmouseleave="this.style.background=''">
           <span id="se-loc-display-${s.id}">&#128205; ${s.location ? escapeHtml(s.location) : '<em>Add location</em>'}</span>
         </span>
@@ -3503,7 +3503,7 @@ function sessionCard(s) {
         </div>
       </div>
       <div id="notes-display-${s.id}" onclick="inlineEditNotes('${s.id}')" style="margin-top:10px;font-size:13px;cursor:text;border-radius:4px;padding:4px;transition:background 0.15s" onmouseenter="this.style.background='var(--panel-2)'" onmouseleave="this.style.background=''" title="Click to edit notes">
-        ${s.notes ? `<span style="color:var(--text-dim);white-space:pre-wrap">${escapeHtml(s.notes)}</span>` : `<span style="color:var(--border);font-style:italic;font-size:12px">Click to add notes...</span>`}
+        ${s.notes ? `<span style="color:var(--text-dim);white-space:pre-wrap">${escapeHtml(s.notes)}</span>` : `<span style="color:var(--border);font-style:italic;font-size:13px">Click to add notes...</span>`}
       </div>
       <div id="notes-editor-${s.id}" style="display:none;margin-top:10px">
         <textarea id="notes-ta-${s.id}" style="width:100%;min-height:60px;font-size:13px" placeholder="Session notes...">${escapeHtml(s.notes||'')}</textarea>
@@ -3521,7 +3521,7 @@ function sessionCard(s) {
         if (!toTake) return '';
         const color = packed === toTake ? '#34C759' : '#007AFF';
         const text = packed === toTake ? `✓ All packed (${packed}/${toTake})` : `${packed} / ${toTake} packed`;
-        return `<div style="margin-top:10px;font-size:12px;color:${color}">&#9745; ${text}</div>`;
+        return `<div style="margin-top:10px;font-size:13px;color:${color}">&#9745; ${text}</div>`;
       })() : ''}
       <div class="row-actions" style="margin-top:14px">
         ${isPlanned ? `
@@ -3647,7 +3647,7 @@ function renderChecklistInModal() {
         ${(!isToggleable || enabled) ? `
           <div>${allItems.map(item => itemRow(item)).join('')}</div>
           <div style="display:flex;gap:6px;margin-top:8px;align-items:center">
-            <input id="cl-modal-new-${cat}" type="text" placeholder="Add a gear item — saves to all future sessions" style="flex:1;font-size:12px;padding:5px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text)">
+            <input id="cl-modal-new-${cat}" type="text" placeholder="Add a gear item — saves to all future sessions" style="flex:1;font-size:13px;padding:5px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text)">
             <button class="btn small secondary" onclick="addModalChecklistItem('${cat}')">+ Add</button>
           </div>
         ` : ''}
@@ -3693,7 +3693,7 @@ function renderChecklistInModal() {
       <div style="flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
         <div style="width:${pct}%;height:100%;background:${color};border-radius:3px;transition:width 0.3s"></div>
       </div>
-      <div style="font-size:12px;font-weight:600;color:${color};white-space:nowrap">${progressText}</div>
+      <div style="font-size:13px;font-weight:600;color:${color};white-space:nowrap">${progressText}</div>
     </div>` : ''}
     <div style="margin-bottom:16px">
       <div style="font-size:13px;font-weight:600;color:var(--text-dim);margin-bottom:8px">🔫 Firearms</div>
@@ -3861,7 +3861,7 @@ function openChecklistModal(sessionId) {
         ${(!isToggleable || enabled) ? `
           <div>${allItems.map(item => itemRow(item)).join('')}</div>
           <div style="display:flex;gap:6px;margin-top:8px;align-items:center">
-            <input id="cl-new-${cat}" type="text" placeholder="Add a gear item — saves to all future sessions" style="flex:1;font-size:12px;padding:5px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text)">
+            <input id="cl-new-${cat}" type="text" placeholder="Add a gear item — saves to all future sessions" style="flex:1;font-size:13px;padding:5px 10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text)">
             <button class="btn small secondary" onclick="addDbChecklistItem('${sessionId}','${cat}')">+ Add</button>
           </div>
         ` : ''}
@@ -3882,7 +3882,7 @@ function openChecklistModal(sessionId) {
       <div style="flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
         <div style="width:${pct}%;height:100%;background:${color};border-radius:3px;transition:width 0.3s"></div>
       </div>
-      <div style="font-size:12px;font-weight:600;color:${color};white-space:nowrap">${text}</div>
+      <div style="font-size:13px;font-weight:600;color:${color};white-space:nowrap">${text}</div>
     </div>`;
   }
 
@@ -3892,7 +3892,7 @@ function openChecklistModal(sessionId) {
       <button class="modal-close" onclick="closeModal()">&times;</button>
     </div>
     <div class="modal-body" style="max-height:70vh;overflow-y:auto">
-      <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Check items you plan to bring, then mark each as packed when ready.</div>
+      <div style="font-size:13px;color:var(--text-dim);margin-bottom:10px">Check items you plan to bring, then mark each as packed when ready.</div>
       ${progressBar()}
       <div style="margin-bottom:16px">
         <div style="font-size:13px;font-weight:600;color:var(--text-dim);margin-bottom:8px">🔫 Firearms</div>
@@ -4259,13 +4259,13 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
         <button class="btn small secondary" onclick="addAmmoRow()">+ Add</button>
       </div>
       <div id="se-ammo-rows"></div>
-      <div id="se-ammo-mismatch" style="display:none;margin-top:6px;font-size:12px;background:rgba(255,149,0,0.1);border:1px solid var(--warn);border-radius:10px;padding:8px 12px;line-height:1.5"></div>
+      <div id="se-ammo-mismatch" style="display:none;margin-top:6px;font-size:13px;background:rgba(255,149,0,0.1);border:1px solid var(--warn);border-radius:10px;padding:8px 12px;line-height:1.5"></div>
 
       <hr>
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
         <strong>Drills Practiced ${tip('Add drills with optional time and/or score. Scores automatically create or update Personal Records in the Progress section.')}</strong>
         <div style="display:flex;gap:8px;align-items:center">
-          <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-dim)"><input id="se-no-holster" type="checkbox" onchange="toggleNoHolster(this.checked)"> No-holster only</label>
+          <label style="display:flex;align-items:center;gap:4px;font-size:13px;color:var(--text-dim)"><input id="se-no-holster" type="checkbox" onchange="toggleNoHolster(this.checked)"> No-holster only</label>
           <button class="btn small secondary" onclick="addDrillRow()">+ Add</button>
         </div>
       </div>
@@ -4278,7 +4278,7 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
           <div style="display:flex;align-items:center;gap:8px">
             <span id="se-cl-chevron" style="font-size:11px;color:var(--text-dim);transition:transform 0.2s">▶</span>
             <strong>Gear Checklist ${tip('Select items you plan to bring (left checkbox), then mark each as packed (right checkbox). Custom items are saved permanently for all future sessions.')}</strong>
-            <span id="se-cl-progress" style="font-size:12px;font-weight:normal;color:var(--text-dim)"></span>
+            <span id="se-cl-progress" style="font-size:13px;font-weight:normal;color:var(--text-dim)"></span>
           </div>
           <button class="btn small secondary" id="se-cl-print-btn" style="display:none" onclick="event.preventDefault();printChecklistFromModal()">&#128438; Print</button>
         </summary>
@@ -4452,7 +4452,7 @@ function renderFirearmSplits() {
   const addable = DB.firearms.filter(f => !includedIds.has(f.id));
   c.innerHTML = `
     <div style="background:var(--panel-2);border-radius:8px;padding:12px;margin-bottom:8px">
-      <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Enter rounds fired with each firearm:</div>
+      <div style="font-size:13px;color:var(--text-dim);margin-bottom:10px">Enter rounds fired with each firearm:</div>
       ${splits.map(sp => {
         const f = getFirearm(sp.firearmId);
         if (!f) return '';
@@ -4461,7 +4461,7 @@ function renderFirearmSplits() {
           <input type="number" min="0" value="${sp.rounds || 0}"
             style="width:90px"
             onchange="updateSplit('${f.id}', parseInt(this.value)||0)">
-          <span style="font-size:12px;color:var(--text-dim)">rounds</span>
+          <span style="font-size:13px;color:var(--text-dim)">rounds</span>
           <button class="btn small secondary" style="padding:2px 8px;font-size:11px;line-height:1" onclick="removeFirearmSplit('${f.id}')">✕</button>
         </div>`;
       }).join('')}
@@ -4474,7 +4474,7 @@ function renderFirearmSplits() {
           <button class="btn small secondary" onclick="addFirearmSplit()">Add</button>
         </div>
       ` : ''}
-      <div style="font-size:12px;margin-top:8px;color:var(--text-dim)">
+      <div style="font-size:13px;margin-top:8px;color:var(--text-dim)">
         Total: <strong style="color:var(--accent)" id="split-total">${splits.reduce((s,sp)=>s+(sp.rounds||0),0)}</strong> rounds
       </div>
     </div>
@@ -4531,7 +4531,7 @@ function renderMalfunctionRows() {
   if (!c) return;
   const list = window._tempSession.malfunctions || [];
   if (!list.length) {
-    c.innerHTML = '<div class="text-dim" style="font-size:12px;padding:6px 0">No malfunctions logged for this session.</div>';
+    c.innerHTML = '<div class="text-dim" style="font-size:13px;padding:6px 0">No malfunctions logged for this session.</div>';
     return;
   }
   c.innerHTML = list.map((m, i) => `
@@ -4582,7 +4582,7 @@ function renderAmmoRows() {
           <option value="__untracked__" ${u.ammoId==='__untracked__'?'selected':''}>Untracked / Range Purchase</option>
           ${DB.ammunition.map(a => `<option value="${a.id}" ${u.ammoId===a.id?'selected':''}>${escapeHtml(a.brand)} ${escapeHtml(a.caliber)} ${escapeHtml(a.grain)}gr ${escapeHtml(a.bulletType)} &mdash; ${(a.quantity||0).toLocaleString()} in can</option>`).join('')}
         </select>
-        ${unselected ? `<div style="font-size:12px;color:var(--accent);margin-top:4px;text-align:right">⚠️ Select an ammo type or choose Untracked / Range Purchase.</div>` : ''}
+        ${unselected ? `<div style="font-size:13px;color:var(--accent);margin-top:4px;text-align:right">⚠️ Select an ammo type or choose Untracked / Range Purchase.</div>` : ''}
       </div>
       <div class="form-row"><label>Rounds</label>
         <input type="number" min="0" value="${u.rounds||0}" onchange="updateAmmoRow(${i},'rounds',parseInt(this.value)||0);renderAmmoRows()">
@@ -4768,11 +4768,11 @@ function openAnnotateTool(src, sessionId, imgIndex) {
     overlay.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.96);z-index:10002;flex-direction:column;align-items:center;justify-content:flex-start;overflow:auto;padding:12px';
     overlay.innerHTML = `
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;background:rgba(255,255,255,0.06);padding:8px 14px;border-radius:8px">
-        <span style="color:#aaa;font-size:12px;margin-right:4px">Circle color:</span>
+        <span style="color:#aaa;font-size:13px;margin-right:4px">Circle color:</span>
         ${[['#ff4444','Red'],['#ffee44','Yellow'],['#44dd66','Green'],['#4a9eff','Blue'],['#ffffff','White']].map(([c,n]) =>
           `<button onclick="setAnnotateColor('${c}')" id="ann-col-${c.replace('#','')}" style="width:24px;height:24px;border-radius:50%;background:${c};border:2px solid transparent;cursor:pointer;transition:border 0.15s" title="${n}"></button>`
         ).join('')}
-        <span style="color:#aaa;font-size:12px;margin:0 4px">Size:</span>
+        <span style="color:#aaa;font-size:13px;margin:0 4px">Size:</span>
         <input id="ann-radius" type="range" min="5" max="80" value="20" style="width:80px">
         <button class="btn small secondary" onclick="clearAnnotations()">Clear All</button>
         <button class="btn small danger" onclick="undoAnnotation()">Undo</button>
@@ -5086,7 +5086,7 @@ function saveInlineNote(id) {
   const disp = document.getElementById('notes-display-' + id);
   disp.innerHTML = s.notes
     ? `<span style="color:var(--text-dim);white-space:pre-wrap">${escapeHtml(s.notes)}</span>`
-    : `<span style="color:var(--border);font-style:italic;font-size:12px">Click to add notes...</span>`;
+    : `<span style="color:var(--border);font-style:italic;font-size:13px">Click to add notes...</span>`;
   disp.style.display = '';
   document.getElementById('notes-editor-' + id).style.display = 'none';
 }
@@ -5575,7 +5575,7 @@ function renderHeatmapPane() {
       <div class="stat"><div class="label">Sessions This Year</div><div class="value accent">${sessionsThisYear}</div></div>
       <div class="stat"><div class="label">Total Sessions</div><div class="value">${totalSessions}</div></div>
       <div class="stat"><div class="label">Active Training Days</div><div class="value">${activeDays}</div></div>
-      <div class="stat"><div class="label">Most Used Firearm</div><div class="value" style="font-size:16px">${topFirearm ? escapeHtml((getFirearm(topFirearm[0])||{}).name||'—') : '—'}</div>${topFirearm?`<div class="delta">${topFirearm[1]} session${topFirearm[1]!==1?'s':''}</div>`:''}</div>
+      <div class="stat"><div class="label">Most Used Firearm</div><div class="value" style="font-size:17px">${topFirearm ? escapeHtml((getFirearm(topFirearm[0])||{}).name||'—') : '—'}</div>${topFirearm?`<div class="delta">${topFirearm[1]} session${topFirearm[1]!==1?'s':''}</div>`:''}</div>
     </div>
 
     <!-- Monthly session bars -->
@@ -5588,7 +5588,7 @@ function renderHeatmapPane() {
               <div style="width:100%;background:${mb.count>0?'var(--accent)':'var(--panel-2)'};height:${mb.count>0?Math.max(6,Math.round((mb.count/maxMonthCount)*56)):4}px;border-radius:3px 3px 0 0;transition:height 0.2s"></div>
             </div>
             <div style="font-size:11px;color:${mb.count>0?'var(--text)':'var(--text-dim)'};font-weight:${mb.count>0?600:400}">${mb.count}</div>
-            <div style="font-size:10px;color:var(--text-dim);white-space:nowrap">${mb.label}</div>
+            <div style="font-size:11px;color:var(--text-dim);white-space:nowrap">${mb.label}</div>
           </div>
         `).join('')}
       </div>
@@ -5698,7 +5698,7 @@ function renderMatchesPane() {
           ${hasFilter ? `<button class="btn small secondary" onclick="clearMatchFilter()" style="width:100%">&#10005; Clear</button>` : '<div></div>'}
         </div>
       </div>
-      ${hasFilter ? `<div style="margin-top:8px;font-size:12px;color:var(--text-dim)">Showing ${matches.length} of ${allMatches.length} match${allMatches.length!==1?'es':''}</div>` : ''}
+      ${hasFilter ? `<div style="margin-top:8px;font-size:13px;color:var(--text-dim)">Showing ${matches.length} of ${allMatches.length} match${allMatches.length!==1?'es':''}</div>` : ''}
     </div>
     <div class="grid grid-4" style="margin-bottom:16px">
       <div class="stat"><div class="label">Matches Logged</div><div class="value">${allMatches.length}</div></div>
@@ -5713,12 +5713,12 @@ function renderMatchesPane() {
       return `<div class="grid grid-2" style="margin-bottom:16px">
         <div class="card">
           <h3>Stage Performance by Match</h3>
-          <div class="text-dim" style="font-size:12px;margin-bottom:8px">Each row is a match. Each dot is a stage % of stage winner. Line marks your match overall %.</div>
+          <div class="text-dim" style="font-size:13px;margin-bottom:8px">Each row is a match. Each dot is a stage % of stage winner. Line marks your match overall %.</div>
           <div class="chart-container">${stagePerformanceChart(matches)}</div>
         </div>
         <div class="card">
           <h3>Stage % Trend Over Time</h3>
-          <div class="text-dim" style="font-size:12px;margin-bottom:8px">Every stage % plotted chronologically. Orange line = match overall %. Trend line shows trajectory.</div>
+          <div class="text-dim" style="font-size:13px;margin-bottom:8px">Every stage % plotted chronologically. Orange line = match overall %. Trend line shows trajectory.</div>
           <div class="chart-container">${stageTimelineChart(matches)}</div>
         </div>
       </div>`;
@@ -5864,7 +5864,7 @@ function matchCard(m) {
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
           <div style="font-size:18px;font-weight:600">${escapeHtml(m.name || 'Match')}</div>
-          <div class="text-dim" style="font-size:12px;margin-top:2px">${formatDate(m.date)} &middot; ${escapeHtml(m.location || '—')} &middot; ${escapeHtml(m.matchType || 'USPSA')}</div>
+          <div class="text-dim" style="font-size:13px;margin-top:2px">${formatDate(m.date)} &middot; ${escapeHtml(m.location || '—')} &middot; ${escapeHtml(m.matchType || 'USPSA')}</div>
         </div>
         <div style="text-align:right">
           <span class="badge info">${escapeHtml(m.division || 'Division')}</span>
@@ -5881,7 +5881,7 @@ function matchCard(m) {
           <div class="text-dim" style="font-size:11px">Match %</div>
           <div id="mpct-display-${m.id}" onclick="inlineEditMatchPct('${m.id}')" style="font-weight:500;cursor:text;padding:2px 3px;border-radius:3px;transition:background 0.15s" onmouseenter="this.style.background='var(--panel-2)'" onmouseleave="this.style.background=''" title="Click to edit">${m.matchPercentage != null ? m.matchPercentage.toFixed(2) + '%' : '<span style=\'color:var(--border)\'>—</span>'}</div>
           <div id="mpct-editor-${m.id}" style="display:none;align-items:center;gap:4px;margin-top:2px">
-            <input id="mpct-input-${m.id}" type="number" step="0.01" min="0" max="120" value="${m.matchPercentage != null ? m.matchPercentage : ''}" style="width:70px;font-size:12px;padding:2px 4px;background:var(--bg);border:1px solid var(--accent);border-radius:4px;color:var(--text)">
+            <input id="mpct-input-${m.id}" type="number" step="0.01" min="0" max="120" value="${m.matchPercentage != null ? m.matchPercentage : ''}" style="width:70px;font-size:13px;padding:2px 4px;background:var(--bg);border:1px solid var(--accent);border-radius:4px;color:var(--text)">
             <button class="btn small" onclick="saveInlineMatchPct('${m.id}')">✓</button>
             <button class="btn small secondary" onclick="cancelInlineMatchPct('${m.id}')">✕</button>
           </div>
@@ -5940,14 +5940,14 @@ function renderClassificationPane() {
         return `<div class="card">
           <h3>${escapeHtml(d)}</h3>
           <div style="display:flex;justify-content:space-between;align-items:center">
-            <div><div style="font-size:36px;font-weight:600;color:var(--accent)">${c.percent.toFixed(2)}%</div><div class="text-dim" style="font-size:12px">Best ${c.used.length} of last ${c.poolSize} ${need}</div></div>
+            <div><div style="font-size:36px;font-weight:600;color:var(--accent)">${c.percent.toFixed(2)}%</div><div class="text-dim" style="font-size:13px">Best ${c.used.length} of last ${c.poolSize} ${need}</div></div>
             <div style="font-size:42px;font-weight:600"><span class="badge ${tier}" style="font-size:24px;padding:6px 14px">${c.class}</span></div>
           </div>
           <hr>
-          <div style="font-size:12px;color:var(--text-dim);line-height:1.8">
+          <div style="font-size:13px;color:var(--text-dim);line-height:1.8">
             <strong style="color:var(--text)">Class thresholds:</strong> GM ≥ 95% &middot; M ≥ 85% &middot; A ≥ 75% &middot; B ≥ 60% &middot; C ≥ 40% &middot; D < 40%
           </div>
-          <div style="margin-top:12px"><strong style="font-size:12px;color:var(--text-dim)">Scores Used</strong><div style="margin-top:6px">${c.used.map(x => `<div style="font-size:13px;padding:4px 0;border-bottom:1px dotted var(--border)"><span class="text-dim">${formatDate(x.date)}</span> &middot; ${escapeHtml(x.classifierCode||'')} &middot; <strong style="color:var(--accent)">${x.classifierPercent.toFixed(2)}%</strong></div>`).join('')}</div></div>
+          <div style="margin-top:12px"><strong style="font-size:13px;color:var(--text-dim)">Scores Used</strong><div style="margin-top:6px">${c.used.map(x => `<div style="font-size:13px;padding:4px 0;border-bottom:1px dotted var(--border)"><span class="text-dim">${formatDate(x.date)}</span> &middot; ${escapeHtml(x.classifierCode||'')} &middot; <strong style="color:var(--accent)">${x.classifierPercent.toFixed(2)}%</strong></div>`).join('')}</div></div>
         </div>`;
       }).join('')}
     </div>
@@ -5958,7 +5958,7 @@ function renderClassificationPane() {
 
     <div class="card">
       <h3>Best Score per Classifier</h3>
-      <div class="text-dim" style="font-size:12px;margin-bottom:8px">Your peak performance for each unique classifier code, with attempt count and improvement vs. first attempt.</div>
+      <div class="text-dim" style="font-size:13px;margin-bottom:8px">Your peak performance for each unique classifier code, with attempt count and improvement vs. first attempt.</div>
       ${bestPerClassifierTable()}
     </div>
   `;
@@ -6291,7 +6291,7 @@ function renderStageTimelinePane() {
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px">
         <h3 style="margin-bottom:0">Stage % Over Time</h3>
-        <div style="font-size:12px;color:var(--text-dim);display:flex;gap:16px">
+        <div style="font-size:13px;color:var(--text-dim);display:flex;gap:16px">
           <span>Average: <strong style="color:var(--text)">${avg}%</strong></span>
           <span>Trend: <strong style="color:${trendColor}">${trend}</strong></span>
           <span>Stages: <strong style="color:var(--text)">${n}</strong></span>
@@ -6358,7 +6358,7 @@ function openClassifierModal(id) {
         </div>
       </div>
       <div class="form-row"><label>Your Percentage (auto)</label>
-        <input id="cl-pct" readonly value="${c.classifierPercent != null && c.classifierPercent !== '' ? Number(c.classifierPercent).toFixed(2) + '%' : ''}" style="background:var(--panel-2);font-size:16px;font-weight:600;color:var(--accent)">
+        <input id="cl-pct" readonly value="${c.classifierPercent != null && c.classifierPercent !== '' ? Number(c.classifierPercent).toFixed(2) + '%' : ''}" style="background:var(--panel-2);font-size:17px;font-weight:600;color:var(--accent)">
       </div>
       <hr>
       <strong>Hit Breakdown (optional)</strong>
@@ -6765,7 +6765,7 @@ function renderCostsDashboard({ ammoCost, rangeFees, matchFees, gearTotal, grand
 
     <div class="card" style="margin-bottom:16px">
       <h3>Monthly Spend — Last 13 Months</h3>
-      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;font-size:12px">
+      <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px;font-size:13px">
         <span><span style="display:inline-block;width:10px;height:10px;background:${COLORS.ammo};border-radius:2px;margin-right:4px"></span>Ammo</span>
         <span><span style="display:inline-block;width:10px;height:10px;background:${COLORS.range};border-radius:2px;margin-right:4px"></span>Range Fees</span>
         <span><span style="display:inline-block;width:10px;height:10px;background:${COLORS.match};border-radius:2px;margin-right:4px"></span>Match Fees</span>
@@ -6796,7 +6796,7 @@ function renderCostsDashboard({ ammoCost, rangeFees, matchFees, gearTotal, grand
             <div class="progress"><div class="progress-fill" style="width:${pct}%;background:${c.color}"></div></div>
           </div>`;
         }).join('')}
-        <div style="display:flex;justify-content:space-between;padding:10px 0 0;font-size:14px;border-top:1px solid var(--border);margin-top:8px">
+        <div style="display:flex;justify-content:space-between;padding:10px 0 0;font-size:15px;border-top:1px solid var(--border);margin-top:8px">
           <strong>YTD Total</strong><strong style="color:var(--accent)">$${ytdTotal.toFixed(2)}</strong>
         </div>
       </div>
@@ -6804,7 +6804,7 @@ function renderCostsDashboard({ ammoCost, rangeFees, matchFees, gearTotal, grand
 
     ${fwData.length ? `<div class="card" style="margin-bottom:16px">
       <h3>Spend by Firearm</h3>
-      <div class="text-dim" style="font-size:12px;margin-bottom:10px">Ammo + range fees from sessions attributed to each gun; match fees from logged matches. Gear purchases are not firearm-attributed.</div>
+      <div class="text-dim" style="font-size:13px;margin-bottom:10px">Ammo + range fees from sessions attributed to each gun; match fees from logged matches. Gear purchases are not firearm-attributed.</div>
       <table>
         <thead><tr><th>Firearm</th><th>Ammo Cost</th><th>Range Fees</th><th>Match Fees</th><th>Total</th></tr></thead>
         <tbody>
@@ -6825,7 +6825,7 @@ function renderCostsLog() {
   return `
     <div class="card" style="margin-bottom:16px">
       <h3>Ammo Cost by Session</h3>
-      <div class="text-dim" style="font-size:12px;margin-bottom:10px">Auto-calculated from rounds fired × cost/round. Set a cost/round in Ammunition to populate this table.</div>
+      <div class="text-dim" style="font-size:13px;margin-bottom:10px">Auto-calculated from rounds fired × cost/round. Set a cost/round in Ammunition to populate this table.</div>
       ${(() => {
         const rows = [...DB.sessions]
           .sort((a, b) => b.date.localeCompare(a.date))
@@ -7029,7 +7029,7 @@ function renderHelp() {
     <div style="margin-bottom:16px;display:flex;gap:10px;align-items:center">
       <div style="flex:1;position:relative">
         <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-dim)">&#128269;</span>
-        <input type="search" id="help-search" placeholder="Search help topics… (e.g. magazine, backup, drill)" oninput="filterHelpSections(this.value)" style="width:100%;padding:8px 12px 8px 32px;background:var(--panel-2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px">
+        <input type="search" id="help-search" placeholder="Search help topics… (e.g. magazine, backup, drill)" oninput="filterHelpSections(this.value)" style="width:100%;padding:8px 12px 8px 32px;background:var(--panel-2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:15px">
       </div>
       <button class="btn secondary" onclick="document.getElementById('help-search').value='';filterHelpSections('')" style="white-space:nowrap">&#10005; Clear</button>
     </div>
@@ -7238,7 +7238,7 @@ function renderMalfunctions() {
           ${hasFilter ? `<button class="btn small secondary" onclick="clearMalfFilter()" style="width:100%">&#10005; Clear</button>` : '<div></div>'}
         </div>
       </div>
-      ${hasFilter ? `<div style="margin-top:8px;font-size:12px;color:var(--text-dim)">Showing ${filtered.length} of ${all.length} malfunction${all.length!==1?'s':''}</div>` : ''}
+      ${hasFilter ? `<div style="margin-top:8px;font-size:13px;color:var(--text-dim)">Showing ${filtered.length} of ${all.length} malfunction${all.length!==1?'s':''}</div>` : ''}
     </div>
     <div class="grid grid-4" style="margin-bottom:16px">
       <div class="stat"><div class="label">Total Logged</div><div class="value">${all.length}</div></div>
@@ -7288,7 +7288,7 @@ function renderMalfunctions() {
       const maxMag = rows[0][1].count;
       return `<div class="card" style="margin-bottom:16px">
         <h3>Malfunction Correlation by Magazine</h3>
-        <div class="text-dim" style="font-size:12px;margin-bottom:10px">Only malfunctions where a magazine was identified are shown. High counts may indicate a problem mag.</div>
+        <div class="text-dim" style="font-size:13px;margin-bottom:10px">Only malfunctions where a magazine was identified are shown. High counts may indicate a problem mag.</div>
         <table>
           <thead><tr><th>Magazine</th><th>Pool</th><th>Total</th><th>Top Type</th><th>Rounds Through Mag</th></tr></thead>
           <tbody>${rows.map(([magId, data]) => {
@@ -7298,14 +7298,14 @@ function renderMalfunctions() {
             const barW = Math.round((data.count / maxMag) * 100);
             return `<tr>
               <td><strong>${mg ? escapeHtml(mg.label) : magId}</strong></td>
-              <td class="text-dim" style="font-size:12px">${escapeHtml(poolNames)}</td>
+              <td class="text-dim" style="font-size:13px">${escapeHtml(poolNames)}</td>
               <td>
                 <div style="display:flex;align-items:center;gap:8px">
                   <span class="badge ${data.count >= 3 ? 'danger' : 'warn'}">${data.count}</span>
                   <div class="progress" style="width:80px;flex-shrink:0"><div class="progress-fill danger" style="width:${barW}%"></div></div>
                 </div>
               </td>
-              <td style="font-size:12px">${topType ? escapeHtml(topType[0]) : '—'}</td>
+              <td style="font-size:13px">${topType ? escapeHtml(topType[0]) : '—'}</td>
               <td>${mg ? (mg.totalRounds||0).toLocaleString() : '—'}</td>
             </tr>`;
           }).join('')}</tbody>
@@ -7333,7 +7333,7 @@ function renderMalfunctions() {
             <td class="row-actions">${m.source !== 'session' ? `<button class="btn small danger" onclick="deleteMalfunction('${m.id}')">Delete</button>` : '<span class="text-dim" style="font-size:11px">in session</span>'}</td>
           </tr>`;
         }).join('')}</tbody>
-      </table>` : `<div class="empty"><div class="icon">&#9888;</div>${hasFilter ? 'No malfunctions match the current filters.' : "No malfunctions logged. That's a good thing!"}<br><br>${hasFilter ? `<button class="btn secondary" onclick="clearMalfFilter()">Clear Filters</button>` : '<div class="text-dim" style="font-size:12px">Log them inside sessions or as standalone entries.</div>'}</div>`}
+      </table>` : `<div class="empty"><div class="icon">&#9888;</div>${hasFilter ? 'No malfunctions match the current filters.' : "No malfunctions logged. That's a good thing!"}<br><br>${hasFilter ? `<button class="btn secondary" onclick="clearMalfFilter()">Clear Filters</button>` : '<div class="text-dim" style="font-size:13px">Log them inside sessions or as standalone entries.</div>'}</div>`}
     </div>
     ${recentlyDeletedCard('malfunction')}
   `;
@@ -7459,7 +7459,7 @@ function renderMaintenance() {
           <div style="display:flex;justify-content:space-between;align-items:center">
             <div>
               <strong>Next replacement: ${formatDate(ms.nextDue)}</strong>
-              <div class="text-dim" style="font-size:12px;margin-top:4px">Schedule: every ${ms.intervalMonths} months &middot; Started ${formatDate(ms.startDate)} &middot; ${ms.lastDone ? 'Last done ' + formatDate(ms.lastDone.date) : 'Never replaced in app'}</div>
+              <div class="text-dim" style="font-size:13px;margin-top:4px">Schedule: every ${ms.intervalMonths} months &middot; Started ${formatDate(ms.startDate)} &middot; ${ms.lastDone ? 'Last done ' + formatDate(ms.lastDone.date) : 'Never replaced in app'}</div>
             </div>
             <div style="display:flex;gap:8px;align-items:center">
               <span class="badge ${stateClass}">${stateLabel}</span>
@@ -7507,7 +7507,7 @@ function renderMaintenance() {
           ${hasFilter ? `<button class="btn small secondary" onclick="clearMaintenanceFilter()" style="width:100%">&#10005; Clear</button>` : '<div></div>'}
         </div>
       </div>
-      ${hasFilter ? `<div style="margin-top:8px;font-size:12px;color:var(--text-dim)">Showing ${log.length} of ${allLog.length} record${allLog.length!==1?'s':''}</div>` : ''}
+      ${hasFilter ? `<div style="margin-top:8px;font-size:13px;color:var(--text-dim)">Showing ${log.length} of ${allLog.length} record${allLog.length!==1?'s':''}</div>` : ''}
     </div>
 
     <div class="card">
@@ -7794,7 +7794,7 @@ function renderSettings() {
         </label>
       </div>
 
-      <div style="margin-top:12px;font-size:12px;color:var(--text-dim)">
+      <div style="margin-top:12px;font-size:13px;color:var(--text-dim)">
         Last exported: <strong style="color:var(--text)">${lastExport ? formatDate(lastExport) : 'Never'}</strong>
         &nbsp;&middot;&nbsp;
         Last imported: <strong style="color:var(--text)">${lastImport ? formatDate(lastImport) : 'Never'}</strong>
@@ -7808,7 +7808,7 @@ function renderSettings() {
         <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
           <div>
             <div style="font-weight:600;color:var(--accent)">&#8634; Auto-Sync (set up once, runs automatically)</div>
-            <div style="font-size:12px;color:var(--text-dim);margin-top:4px">Pick a sync file in iCloud Drive once. The app writes to it on every change, reads from it on open. No more manual export/import.</div>
+            <div style="font-size:13px;color:var(--text-dim);margin-top:4px">Pick a sync file in iCloud Drive once. The app writes to it on every change, reads from it on open. No more manual export/import.</div>
           </div>
         </div>
         ${autoSyncStatus.connected ? `
@@ -7828,7 +7828,7 @@ function renderSettings() {
         ` : (autoSyncStatus.filename ? `
           <div style="background:rgba(255,149,0,0.1);border:1px solid var(--warn);border-radius:10px;padding:12px;font-size:13px">
             <strong style="color:var(--warn)">Auto-sync needs to be reconnected</strong>
-            <div style="font-size:12px;color:var(--text-dim);margin-top:4px">Browser permission was lost (this happens after browser restarts). Click below to re-grant write access to <strong>${escapeHtml(autoSyncStatus.filename)}</strong>.</div>
+            <div style="font-size:13px;color:var(--text-dim);margin-top:4px">Browser permission was lost (this happens after browser restarts). Click below to re-grant write access to <strong>${escapeHtml(autoSyncStatus.filename)}</strong>.</div>
             <div style="margin-top:10px;display:flex;gap:8px">
               <button class="btn small" onclick="reconnectAutoSync()">Reconnect</button>
               <button class="btn small secondary" onclick="connectAutoSync()">Pick a different file</button>
@@ -7841,7 +7841,7 @@ function renderSettings() {
         `)}
       ` : `
         <hr style="margin:20px 0">
-        <div class="text-dim" style="font-size:12px">
+        <div class="text-dim" style="font-size:13px">
           <strong>Auto-sync available in Chrome/Edge on Mac.</strong> This browser doesn't support the File System Access API, so use the manual Export/Import buttons above. Your data still syncs reliably — it just takes two clicks instead of being automatic.
         </div>
       `}
@@ -7902,7 +7902,7 @@ function renderSettings() {
         ${DB.drillLibrary.map((d, i) => `
           <div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
             <strong style="min-width:180px">${escapeHtml(d.name)}</strong>
-            <span class="text-dim" style="font-size:12px;flex:1">${escapeHtml(d.description||'')}</span>
+            <span class="text-dim" style="font-size:13px;flex:1">${escapeHtml(d.description||'')}</span>
             <span class="badge neutral">${escapeHtml(d.scoring||'time')}</span>
             <button class="btn small danger" onclick="removeDrill(${i})">&times;</button>
           </div>
@@ -8331,7 +8331,7 @@ function renderRRPreview(headers, rows) {
   const selectors = Object.entries(_rrMapping).map(([field, col]) => `
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px">
       <span style="width:80px;color:var(--text-dim);font-size:11px">${field}</span>
-      <select onchange="_rrMapping['${field}']=this.value;renderRRPreview(${JSON.stringify(headers)}, _rrRows)" style="flex:1;padding:4px 6px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:12px">
+      <select onchange="_rrMapping['${field}']=this.value;renderRRPreview(${JSON.stringify(headers)}, _rrRows)" style="flex:1;padding:4px 6px;background:var(--bg);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:13px">
         <option value="">— not mapped —</option>
         ${headers.map(h => `<option value="${escapeHtml(h)}" ${col===h?'selected':''}>${escapeHtml(h)}</option>`).join('')}
       </select>
@@ -8350,7 +8350,7 @@ function renderRRPreview(headers, rows) {
   preview.innerHTML = `
     <div style="margin-bottom:12px">
       <strong>Column Mapping</strong>
-      <div class="text-dim" style="font-size:12px;margin-bottom:10px">Auto-detected from headers. Adjust if needed.</div>
+      <div class="text-dim" style="font-size:13px;margin-bottom:10px">Auto-detected from headers. Adjust if needed.</div>
       ${selectors}
     </div>
     <div style="margin-bottom:12px">
@@ -8361,7 +8361,7 @@ function renderRRPreview(headers, rows) {
     <div style="display:flex;gap:8px;align-items:center">
       <button class="btn" onclick="importRangeReadyCSV()">Import ${rows.length} Sessions</button>
       <button class="btn secondary" onclick="document.getElementById('rr-preview').innerHTML=''">Cancel</button>
-      <span class="text-dim" style="font-size:12px">Duplicate sessions (same date + rounds) will be skipped.</span>
+      <span class="text-dim" style="font-size:13px">Duplicate sessions (same date + rounds) will be skipped.</span>
     </div>
   `;
 }
@@ -8740,7 +8740,7 @@ function showTourStep() {
         ${!isFirst ? `<button class="btn secondary" onclick="tourNav(-1)">&#8592; Back</button>` : '<span></span>'}
         ${!isLast ? `<button class="btn" onclick="tourNav(1)">Next &#8594;</button>` : `<button class="btn" onclick="closeModal()">Done &#10003;</button>`}
       </div>
-      <button class="btn secondary" onclick="closeModal()" style="font-size:12px">Skip Tour</button>
+      <button class="btn secondary" onclick="closeModal()" style="font-size:13px">Skip Tour</button>
     </div>
   `);
 }
@@ -8864,18 +8864,18 @@ function renderWizardStep() {
       <div style="text-align:center;padding:8px 0 24px">
         <div style="font-size:48px;margin-bottom:12px">🎯</div>
         <h2 style="font-size:22px;margin-bottom:8px">Welcome to Pistol Tracker!</h2>
-        <p style="color:var(--text-dim);font-size:14px;line-height:1.7;max-width:420px;margin:0 auto 24px">Your personal training log, maintenance scheduler, and competition tracker — all in one place. No account needed, no internet required.</p>
+        <p style="color:var(--text-dim);font-size:15px;line-height:1.7;max-width:420px;margin:0 auto 24px">Your personal training log, maintenance scheduler, and competition tracker — all in one place. No account needed, no internet required.</p>
         <p style="color:var(--text-dim);font-size:13px;margin-bottom:24px">How would you like to get started?</p>
         <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
           <div onclick="wizNext()" style="cursor:pointer;background:var(--panel-2);border:2px solid var(--accent);border-radius:12px;padding:20px 24px;max-width:200px;text-align:left;transition:background 0.15s" onmouseenter="this.style.background='var(--bg)'" onmouseleave="this.style.background='var(--panel-2)'">
             <div style="font-size:24px;margin-bottom:8px">⚡</div>
             <div style="font-weight:600;margin-bottom:4px">Quick Setup</div>
-            <div style="font-size:12px;color:var(--text-dim)">Add your firearm and ammo, set preferences. Ready to log in ~3 minutes.</div>
+            <div style="font-size:13px;color:var(--text-dim)">Add your firearm and ammo, set preferences. Ready to log in ~3 minutes.</div>
           </div>
           <div onclick="closeOnboarding();startFullTour();" style="cursor:pointer;background:var(--panel-2);border:2px solid var(--border);border-radius:12px;padding:20px 24px;max-width:200px;text-align:left;transition:background 0.15s;border-color:var(--border)" onmouseenter="this.style.background='var(--bg)'" onmouseleave="this.style.background='var(--panel-2)'">
             <div style="font-size:24px;margin-bottom:8px">🗺</div>
             <div style="font-weight:600;margin-bottom:4px">Full Tour</div>
-            <div style="font-size:12px;color:var(--text-dim)">Walk through all 13 sections with tips and explanations for each one.</div>
+            <div style="font-size:13px;color:var(--text-dim)">Walk through all 13 sections with tips and explanations for each one.</div>
           </div>
         </div>
       </div>
@@ -8892,7 +8892,7 @@ function renderWizardStep() {
       <p style="color:var(--text-dim);font-size:13px;margin-bottom:20px">You can add more later from the Firearms section. Fill in what you know — nothing is required except the name.</p>
       <div class="form-grid-2">
         <div class="form-row"><label>Name <span style="color:var(--accent)">*</span></label>
-          <input id="wz-fa-name" placeholder="e.g. Glock 34, CZ Shadow 2, Staccato C2" style="font-size:14px">
+          <input id="wz-fa-name" placeholder="e.g. Glock 34, CZ Shadow 2, Staccato C2" style="font-size:15px">
         </div>
         <div class="form-row"><label>Manufacturer</label>
           <input id="wz-fa-mfr" placeholder="e.g. Glock, CZ, Staccato">
@@ -9002,7 +9002,7 @@ function renderWizardStep() {
     content = `
       <div style="text-align:center;padding:8px 0 16px">
         <div style="font-size:48px;margin-bottom:12px">🎉</div>
-        <h2 style="font-size:20px;margin-bottom:8px">You're all set!</h2>
+        <h2 style="font-size:22px;margin-bottom:8px">You're all set!</h2>
         <p style="color:var(--text-dim);font-size:13px;line-height:1.7;max-width:420px;margin:0 auto 20px">
           Head to <strong style="color:var(--text)">Sessions</strong> to log your first range session, or explore the sidebar to see what's available. The <strong style="color:var(--text)">Help</strong> section covers every feature in detail.
         </p>
@@ -9022,7 +9022,7 @@ function renderWizardStep() {
 
   overlay.innerHTML = `
     <div style="background:var(--panel);border-radius:16px;padding:28px 32px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;position:relative">
-      <button onclick="closeOnboarding()" style="position:absolute;top:14px;right:16px;background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;line-height:1" title="Close">&times;</button>
+      <button onclick="closeOnboarding()" style="position:absolute;top:14px;right:16px;background:none;border:none;color:var(--text-dim);font-size:22px;cursor:pointer;line-height:1" title="Close">&times;</button>
       ${progressBar}
       ${content}
     </div>
