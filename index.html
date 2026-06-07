@@ -3030,11 +3030,12 @@ function renderOptics() {
     </div>
     ${sectionHelpPanel('optics')}
     ${optics.length === 0 ? `
-      <div class="card" style="text-align:center;padding:40px;color:var(--text-dim)">
-        <div style="font-size:32px;margin-bottom:12px">&#9678;</div>
-        <div style="font-size:17px;margin-bottom:6px">No optics logged yet</div>
-        <div style="font-size:13px">Track your red dots and sights, log battery changes, and save your zero and settings.</div>
-      </div>
+      <div class="card"><div class="empty">
+        <div class="icon">🔭</div>
+        <div style="font-size:17px;font-weight:600;color:var(--text);margin-bottom:6px">No Optics Added Yet</div>
+        <div style="margin-bottom:16px">Track red dots and iron sights, log battery changes, and save your zero and settings for each firearm.</div>
+        <button class="btn" onclick="openOpticModal()">Add First Optic</button>
+      </div></div>
     ` : `<div class="grid grid-2">${optics.map(op => opticCard(op)).join('')}</div>`}
 
     <div class="view-header" style="margin-top:28px">
@@ -5459,7 +5460,7 @@ function renderPRsPane() {
   const prs = personalRecords();
   const recs = allDrillRecords();
   if (!recs.length) {
-    return `<div class="card"><div class="empty"><div class="icon">⭐</div>No drill data yet. Log a session with drill scores to start tracking PRs.</div></div>`;
+    return `<div class="card"><div class="empty"><div class="icon">⭐</div>No drill data yet. Log a session with drill scores to start tracking PRs.<br><br><button class="btn secondary" onclick="setView('sessions')">Go to Sessions</button></div></div>`;
   }
   return `
     <div class="grid grid-2">
@@ -5519,7 +5520,7 @@ function renderGoalsPane() {
       </div>
       <hr>
       <div style="font-size:13px;font-weight:600;color:var(--text-dim);padding:6px 0 4px">Open (${open.length})</div>
-      ${open.length ? open.map(g => goalRow(g)).join('') : '<div class="empty">No open goals. Set one to give your training direction.</div>'}
+      ${open.length ? open.map(g => goalRow(g)).join('') : '<div class="empty"><div class="icon">🎯</div>No open goals. Set one to give your training direction.</div>'}
       ${done.length ? `<hr><div style="font-size:13px;font-weight:600;color:var(--text-dim);padding:6px 0 4px">Achieved (${done.length})</div>${done.map(g => goalRow(g)).join('')}` : ''}
     </div>
     <div class="card">
@@ -5622,7 +5623,7 @@ function renderSkillsPane() {
           `).join('')}
         </div>
         ${latest.notes ? `<hr><div style="font-size:13px;color:var(--text-dim)"><strong>Notes:</strong> ${escapeHtml(latest.notes)}</div>` : ''}
-      ` : '<div class="empty">No assessments yet. Make your first one.</div>'}
+      ` : '<div class="empty"><div class="icon">📈</div>No assessments yet. Make your first one.</div>'}
     </div>
 
     ${DB.skillAssessments.length > 1 ? `<div class="card">
@@ -7835,8 +7836,7 @@ function renderMaintenance() {
             </td>
           </tr>`;
         }).join('')}</tbody>
-      </table>` : `<div class="empty">${hasFilter ? 'No records match the current filters.' : 'No maintenance logged yet.'}</div>`}
-      ${hasFilter && log.length === 0 ? `<div style="text-align:center;margin-top:8px"><button class="btn secondary" onclick="clearMaintenanceFilter()">Clear Filters</button></div>` : ''}
+      </table>` : `<div class="empty"><div class="icon">${hasFilter ? '🔍' : '🔧'}</div>${hasFilter ? 'No records match the current filters.' : 'No maintenance logged yet.'}${hasFilter ? '<br><br><button class="btn secondary" onclick="clearMaintenanceFilter()">Clear Filters</button>' : ''}</div>`}
     </div>
     ${recentlyDeletedCard('maintenance')}
   `;
