@@ -3501,7 +3501,7 @@ function sessionCard(s) {
     <div class="card">${isPlanned ? `<div style="background:#007AFF;margin:-20px -20px 14px -20px;padding:6px 16px;border-radius:12px 12px 0 0;font-size:13px;font-weight:600;color:#fff">&#128203; Planned Session</div>` : ''}
       <div style="display:flex;justify-content:space-between;align-items:flex-start">
         <div>
-          <div style="font-size:17px;font-weight:600">${formatDate(s.date)} <span class="badge ${isPlanned ? '' : (s.type==='competition'?'info':'neutral')}" ${isPlanned ? 'style="background:rgba(0,122,255,0.12);color:#007AFF;border:1px solid rgba(0,122,255,0.3)"' : ''}>${({'practice':'Practice','competition':'Competition','class':'Class / Training','dry_fire':'Dry Fire'}[s.type||'practice']||escapeHtml(s.type||'practice'))}</span></div>
+          <div style="font-size:17px;font-weight:600">${formatDate(s.date)} <span class="badge ${{practice:'neutral',competition:'info',class:'success',dry_fire:'neutral'}[s.type||'practice']||'neutral'}">${({'practice':'Practice','competition':'Competition','class':'Class / Training','dry_fire':'Dry Fire'}[s.type||'practice']||escapeHtml(s.type||'practice'))}</span></div>
           <div class="text-dim" style="font-size:13px;margin-top:6px">${((s.firearmSplits && s.firearmSplits.length) || plannedFwIds.length > 1) ? firearmDisplay + ' &middot; ' : escapeHtml(f ? f.name : '—') + ' &middot; '}${escapeHtml(s.location || 'Location not set')}</div>
         </div>
         <div style="text-align:right">
