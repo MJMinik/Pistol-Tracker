@@ -8836,26 +8836,24 @@ function roundsChart() {
   return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${grid}${bars}${legend}</svg>`;
 }
 
-function svgXDateLabels(minD, maxD, W, padL, padR, H, padB, n) {
-  n = n || 4;
+function xDateLabelRow(minD, maxD, padL, padR, W) {
+  const n = 4;
   const mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  let out = '';
-  const range = Math.max(1, maxD - minD);
+  const labels = [];
   for (let i = 0; i <= n; i++) {
-    const t = minD + (i / n) * range;
+    const t = minD + (i / n) * Math.max(1, maxD - minD);
     const d = new Date(t);
-    const lbl = mo[d.getMonth()] + " '" + String(d.getFullYear()).slice(2);
-    const x = padL + (i / n) * (W - padL - padR);
-    const anchor = i === 0 ? 'start' : i === n ? 'end' : 'middle';
-    out += `<text x="${x.toFixed(1)}" y="${H - padB + 14}" text-anchor="${anchor}" fill="var(--text-dim)" font-size="13">${lbl}</text>`;
+    labels.push(mo[d.getMonth()] + " '" + String(d.getFullYear()).slice(2));
   }
-  return out;
+  const pl = (padL / W * 100).toFixed(1);
+  const pr = (padR / W * 100).toFixed(1);
+  return '<div style="display:flex;justify-content:space-between;padding:3px ' + pr + '% 4px ' + pl + '%;font-size:11px;color:var(--text-dim)">' + labels.map(function(l){return '<span>' + l + '</span>';}).join('') + '</div>';
 }
 
 function cumulativeRoundsChart() {
   const sessions = [...DB.sessions].sort((a,b)=>a.date.localeCompare(b.date));
   if (!sessions.length) return `<div class="empty">No session data yet.</div>`;
-  const W = 600, H = 240, padL = 52, padB = 44, padT = 10, padR = 10;
+  const W = 600, H = 220, padL = 52, padB = 24, padT = 10, padR = 10;
   let cumLive = 0, cumAll = 0;
   const pointsLive = [], pointsAll = [];
   for (const s of sessions) {
@@ -8881,23 +8879,23 @@ function cumulativeRoundsChart() {
     grid += `<line x1="${padL}" x2="${W-padR}" y1="${y}" y2="${y}" stroke="var(--border)" stroke-dasharray="2,3"/>`;
     grid += `<text x="${padL-6}" y="${y+4}" text-anchor="end" fill="var(--text-dim)" font-size="13">${val.toLocaleString()}</text>`;
   }
-  const xLabels = svgXDateLabels(minD, maxD, W, padL, padR, H, padB);
+  const xLabels = xDateLabelRow(minD, maxD, padL, padR, W);
   const pathAll = hasDry ? pointsAll.map((p,i) => `${i?'L':'M'} ${xFor(p.date).toFixed(1)} ${yFor(p.cum).toFixed(1)}`).join(' ') : '';
   const legend = hasDry
     ? `<text x="${padL}" y="${H-4}" fill="var(--accent)" font-size="12">&#9632; Live-fire</text><text x="${padL+80}" y="${H-4}" fill="var(--info)" font-size="12">&#9632; All (incl. dry)</text>`
     : `<text x="${padL}" y="${H-4}" fill="var(--accent)" font-size="12">&#9632; Live-fire rounds</text>`;
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
-    ${grid}${xLabels}
+  return `<div><svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+    ${grid}
     ${hasDry ? `<path d="${pathAll}" stroke="var(--info)" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/>` : ''}
     <path d="${pathLive}" stroke="var(--accent)" stroke-width="2" fill="none"/>
     ${dots}
     ${legend}
-  </svg>`;
+  </svg>${xLabels}</div>`;
 }
 
 function sessionRatingsChart(sessions) {
   if (!sessions.length) return `<div class="empty">Log a few sessions with self-ratings to see the trend.</div>`;
-  const W = 600, H = 240, padL = 36, padB = 44, padT = 26, padR = 10;
+  const W = 600, H = 220, padL = 36, padB = 24, padT = 26, padR = 10;
   const minD = new Date(sessions[0].date).getTime();
   const maxD = new Date(sessions[sessions.length-1].date).getTime() || minD + 1;
   const xFor = d => padL + ((new Date(d).getTime() - minD) / Math.max(1, maxD - minD)) * (W - padL - padR);
@@ -8914,18 +8912,18 @@ function sessionRatingsChart(sessions) {
     grid += `<line x1="${padL}" x2="${W-padR}" y1="${y}" y2="${y}" stroke="var(--border)" stroke-dasharray="2,3"></line>`;
     grid += `<text x="${padL-6}" y="${y+4}" text-anchor="end" fill="var(--text-dim)" font-size="13">${10 - i*2}</text>`;
   }
-  const xLabels = svgXDateLabels(minD, maxD, W, padL, padR, H, padB);
+  const xLabels = xDateLabelRow(minD, maxD, padL, padR, W);
   let legend = '';
   ['focus','fundamentals','satisfaction'].forEach((k, i) => {
     legend += `<g transform="translate(${padL + i*140}, 2)"><rect width="12" height="12" fill="${colors[k]}"/><text x="16" y="11" fill="var(--text)" font-size="13">${k}</text></g>`;
   });
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${grid}${xLabels}${lines}${legend}</svg>`;
+  return `<div><svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${grid}${lines}${legend}</svg>${xLabels}</div>`;
 }
 
 function skillTrendChart() {
   const assess = [...DB.skillAssessments].sort((a,b)=>a.date.localeCompare(b.date));
   if (assess.length < 2) return `<div class="empty">Need at least 2 assessments to chart progression.</div>`;
-  const W = 700, H = 260, padL = 36, padB = 44, padT = 10, padR = 140;
+  const W = 700, H = 240, padL = 36, padB = 24, padT = 10, padR = 140;
   const minD = new Date(assess[0].date).getTime();
   const maxD = new Date(assess[assess.length-1].date).getTime() || minD + 1;
   const xFor = d => padL + ((new Date(d).getTime() - minD) / Math.max(1, maxD - minD)) * (W - padL - padR);
@@ -8945,8 +8943,8 @@ function skillTrendChart() {
     grid += `<line x1="${padL}" x2="${W-padR}" y1="${y}" y2="${y}" stroke="var(--border)" stroke-dasharray="2,3"></line>`;
     grid += `<text x="${padL-6}" y="${y+4}" text-anchor="end" fill="var(--text-dim)" font-size="13">${10 - i*2}</text>`;
   }
-  const xLabels = svgXDateLabels(minD, maxD, W, padL, padR, H, padB);
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${grid}${xLabels}${lines}${legend}</svg>`;
+  const xLabels = xDateLabelRow(minD, maxD, padL, padR, W);
+  return `<div><svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${grid}${lines}${legend}</svg>${xLabels}</div>`;
 }
 
 function drillProgressionChart() {
