@@ -2477,8 +2477,7 @@ function renderMagazinesPane() {
         <td>${escapeHtml(mg.notes || '')}</td>
         <td class="row-actions">
           <button class="btn small secondary" onclick="openMagazineModal('${mg.id}')">Edit</button>
-          <button class="btn small secondary" onclick="openSpringModal('${mg.id}')">Log Spring</button>
-          <button class="btn small danger" onclick="deleteMagazine('${mg.id}')">Delete</button>
+          <button class="btn small secondary" onclick="showMagActions('${mg.id}')" style="font-size:17px;padding:4px 10px;line-height:1">&#8943;</button>
         </td>
       </tr>`;
     }).join('');
@@ -2508,6 +2507,13 @@ function toggleMagGroup(groupKey) {
   const btn = el && el.previousElementSibling && el.previousElementSibling.querySelector('span');
   if (el) el.style.display = window._collapsedMagGroups[groupKey] ? 'none' : 'block';
   if (btn) btn.textContent = window._collapsedMagGroups[groupKey] ? '▶ Show' : '▼ Hide';
+}
+
+function showMagActions(id) {
+  showActionSheet('Magazine options', [
+    { label: 'Log Spring Replacement', fn: () => openSpringModal(id) },
+    { label: 'Delete Magazine', style: 'danger', fn: () => deleteMagazine(id) }
+  ]);
 }
 
 function openMagazineModal(id) {
