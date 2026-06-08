@@ -2483,7 +2483,7 @@ function renderMagazinesPane() {
       </tr>`;
     }).join('');
     const groupKey = 'mag-group-' + g.firearmIds.slice().sort().join('-');
-    const isCollapsed = window._collapsedMagGroups && window._collapsedMagGroups[groupKey];
+    const isCollapsed = !window._collapsedMagGroups || window._collapsedMagGroups[groupKey] !== false;
     return `<div class="card" style="margin-bottom:16px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;cursor:pointer;gap:8px" onclick="toggleMagGroup('${groupKey}')">
         <h3 style="min-width:0;word-break:break-word;margin:0">${escapeHtml(poolNames)} — ${g.mags.length} magazine${g.mags.length!==1?'s':''}</h3>
@@ -2503,7 +2503,7 @@ function renderMagazinesPane() {
 
 function toggleMagGroup(groupKey) {
   if (!window._collapsedMagGroups) window._collapsedMagGroups = {};
-  window._collapsedMagGroups[groupKey] = !window._collapsedMagGroups[groupKey];
+  window._collapsedMagGroups[groupKey] = (window._collapsedMagGroups[groupKey] === false) ? true : false;
   const el = document.getElementById(groupKey);
   const btn = el && el.previousElementSibling && el.previousElementSibling.querySelector('span');
   if (el) el.style.display = window._collapsedMagGroups[groupKey] ? 'none' : 'block';
