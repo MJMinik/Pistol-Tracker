@@ -1,0 +1,962 @@
+{
+  "firearms": [
+    {
+      "id": "fa-1",
+      "name": "Atlas Erebus",
+      "model": "Erebus",
+      "manufacturer": "Atlas Gunworks",
+      "caliber": "9mm",
+      "dateAcquired": "",
+      "startingRoundCount": 0,
+      "notes": "Imported from RangeReady"
+    },
+    {
+      "id": "fa-2",
+      "name": "Atlas Apollo",
+      "model": "Apollo",
+      "manufacturer": "Atlas Gunworks",
+      "caliber": "9mm",
+      "dateAcquired": "",
+      "startingRoundCount": 0,
+      "notes": "Imported from RangeReady"
+    },
+    {
+      "id": "fa-3",
+      "name": "Atlas Eos",
+      "model": "Eos",
+      "manufacturer": "Atlas Gunworks",
+      "caliber": "9mm",
+      "dateAcquired": "",
+      "startingRoundCount": 0,
+      "notes": "Imported from RangeReady"
+    },
+    {
+      "id": "fa-4",
+      "name": "Staccato XC",
+      "model": "XC",
+      "manufacturer": "Staccato",
+      "caliber": "9mm",
+      "dateAcquired": "",
+      "startingRoundCount": 0,
+      "notes": "Imported from RangeReady"
+    }
+  ],
+  "ammunition": [
+    {
+      "id": "am-19dd66af5ab-46a8a6",
+      "brand": "Blazer Brass",
+      "caliber": "9mm",
+      "grain": "115",
+      "bulletType": "FMJ",
+      "quantity": 680,
+      "costPerRound": "",
+      "notes": "Imported from RangeReady. Lot:"
+    },
+    {
+      "id": "am-19dd66af5ab-f795d8",
+      "brand": "Blazer Brass",
+      "caliber": "9mm",
+      "grain": "115",
+      "bulletType": "FMJ",
+      "quantity": 1000,
+      "costPerRound": "",
+      "notes": "Imported from RangeReady. Lot:"
+    },
+    {
+      "id": "am-19dd66af5ab-0779b6",
+      "brand": "Blazer Brass 115 Grain FMJ",
+      "caliber": "9mm",
+      "grain": "115",
+      "bulletType": "FMJ",
+      "quantity": 1000,
+      "costPerRound": "",
+      "notes": "Imported from RangeReady. Lot:"
+    },
+    {
+      "id": "am-19dd66af5ab-db5598",
+      "brand": "Winchester 115 Grain FMJ",
+      "caliber": "9mm",
+      "grain": "115",
+      "bulletType": "FMJ",
+      "quantity": 1000,
+      "costPerRound": "",
+      "notes": "Imported from RangeReady. Lot:"
+    },
+    {
+      "id": "am-rr-placeholder",
+      "brand": "Blazer Brass",
+      "caliber": "9mm",
+      "grain": "115",
+      "bulletType": "FMJ",
+      "quantity": 0,
+      "costPerRound": "",
+      "notes": "RangeReady import \u2014 defaulted to Blazer Brass 115gr FMJ for sessions without specific ammo links."
+    }
+  ],
+  "sessions": [
+    {
+      "id": "se-19dd66af5ab-c30da4",
+      "date": "2026-04-28",
+      "type": "practice",
+      "firearmId": "fa-1",
+      "location": "Shoot Straight: University",
+      "distances": "",
+      "notes": "7 yard doubles.",
+      "totalRounds": 300,
+      "ammoUsage": [
+        {
+          "ammoId": "am-rr-placeholder",
+          "rounds": 300
+        }
+      ],
+      "drills": [
+        {
+          "name": "Dot Torture",
+          "distance": "",
+          "time": null,
+          "score": null,
+          "maxScore": null,
+          "notes": ""
+        }
+      ],
+      "targetImages": [],
+      "malfunctions": [],
+      "selfRating": {
+        "focus": 5,
+        "fundamentals": 5,
+        "satisfaction": 5
+      }
+    },
+    {
+      "id": "se-19dd66af5ab-bf9983",
+      "date": "2026-04-21",
+      "type": "practice",
+      "firearmId": "fa-1",
+      "location": "Shoot Straight: University",
+      "distances": "",
+      "notes": "Timed Doubles",
+      "totalRounds": 210,
+      "ammoUsage": [
+        {
+          "ammoId": "am-rr-placeholder",
+          "rounds": 210
+        }
+      ],
+      "drills": [
+        {
+          "name": "Dot Torture",
+          "distance": "",
+          "time": null,
+          "score": null,
+          "maxScore": null,
+          "notes": ""
+        }
+      ],
+      "targetImages": [],
+      "malfunctions": [],
+      "selfRating": {
+        "focus": 5,
+        "fundamentals": 5,
+        "satisfaction": 5
+      }
+    },
+    {
+      "id": "se-19dd66af5ab-f05667",
+      "date": "2026-04-12",
+      "type": "practice",
+      "firearmId": "fa-1",
+      "location": "Shoot Straight: University",
+      "distances": "",
+      "notes": "7 yard doubles. Left and right arm single hand shooting",
+      "totalRounds": 260,
+      "ammoUsage": [
+        {
+          "ammoId": "am-rr-placeholder",
+          "rounds": 260
+        }
+      ],
+      "drills": [
+        {
+          "name": "Dot Torture",
+          "distance": "",
+          "time": null,
+          "score": null,
+          "maxScore": null,
+          "notes": ""
+        }
+      ],
+      "targetImages": [],
+      "malfunctions": [],
+      "selfRating": {
+        "focus": 5,
+        "fundamentals": 5,
+        "satisfaction": 5
+      }
+    },
+    {
+      "id": "se-19dd66af5ab-c92663",
+      "date": "2026-04-08",
+      "type": "practice",
+      "firearmId": "fa-1",
+      "location": "Shoot Straight: University",
+      "distances": "",
+      "notes": "7 Yard Doubles",
+      "totalRounds": 200,
+      "ammoUsage": [
+        {
+          "ammoId": "am-rr-placeholder",
+          "rounds": 200
+        }
+      ],
+      "drills": [
+        {
+          "name": "Dot Torture",
+          "distance": "",
+          "time": null,
+          "score": null,
+          "maxScore": null,
+          "notes": ""
+        }
+      ],
+      "targetImages": [],
+      "malfunctions": [],
+      "selfRating": {
+        "focus": 5,
+        "fundamentals": 5,
+        "satisfaction": 5
+      }
+    },
+    {
+      "id": "se-19dd66af5ab-f54821",
+      "date": "2026-04-06",
+      "type": "practice",
+      "firearmId": "fa-1",
+      "location": "",
+      "distances": "",
+      "notes": "5 and 7 Yard doubles\n7 yard moving targets",
+      "totalRounds": 310,
+      "ammoUsage": [
+        {
+          "ammoId": "am-rr-placeholder",
+          "rounds": 310
+        }
+      ],
+      "drills": [
+        {
+          "name": "Dot Torture",
+          "distance": "",
+          "time": null,
+          "score": null,
+          "maxScore": null,
+          "notes": ""
+        }
+      ],
+      "targetImages": [],
+      "malfunctions": [],
+      "selfRating": {
+        "focus": 5,
+        "fundamentals": 5,
+        "satisfaction": 5
+      }
+    },
+    {
+      "id": "se-19dd66af5ab-3cf672",
+      "date": "2026-04-02",
+      "type": "practice",
+      "firearmId": "fa-1",
+      "location": "Shoot Straight: University",
+      "distances": "",
+      "notes": "Doubles, 7 yards",
+      "totalRounds": 260,
+      "ammoUsage": [
+        {
+          "ammoId": "am-rr-placeholder",
+          "rounds": 260
+        }
+      ],
+      "drills": [
+        {
+          "name": "Dot Torture",
+          "distance": "",
+          "time": null,
+          "score": null,
+          "maxScore": null,
+          "notes": ""
+        }
+      ],
+      "targetImages": [],
+      "malfunctions": [],
+      "selfRating": {
+        "focus": 5,
+        "fundamentals": 5,
+        "satisfaction": 5
+      }
+    },
+    {
+      "id": "se-19dd66af5ab-ddd7fb",
+      "date": "2026-03-21",
+      "type": "practice",
+      "firearmId": "fa-1",
+      "location": "Gun Craft, Ruskin Florida",
+      "distances": "",
+      "notes": "Bill Drill 3.03 (All A-Zone)\nMovement Drills",
+      "totalRounds": 300,
+      "ammoUsage": [
+        {
+          "ammoId": "am-rr-placeholder",
+          "rounds": 300
+        }
+      ],
+      "drills": [
+        {
+          "name": "Bill Drill",
+          "distance": "",
+          "time": null,
+          "score": null,
+          "maxScore": null,
+          "notes": ""
+        }
+      ],
+      "targetImages": [],
+      "malfunctions": [],
+      "selfRating": {
+        "focus": 5,
+        "fundamentals": 5,
+        "satisfaction": 5
+      }
+    },
+    {
+      "id": "se-19dd66af5ab-477895",
+      "date": "2026-03-20",
+      "type": "practice",
+      "firearmId": "fa-1",
+      "location": "",
+      "distances": "",
+      "notes": "",
+      "totalRounds": 225,
+      "ammoUsage": [
+        {
+          "ammoId": "am-rr-placeholder",
+          "rounds": 225
+        }
+      ],
+      "drills": [],
+      "targetImages": [],
+      "malfunctions": [],
+      "selfRating": {
+        "focus": 5,
+        "fundamentals": 5,
+        "satisfaction": 5
+      }
+    },
+    {
+      "id": "se-19dd66af5ab-0b150a",
+      "date": "2026-03-16",
+      "type": "practice",
+      "firearmId": "fa-1",
+      "location": "Shoot Straight: University",
+      "distances": "",
+      "notes": "Doubles - all at 7 yards",
+      "totalRounds": 310,
+      "ammoUsage": [
+        {
+          "ammoId": "am-rr-placeholder",
+          "rounds": 310
+        }
+      ],
+      "drills": [
+        {
+          "name": "Dot Torture",
+          "distance": "",
+          "time": null,
+          "score": null,
+          "maxScore": null,
+          "notes": ""
+        }
+      ],
+      "targetImages": [],
+      "malfunctions": [],
+      "selfRating": {
+        "focus": 5,
+        "fundamentals": 5,
+        "satisfaction": 5
+      }
+    },
+    {
+      "id": "se-19dd66af5ab-d6b488",
+      "date": "2026-03-09",
+      "type": "practice",
+      "firearmId": "fa-1",
+      "location": "Shoot Straight: University",
+      "distances": "",
+      "notes": "Doubles\nSingle bullet, re-load, reacquire target and take a second shot.",
+      "totalRounds": 350,
+      "ammoUsage": [
+        {
+          "ammoId": "am-rr-placeholder",
+          "rounds": 350
+        }
+      ],
+      "drills": [
+        {
+          "name": "Dot Torture",
+          "distance": "",
+          "time": null,
+          "score": null,
+          "maxScore": null,
+          "notes": ""
+        }
+      ],
+      "targetImages": [],
+      "malfunctions": [],
+      "selfRating": {
+        "focus": 5,
+        "fundamentals": 5,
+        "satisfaction": 5
+      }
+    },
+    {
+      "id": "se-19dd66af5ab-319b63",
+      "date": "2026-03-05",
+      "type": "practice",
+      "firearmId": "fa-1",
+      "location": "Shoot Straight: University",
+      "distances": "",
+      "notes": "",
+      "totalRounds": 260,
+      "ammoUsage": [
+        {
+          "ammoId": "am-rr-placeholder",
+          "rounds": 260
+        }
+      ],
+      "drills": [
+        {
+          "name": "Dot Torture",
+          "distance": "",
+          "time": null,
+          "score": null,
+          "maxScore": null,
+          "notes": ""
+        }
+      ],
+      "targetImages": [],
+      "malfunctions": [],
+      "selfRating": {
+        "focus": 5,
+        "fundamentals": 5,
+        "satisfaction": 5
+      }
+    },
+    {
+      "id": "se-19dd66af5ab-ca8de9",
+      "date": "2026-03-03",
+      "type": "practice",
+      "firearmId": "fa-1",
+      "location": "KneeKnowHow",
+      "distances": "",
+      "notes": "Recoil doubles, speed transitions",
+      "totalRounds": 500,
+      "ammoUsage": [
+        {
+          "ammoId": "am-rr-placeholder",
+          "rounds": 500
+        }
+      ],
+      "drills": [],
+      "targetImages": [],
+      "malfunctions": [],
+      "selfRating": {
+        "focus": 5,
+        "fundamentals": 5,
+        "satisfaction": 5
+      }
+    },
+    {
+      "id": "se-19dd66af5ab-c128bb",
+      "date": "2026-03-01",
+      "type": "practice",
+      "firearmId": "fa-2",
+      "location": "",
+      "distances": "",
+      "notes": "",
+      "totalRounds": 225,
+      "ammoUsage": [
+        {
+          "ammoId": "am-rr-placeholder",
+          "rounds": 225
+        }
+      ],
+      "drills": [
+        {
+          "name": "Dot Torture",
+          "distance": "",
+          "time": null,
+          "score": null,
+          "maxScore": null,
+          "notes": ""
+        }
+      ],
+      "targetImages": [],
+      "malfunctions": [],
+      "selfRating": {
+        "focus": 5,
+        "fundamentals": 5,
+        "satisfaction": 5
+      }
+    },
+    {
+      "id": "se-19dd66af5ab-624fb1",
+      "date": "2026-02-26",
+      "type": "practice",
+      "firearmId": "fa-1",
+      "location": "Shoot Straight: University",
+      "distances": "",
+      "notes": "5 yard doubles\n7 yard doubles\n7 yard pseudo - draw, plus doubles",
+      "totalRounds": 260,
+      "ammoUsage": [
+        {
+          "ammoId": "am-rr-placeholder",
+          "rounds": 260
+        }
+      ],
+      "drills": [],
+      "targetImages": [],
+      "malfunctions": [],
+      "selfRating": {
+        "focus": 5,
+        "fundamentals": 5,
+        "satisfaction": 5
+      }
+    },
+    {
+      "id": "se-19dd66af5ab-c3a3e3",
+      "date": "2026-02-22",
+      "type": "practice",
+      "firearmId": "fa-1",
+      "location": "Shoot Straight: University",
+      "distances": "",
+      "notes": "Doubles: working on recoil control. Starting to be able to shoot reactively.",
+      "totalRounds": 250,
+      "ammoUsage": [
+        {
+          "ammoId": "am-rr-placeholder",
+          "rounds": 250
+        }
+      ],
+      "drills": [
+        {
+          "name": "Five-Yard Roundup",
+          "distance": "",
+          "time": null,
+          "score": null,
+          "maxScore": null,
+          "notes": ""
+        }
+      ],
+      "targetImages": [],
+      "malfunctions": [],
+      "selfRating": {
+        "focus": 5,
+        "fundamentals": 5,
+        "satisfaction": 5
+      }
+    }
+  ],
+  "maintenance": [
+    {
+      "id": "ma-19dd66af5ab-5d452d",
+      "date": "2026-04-24",
+      "firearmId": "fa-1",
+      "type": "field_strip",
+      "performedBy": "Self",
+      "partsReplaced": "",
+      "notes": "Round count at maintenance: 3695"
+    },
+    {
+      "id": "ma-19dd66af5ab-d91a58",
+      "date": "2026-04-14",
+      "firearmId": "fa-1",
+      "type": "field_strip",
+      "performedBy": "Self",
+      "partsReplaced": "",
+      "notes": "Round count at maintenance: 3485"
+    },
+    {
+      "id": "ma-19dd66af5ab-c10360",
+      "date": "2026-04-10",
+      "firearmId": "fa-1",
+      "type": "field_strip",
+      "performedBy": "Self",
+      "partsReplaced": "",
+      "notes": "Round count at maintenance: 3225"
+    },
+    {
+      "id": "ma-19dd66af5ab-4e2713",
+      "date": "2026-04-07",
+      "firearmId": "fa-1",
+      "type": "field_strip",
+      "performedBy": "Self",
+      "partsReplaced": "",
+      "notes": "Round count at maintenance: 3025"
+    },
+    {
+      "id": "ma-19dd66af5ab-6ed34d",
+      "date": "2026-04-02",
+      "firearmId": "fa-1",
+      "type": "field_strip",
+      "performedBy": "Self",
+      "partsReplaced": "",
+      "notes": "Round count at maintenance: 2715"
+    },
+    {
+      "id": "ma-19dd66af5ab-15c944",
+      "date": "2026-03-22",
+      "firearmId": "fa-1",
+      "type": "field_strip",
+      "performedBy": "Self",
+      "partsReplaced": "",
+      "notes": "Round count at maintenance: 2455"
+    },
+    {
+      "id": "ma-19dd66af5ab-afca05",
+      "date": "2026-03-22",
+      "firearmId": "fa-1",
+      "type": "field_strip",
+      "performedBy": "Self",
+      "partsReplaced": "",
+      "notes": "Round count at maintenance: 2155"
+    },
+    {
+      "id": "ma-19dd66af5ab-30011e",
+      "date": "2026-03-21",
+      "firearmId": "fa-1",
+      "type": "field_strip",
+      "performedBy": "Self",
+      "partsReplaced": "",
+      "notes": "Round count at maintenance: 1930"
+    },
+    {
+      "id": "ma-19dd66af5ab-416609",
+      "date": "2026-03-09",
+      "firearmId": "fa-1",
+      "type": "field_strip",
+      "performedBy": "Self",
+      "partsReplaced": "",
+      "notes": "Round count at maintenance: 1620"
+    },
+    {
+      "id": "ma-19dd66af5ab-90de28",
+      "date": "2026-03-09",
+      "firearmId": "fa-1",
+      "type": "field_strip",
+      "performedBy": "Self",
+      "partsReplaced": "",
+      "notes": "Round count at maintenance: 1270"
+    },
+    {
+      "id": "ma-19dd66af5ab-663e24",
+      "date": "2026-03-05",
+      "firearmId": "fa-1",
+      "type": "field_strip",
+      "performedBy": "Self",
+      "partsReplaced": "",
+      "notes": "Round count at maintenance: 1010"
+    },
+    {
+      "id": "ma-19dd66af5ab-6a6fed",
+      "date": "2026-03-03",
+      "firearmId": "fa-2",
+      "type": "field_strip",
+      "performedBy": "Self",
+      "partsReplaced": "",
+      "notes": "Round count at maintenance: 225"
+    },
+    {
+      "id": "ma-19dd66af5ab-3968f5",
+      "date": "2026-02-26",
+      "firearmId": "fa-1",
+      "type": "field_strip",
+      "performedBy": "Self",
+      "partsReplaced": "",
+      "notes": "Round count at maintenance: 510"
+    },
+    {
+      "id": "ma-19dd66af5ab-f6bf7e",
+      "date": "2026-02-22",
+      "firearmId": "fa-1",
+      "type": "field_strip",
+      "performedBy": "Self",
+      "partsReplaced": "",
+      "notes": "Round count at maintenance: 250"
+    }
+  ],
+  "drillLibrary": [
+    {
+      "name": "Bill Drill",
+      "description": "6 shots from holster at 7 yards on USPSA target.",
+      "scoring": "time",
+      "requiresHolster": true,
+      "liveCompatible": true,
+      "dryCompatible": true,
+      "category": "speed"
+    },
+    {
+      "name": "El Presidente",
+      "description": "3 targets, 6 shots, reload, 6 more shots at 10 yards.",
+      "scoring": "time_score",
+      "maxScore": 60,
+      "requiresHolster": true,
+      "liveCompatible": true,
+      "dryCompatible": true,
+      "category": "classic"
+    },
+    {
+      "name": "Mozambique / Failure Drill",
+      "description": "2 to body, 1 to head from holster or low ready.",
+      "scoring": "time",
+      "requiresHolster": false,
+      "liveCompatible": true,
+      "dryCompatible": true,
+      "category": "speed"
+    },
+    {
+      "name": "Draw to First Shot",
+      "description": "Timed draws from holster to A-zone hit.",
+      "scoring": "time",
+      "requiresHolster": true,
+      "liveCompatible": true,
+      "dryCompatible": true,
+      "category": "speed"
+    },
+    {
+      "name": "Hackathorn Standards",
+      "description": "Multi-position practical drill.",
+      "scoring": "time_score",
+      "requiresHolster": true,
+      "liveCompatible": true,
+      "dryCompatible": true,
+      "category": "classic"
+    },
+    {
+      "name": "Match Stage",
+      "description": "USPSA / IDPA / steel match stage.",
+      "scoring": "time_score",
+      "requiresHolster": true,
+      "liveCompatible": true,
+      "dryCompatible": false,
+      "category": "competition"
+    },
+    {
+      "name": "10-10-10",
+      "description": "10 yards, 10 rounds, 10 seconds, B-8 target.",
+      "scoring": "score",
+      "maxScore": 100,
+      "requiresHolster": false,
+      "liveCompatible": true,
+      "dryCompatible": false,
+      "category": "standards"
+    },
+    {
+      "name": "Dot Torture",
+      "description": "50 rounds on 10 dots, drills per dot.",
+      "scoring": "score",
+      "maxScore": 50,
+      "requiresHolster": false,
+      "liveCompatible": true,
+      "dryCompatible": false,
+      "category": "accuracy"
+    },
+    {
+      "name": "Wilson 5x5",
+      "description": "5 yards, 5 shots, 5 seconds, from low ready.",
+      "scoring": "time",
+      "requiresHolster": false,
+      "liveCompatible": true,
+      "dryCompatible": true,
+      "category": "standards"
+    },
+    {
+      "name": "B-8 Standards",
+      "description": "Slow / timed / rapid fire on B-8 bullseye at varying distances.",
+      "scoring": "score",
+      "maxScore": 100,
+      "requiresHolster": false,
+      "liveCompatible": true,
+      "dryCompatible": false,
+      "category": "accuracy"
+    },
+    {
+      "name": "Triple Nickel",
+      "description": "5 shots, 5 yards, 5-inch circle, 5 seconds.",
+      "scoring": "score",
+      "maxScore": 5,
+      "requiresHolster": false,
+      "liveCompatible": true,
+      "dryCompatible": false,
+      "category": "standards"
+    },
+    {
+      "name": "Strong-Hand Only",
+      "description": "Single-hand shooting with dominant hand.",
+      "scoring": "score",
+      "requiresHolster": false,
+      "liveCompatible": true,
+      "dryCompatible": true,
+      "category": "fundamentals"
+    },
+    {
+      "name": "Weak-Hand Only",
+      "description": "Single-hand shooting with support hand.",
+      "scoring": "score",
+      "requiresHolster": false,
+      "liveCompatible": true,
+      "dryCompatible": true,
+      "category": "fundamentals"
+    },
+    {
+      "name": "Slow Fire / Group Shooting",
+      "description": "Slow deliberate accuracy work.",
+      "scoring": "score",
+      "requiresHolster": false,
+      "liveCompatible": true,
+      "dryCompatible": false,
+      "category": "accuracy"
+    },
+    {
+      "name": "Cadence Drill",
+      "description": "Even-paced rhythm shots \u2014 splits work.",
+      "scoring": "time",
+      "requiresHolster": false,
+      "liveCompatible": true,
+      "dryCompatible": true,
+      "category": "speed"
+    },
+    {
+      "name": "Walk Back Drill",
+      "description": "Engage target, step back each successful round.",
+      "scoring": "score",
+      "requiresHolster": false,
+      "liveCompatible": true,
+      "dryCompatible": false,
+      "category": "accuracy"
+    },
+    {
+      "name": "Press Out",
+      "description": "Press out from compressed ready to first shot.",
+      "scoring": "time",
+      "requiresHolster": false,
+      "liveCompatible": true,
+      "dryCompatible": true,
+      "category": "fundamentals"
+    },
+    {
+      "name": "One Reload One",
+      "description": "1 shot, reload, 1 shot \u2014 par time.",
+      "scoring": "time",
+      "requiresHolster": false,
+      "liveCompatible": true,
+      "dryCompatible": true,
+      "category": "manipulation"
+    },
+    {
+      "name": "Reload Drill",
+      "description": "Practice reloads under time.",
+      "scoring": "time",
+      "requiresHolster": false,
+      "liveCompatible": true,
+      "dryCompatible": true,
+      "category": "manipulation"
+    },
+    {
+      "name": "Transition Drill",
+      "description": "Transition between 2+ targets, par time scored.",
+      "scoring": "time",
+      "requiresHolster": false,
+      "liveCompatible": true,
+      "dryCompatible": true,
+      "category": "speed"
+    },
+    {
+      "name": "Position Entry / Exit",
+      "description": "Drill entering and exiting shooting positions.",
+      "scoring": "time",
+      "requiresHolster": false,
+      "liveCompatible": true,
+      "dryCompatible": true,
+      "category": "movement"
+    },
+    {
+      "name": "Wall Drill",
+      "description": "Stand close to a wall, work trigger press without sight movement.",
+      "scoring": "none",
+      "requiresHolster": false,
+      "liveCompatible": false,
+      "dryCompatible": true,
+      "category": "fundamentals"
+    },
+    {
+      "name": "Coin Drill",
+      "description": "Balance a coin on the front sight, dry fire without dropping it.",
+      "scoring": "none",
+      "requiresHolster": false,
+      "liveCompatible": false,
+      "dryCompatible": true,
+      "category": "fundamentals"
+    },
+    {
+      "name": "Dry Fire Reload",
+      "description": "Reload practice with dummy/empty magazines.",
+      "scoring": "time",
+      "requiresHolster": false,
+      "liveCompatible": false,
+      "dryCompatible": true,
+      "category": "manipulation"
+    },
+    {
+      "name": "Index Drill",
+      "description": "Eyes-closed presentation, open and check natural point of aim.",
+      "scoring": "none",
+      "requiresHolster": false,
+      "liveCompatible": false,
+      "dryCompatible": true,
+      "category": "fundamentals"
+    },
+    {
+      "name": "Dry Fire Draws",
+      "description": "Holster draws to first sight picture, par time.",
+      "scoring": "time",
+      "requiresHolster": true,
+      "liveCompatible": false,
+      "dryCompatible": true,
+      "category": "speed"
+    },
+    {
+      "name": "Five-Yard Roundup",
+      "description": "5 yards, 5 strings of 5 shots in 2.5 sec each, B-8.",
+      "scoring": "score",
+      "maxScore": 125,
+      "requiresHolster": false,
+      "liveCompatible": true,
+      "dryCompatible": false,
+      "category": "standards"
+    },
+    {
+      "name": "Standard Practice",
+      "description": "General practice / freestyle / warm-up.",
+      "scoring": "none",
+      "requiresHolster": false,
+      "liveCompatible": true,
+      "dryCompatible": true,
+      "category": "general"
+    }
+  ],
+  "goals": [],
+  "skillAssessments": [],
+  "malfunctions": [],
+  "settings": {
+    "firstUse": false,
+    "version": "1.1",
+    "importedFromRangeReady": true
+  }
+}
