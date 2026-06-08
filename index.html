@@ -756,8 +756,8 @@
   </main>
 </div>
 
-<div class="modal-backdrop" id="modal-backdrop">
-  <div class="modal" id="modal"></div>
+<div class="modal-backdrop" id="modal-backdrop" aria-hidden="true">
+  <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title"></div>
 </div>
 
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
@@ -2180,11 +2180,23 @@ document.querySelectorAll('nav a').forEach(a => a.addEventListener('click', () =
 function openModal(html, onMount) {
   const m = document.getElementById('modal');
   m.innerHTML = html;
-  document.getElementById('modal-backdrop').classList.add('show');
+  // Wire aria-labelledby to first h3 in the modal header
+  const h3 = m.querySelector('.modal-header h3');
+  if (h3) { h3.id = 'modal-title'; } else { m.removeAttribute('aria-labelledby'); }
+  const backdrop = document.getElementById('modal-backdrop');
+  backdrop.classList.add('show');
+  backdrop.removeAttribute('aria-hidden');
   if (onMount) onMount(m);
+  // Move focus into modal — prefer first input, fall back to close button
+  setTimeout(() => {
+    const first = m.querySelector('input:not([type=hidden]), select, textarea, .modal-close');
+    if (first) first.focus();
+  }, 50);
 }
 function closeModal() {
-  document.getElementById('modal-backdrop').classList.remove('show');
+  const backdrop = document.getElementById('modal-backdrop');
+  backdrop.classList.remove('show');
+  backdrop.setAttribute('aria-hidden', 'true');
 }
 document.getElementById('modal-backdrop').addEventListener('click', e => {
   if (e.target.id === 'modal-backdrop') closeModal();
