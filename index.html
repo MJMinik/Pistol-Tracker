@@ -2485,9 +2485,9 @@ function renderMagazinesPane() {
     const groupKey = 'mag-group-' + g.firearmIds.slice().sort().join('-');
     const isCollapsed = window._collapsedMagGroups && window._collapsedMagGroups[groupKey];
     return `<div class="card" style="margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="toggleMagGroup('${groupKey}')">
-        <h3>${escapeHtml(poolNames)} — ${g.mags.length} magazine${g.mags.length!==1?'s':''}</h3>
-        <span style="font-size:13px;color:var(--text-dim)">${isCollapsed ? '▶ Show' : '▼ Hide'}</span>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;cursor:pointer;gap:8px" onclick="toggleMagGroup('${groupKey}')">
+        <h3 style="min-width:0;word-break:break-word;margin:0">${escapeHtml(poolNames)} — ${g.mags.length} magazine${g.mags.length!==1?'s':''}</h3>
+        <span style="font-size:13px;color:var(--text-dim);white-space:nowrap;padding-top:2px">${isCollapsed ? '▶ Show' : '▼ Hide'}</span>
       </div>
       <div id="${groupKey}" style="display:${isCollapsed ? 'none' : 'block'};margin-top:12px">
         <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
