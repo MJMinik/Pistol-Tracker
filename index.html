@@ -5881,7 +5881,7 @@ function renderHeatmapPane() {
     <div class="card">
       <h3>Training Frequency — Last 52 Weeks</h3>
       <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
-        <svg viewBox="0 0 ${W} ${H}" style="min-width:${W}px;height:${H}px;width:100%" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="0 0 ${W} ${H}" style="min-width:${W}px;height:${H}px;width:100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Training frequency heatmap — last 52 weeks">
           ${monthLabels}${dayLabelSvg}${cells}
         </svg>
       </div>
@@ -6097,7 +6097,7 @@ function stagePerformanceChart(matches) {
     <line x1="240" x2="240" y1="-9" y2="0" stroke="var(--info)" stroke-width="2"/><text x="248" y="0" font-size="10" fill="var(--text-dim)">match overall %</text>
   </g>`;
 
-  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:${H}px">${grid}${rows}${legend}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:${H}px" role="img" aria-label="Stage performance chart — stage percentage per match">${grid}${rows}${legend}</svg>`;
 }
 
 function stageTimelineChart(matches) {
@@ -6168,7 +6168,7 @@ function stageTimelineChart(matches) {
     <text x="${padL + 48}" y="${H - 2}" fill="var(--accent)" font-size="8">● Match %</text>
     <text x="${padL + 96}" y="${H - 2}" fill="var(--info)" font-size="8">— Trend</text>`;
 
-  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto" xmlns="http://www.w3.org/2000/svg">
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Match and stage percentage trend chart">
     ${grid}${stageDots}${matchPath ? `<path d="${matchPath}" stroke="var(--accent)" stroke-width="1.5" fill="none" opacity="0.5"/>` : ''}${matchDots}${legend}
   </svg>`;
 }
@@ -6371,7 +6371,7 @@ function classifierProgressChart() {
     thresholds += `<line x1="${padL}" x2="${W-padR}" y1="${y}" y2="${y}" stroke="var(--border)" stroke-dasharray="3,3"/>`;
     thresholds += `<text x="${padL-6}" y="${y+3}" text-anchor="end" fill="var(--text-dim)" font-size="10">${t.l} ${t.v}</text>`;
   });
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="height:240px">${thresholds}${lines}${legend}</svg>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="height:240px" role="img" aria-label="Classifier hit factor trend chart by division">${thresholds}${lines}${legend}</svg>`;
 }
 
 /* ----- Match modal ----- */
@@ -6645,7 +6645,7 @@ function renderStageTimelinePane() {
         </div>
       </div>
       <div style="overflow-x:auto">
-        <svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:400px;height:${H}px" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="0 0 ${W} ${H}" style="width:100%;min-width:400px;height:${H}px" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Stage performance chart for this match">
           ${grid}${trendLine}${dots}${xLabels}
         </svg>
       </div>
@@ -7065,7 +7065,7 @@ function renderCostsDashboard({ ammoCost, rangeFees, matchFees, gearTotal, grand
     return rects.join('') + `<text x="${(x + barW/2).toFixed(1)}" y="${labelY}" text-anchor="middle" font-size="9" fill="var(--text-dim)">${d.label}</text>`;
   });
 
-  const monthlySVG = `<svg viewBox="0 0 ${chartW} ${chartH}" style="width:100%;height:auto;display:block">
+  const monthlySVG = `<svg viewBox="0 0 ${chartW} ${chartH}" style="width:100%;height:auto;display:block" role="img" aria-label="Monthly spending bar chart — ammo, range fees, and match costs">
     ${yTicks.map(t => `<line x1="${padL}" y1="${t.y}" x2="${chartW-padR}" y2="${t.y}" stroke="var(--border)" stroke-width="1"/>
       <text x="${padL-4}" y="${t.y+4}" text-anchor="end" font-size="9" fill="var(--text-dim)">${t.label}</text>`).join('')}
     <line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+innerH}" stroke="var(--border)" stroke-width="1"/>
@@ -7101,7 +7101,7 @@ function renderCostsDashboard({ ammoCost, rangeFees, matchFees, gearTotal, grand
       return `<rect x="195" y="${legendY}" width="12" height="12" fill="${d.color}" rx="2"/>
         <text x="212" y="${legendY+10}" font-size="12" fill="var(--text)">${d.label}: $${d.value.toFixed(0)} (${(d.value/grandTotal*100).toFixed(0)}%)</text>`;
     });
-    donutSVG = `<svg viewBox="0 0 420 180" style="width:100%;max-width:380px;height:auto;display:block;margin:0 auto">
+    donutSVG = `<svg viewBox="0 0 420 180" style="width:100%;max-width:380px;height:auto;display:block;margin:0 auto" role="img" aria-label="Spending by category donut chart">
       ${slices.join('')}
       <circle cx="${cx}" cy="${cy}" r="${r - strokeW/2 - 2}" fill="var(--panel)"/>
       <text x="${cx}" y="${cy-8}" text-anchor="middle" font-size="11" fill="var(--text-dim)">Total</text>
@@ -8901,7 +8901,7 @@ function roundsChart() {
     grid += `<text x="${padL-6}" y="${y+3}" text-anchor="end" fill="var(--text-dim)" font-size="10">${val}</text>`;
   }
   const legend = `<text x="${padL}" y="${H-1}" fill="var(--accent)" font-size="9">&#9632; Live-fire</text><text x="${padL+60}" y="${H-1}" fill="var(--info)" font-size="9">&#9632; Dry-fire</text>`;
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${grid}${bars}${legend}</svg>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Monthly rounds bar chart — live-fire and dry-fire">${grid}${bars}${legend}</svg>`;
 }
 
 function xDateLabelRow(minD, maxD, padL, padR, W) {
@@ -8952,7 +8952,7 @@ function cumulativeRoundsChart() {
   const legend = hasDry
     ? `<text x="${padL}" y="${H-4}" fill="var(--accent)" font-size="12">&#9632; Live-fire</text><text x="${padL+80}" y="${H-4}" fill="var(--info)" font-size="12">&#9632; All (incl. dry)</text>`
     : `<text x="${padL}" y="${H-4}" fill="var(--accent)" font-size="12">&#9632; Live-fire rounds</text>`;
-  return `<div><svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+  return `<div><svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Cumulative rounds line chart over time">
     ${grid}
     ${hasDry ? `<path d="${pathAll}" stroke="var(--info)" stroke-width="1.5" fill="none" stroke-dasharray="4,3"/>` : ''}
     <path d="${pathLive}" stroke="var(--accent)" stroke-width="2" fill="none"/>
@@ -8985,7 +8985,7 @@ function sessionRatingsChart(sessions) {
   ['focus','fundamentals','satisfaction'].forEach((k, i) => {
     legend += `<g transform="translate(${padL + i*140}, 2)"><rect width="12" height="12" fill="${colors[k]}"/><text x="16" y="11" fill="var(--text)" font-size="13">${k}</text></g>`;
   });
-  return `<div><svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${grid}${lines}${legend}</svg>${xLabels}</div>`;
+  return `<div><svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Self-ratings trend chart — focus, fundamentals, and satisfaction over time">${grid}${lines}${legend}</svg>${xLabels}</div>`;
 }
 
 function skillTrendChart() {
@@ -9012,7 +9012,7 @@ function skillTrendChart() {
     grid += `<text x="${padL-6}" y="${y+4}" text-anchor="end" fill="var(--text-dim)" font-size="13">${10 - i*2}</text>`;
   }
   const xLabels = xDateLabelRow(minD, maxD, padL, padR, W);
-  return `<div><svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${grid}${lines}${legend}</svg>${xLabels}</div>`;
+  return `<div><svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Skill assessment trends chart — 8 skill areas over time">${grid}${lines}${legend}</svg>${xLabels}</div>`;
 }
 
 function drillProgressionChart() {
@@ -9045,7 +9045,7 @@ function drillProgressionChart() {
     const v = scoring === 'time' ? r.time : r.score;
     return `<circle cx="${xFor(r.date)}" cy="${yForFinal(v)}" r="3" fill="var(--accent)"></circle>`;
   }).join('');
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Drill progression chart — ${escapeHtml(drillName)} performance over time">
     <text x="${padL}" y="14" fill="var(--text)" font-size="12" font-weight="600">${escapeHtml(drillName)} (${scoring}, ${scoring==='time'?'lower is better':'higher is better'})</text>
     <path d="${path}" stroke="var(--accent)" stroke-width="2" fill="none"/>${dots}
   </svg>`;
