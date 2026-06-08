@@ -920,7 +920,7 @@ const USPSA_DIVISIONS = ['Open', 'Limited', 'Limited Optics', 'Carry Optics', 'P
    Names included only where reasonably well-known. Edit/correct as needed.
    Look up current HHFs on USPSA's classifier portal. */
 const CLASSIFIER_DATABASE = [
-  { code: '99-08', name: '' },
+  { code: '99-08', name: 'Accelerator' },
   { code: '99-10', name: '' },
   { code: '99-11', name: 'The Roundabout' },
   { code: '99-12', name: 'The El Mar' },
@@ -948,6 +948,7 @@ const CLASSIFIER_DATABASE = [
   { code: '99-61', name: '' },
   { code: '99-62', name: '' },
   { code: '99-63', name: 'Eye of the Tiger' },
+  { code: '03-01', name: 'Safe and Sound' },
   { code: '03-02', name: 'Down the Middle' },
   { code: '03-03', name: '' },
   { code: '03-04', name: '' },
@@ -963,7 +964,7 @@ const CLASSIFIER_DATABASE = [
   { code: '06-03', name: 'Blue Wing' },
   { code: '06-04', name: 'Birdie' },
   { code: '06-05', name: 'Showdown' },
-  { code: '06-06', name: '' },
+  { code: '06-06', name: 'Stop Plates' },
   { code: '06-10', name: '' },
   { code: '08-01', name: 'Steel Switch' },
   { code: '08-02', name: '' },
@@ -972,7 +973,7 @@ const CLASSIFIER_DATABASE = [
   { code: '09-02', name: '' },
   { code: '09-03', name: '' },
   { code: '09-04', name: 'Dot the I' },
-  { code: '09-07', name: '' },
+  { code: '09-07', name: 'Red Baron' },
   { code: '09-08', name: 'Times of Eight' },
   { code: '09-13', name: 'The Five-Sixteen' },
   { code: '09-14', name: '' },
@@ -1014,7 +1015,7 @@ const CLASSIFIER_DATABASE = [
 ];
 function classifierDefByCode(code) {
   if (!code) return null;
-  const norm = String(code).replace(/^CM-?/i, '').trim();
+  const norm = String(code).replace(/^CM-?/i, '').replace(/\s+—.*$/, '').trim();
   return CLASSIFIER_DATABASE.find(x => x.code === norm) || null;
 }
 
@@ -6643,8 +6644,8 @@ function openClassifierModal(id) {
         <div class="form-row"><label>Date</label><input id="cl-date" type="date" value="${c.date}"></div>
         <div class="form-row"><label>Classifier Code</label>
           <input id="cl-code" list="cl-code-list" value="${escapeHtml(c.classifierCode)}" placeholder="e.g. 99-12" oninput="onClassifierCodePicked()">
-          <datalist id="cl-code-list">${CLASSIFIER_DATABASE.map(d => `<option value="${d.code}">${d.name ? '— ' + d.name : ''}</option>`).join('')}</datalist>
-          <div class="help-text">Type or pick from the list. "CM-" prefix is optional.</div>
+          <datalist id="cl-code-list">${CLASSIFIER_DATABASE.map(d => `<option value="${d.code}${d.name ? ' — ' + d.name : ''}"></option>`).join('')}</datalist>
+          <div class="help-text">Type code or name. "CM-" prefix is optional.</div>
         </div>
         <div class="form-row"><label>Classifier Name (optional)</label><input id="cl-name" value="${escapeHtml(c.classifierName)}" placeholder="e.g. The El Mar"></div>
       </div>
@@ -6659,7 +6660,11 @@ function openClassifierModal(id) {
           <select id="cl-firearm">${DB.firearms.map(f => `<option value="${f.id}" ${c.firearmId===f.id?'selected':''}>${escapeHtml(f.name)}</option>`).join('')}</select>
         </div>
       </div>
+
       <hr>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <strong>Scoring</strong>
+      </div>
       <div class="form-grid-4">
         <div class="form-row"><label>Points</label><input id="cl-points" type="number" step="0.1" value="${c.points}" oninput="recalcClassifier()"></div>
         <div class="form-row"><label>Time (sec)</label><input id="cl-time" type="number" step="0.01" value="${c.time}" oninput="recalcClassifier()"></div>
@@ -6672,9 +6677,12 @@ function openClassifierModal(id) {
       <div class="form-row"><label>Your Percentage (auto)</label>
         <input id="cl-pct" readonly value="${c.classifierPercent != null && c.classifierPercent !== '' ? Number(c.classifierPercent).toFixed(2) + '%' : ''}" style="background:var(--panel-2);font-size:17px;font-weight:600;color:var(--accent)">
       </div>
+
       <hr>
-      <div style="font-size:13px;font-weight:600;color:var(--text-dim)">Hit Breakdown <span style="font-weight:400">(optional)</span></div>
-      <div class="form-grid-3" style="margin-top:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <strong style="font-size:13px;color:var(--text-dim)">Hit Breakdown <span style="font-weight:normal">(optional)</span></strong>
+      </div>
+      <div class="form-grid-3">
         <div class="form-row"><label>A</label><input id="cl-A" type="number" min="0" value="${c.A}"></div>
         <div class="form-row"><label>C</label><input id="cl-C" type="number" min="0" value="${c.C}"></div>
         <div class="form-row"><label>D</label><input id="cl-D" type="number" min="0" value="${c.D}"></div>
@@ -6736,7 +6744,7 @@ function saveClassifier(id) {
   const pct = calcClassifierPercent(hf, hhf);
   const data = {
     date: document.getElementById('cl-date').value,
-    classifierCode: document.getElementById('cl-code').value.trim(),
+    classifierCode: document.getElementById('cl-code').value.trim().replace(/\s+—.*$/, '').replace(/^CM-?/i, ''),
     classifierName: document.getElementById('cl-name').value.trim(),
     division: document.getElementById('cl-div').value,
     powerFactor: document.getElementById('cl-pf').value,
