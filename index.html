@@ -5769,7 +5769,9 @@ function renderHeatmapPane() {
     return 'var(--accent)'; // 3+
   }
 
-  const cs = 13, gap = 2; // cell size, gap
+  const isMobile = window.innerWidth < 500;
+  const cs = isMobile ? 16 : 13, gap = isMobile ? 3 : 2; // cell size, gap
+  const labelFs = isMobile ? 11 : 10, dayFs = isMobile ? 10 : 9;
   const padL = 22, padT = 22, padB = 6;
   const W = padL + weeks.length * (cs + gap);
   const H = padT + 7 * (cs + gap) + padB;
@@ -5784,7 +5786,7 @@ function renderHeatmapPane() {
     if (m !== lastMonth) {
       const x = padL + wi * (cs + gap);
       const label = new Date(firstReal.iso).toLocaleString(undefined, { month: 'short' });
-      monthLabels += `<text x="${x}" y="12" fill="var(--text-dim)" font-size="10">${label}</text>`;
+      monthLabels += `<text x="${x}" y="12" fill="var(--text-dim)" font-size="${labelFs}">${label}</text>`;
       lastMonth = m;
     }
   });
@@ -5792,7 +5794,7 @@ function renderHeatmapPane() {
   // Day labels (Mon, Wed, Fri only for spacing)
   const dayAbbr = ['Su','Mo','Tu','We','Th','Fr','Sa'];
   let dayLabelSvg = [1, 3, 5].map(i =>
-    `<text x="${padL - 4}" y="${padT + i * (cs + gap) + cs - 2}" fill="var(--text-dim)" font-size="9" text-anchor="end">${dayAbbr[i]}</text>`
+    `<text x="${padL - 4}" y="${padT + i * (cs + gap) + cs - 2}" fill="var(--text-dim)" font-size="${dayFs}" text-anchor="end">${dayAbbr[i]}</text>`
   ).join('');
 
   // Grid cells with tooltips
@@ -5845,7 +5847,7 @@ function renderHeatmapPane() {
     <div class="card">
       <h3>Training Frequency — Last 52 Weeks</h3>
       <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
-        <svg viewBox="0 0 ${W} ${H}" style="min-width:${Math.min(W,500)}px;height:${H}px;width:100%" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="0 0 ${W} ${H}" style="min-width:${W}px;height:${H}px;width:100%" xmlns="http://www.w3.org/2000/svg">
           ${monthLabels}${dayLabelSvg}${cells}
         </svg>
       </div>
