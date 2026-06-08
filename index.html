@@ -455,7 +455,7 @@
   .text-success { color: var(--success); }
   .text-warn { color: var(--warn); }
   .text-danger { color: var(--danger); }
-  .row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+  .row-actions { display: flex; gap: 6px; flex-wrap: nowrap; white-space: nowrap; }
 
   details summary { cursor: pointer; padding: 8px 0; font-weight: 500; }
   @media (hover: hover) { details summary:hover { color: var(--accent); } }
@@ -2490,7 +2490,7 @@ function renderMagazinesPane() {
       </div>
       <div id="${groupKey}" style="display:${isCollapsed ? 'none' : 'block'};margin-top:12px">
         <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
-        <table style="min-width:540px">
+        <table style="min-width:620px">
           <thead><tr><th>Label</th><th>Total Rounds</th><th>Since Spring</th><th>Last Spring</th><th>Malfunctions</th><th>Notes</th><th></th></tr></thead>
           <tbody>${rows}</tbody>
         </table>
