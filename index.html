@@ -686,7 +686,7 @@
     <button class="hamburger" id="hamburger-btn" onclick="toggleSidebar()" aria-label="Open menu">&#9776;</button>
     <span class="brand-title">Pistol Tracker</span>
     <div style="display:flex;gap:6px;align-items:center">
-      <button class="btn small secondary" onclick="exportSyncFile()" title="Export sync file to iCloud Drive" style="font-size:17px;padding:4px 9px">&#8679;</button>
+      <button class="btn small secondary" onclick="exportSyncFile()" title="Export sync file to iCloud Drive" aria-label="Export sync file to iCloud Drive" style="font-size:17px;padding:4px 9px">&#8679;</button>
       <button class="btn small" onclick="openSessionModal()">+ Session</button>
     </div>
   </div>
@@ -762,7 +762,7 @@
 
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <img id="lightbox-img" alt="">
-  <button class="lightbox-close" id="lightbox-close-btn" onclick="closeLightbox()" title="Close">&times;</button>
+  <button class="lightbox-close" id="lightbox-close-btn" onclick="closeLightbox()" title="Close" aria-label="Close">&times;</button>
   <div class="lightbox-hint">Tap anywhere &middot; swipe down to close</div>
 </div>
 
@@ -2137,7 +2137,7 @@ function toggleSectionHelp(section, btn) {
 }
 
 function sectionHelpBtn(section) {
-  return `<button class="help-btn" onclick="toggleSectionHelp('${section}', this)" title="Help for this section">?</button>`;
+  return `<button class="help-btn" onclick="toggleSectionHelp('${section}', this)" title="Help for this section" aria-label="Help for this section">?</button>`;
 }
 
 function sectionHelpPanel(section) {
@@ -2477,7 +2477,7 @@ function renderMagazinesPane() {
         <td>${escapeHtml(mg.notes || '')}</td>
         <td class="row-actions">
           <button class="btn small secondary" onclick="openMagazineModal('${mg.id}')">Edit</button>
-          <button class="btn small secondary" onclick="showMagActions('${mg.id}')" style="font-size:17px;padding:4px 10px;line-height:1">&#8943;</button>
+          <button class="btn small secondary" onclick="showMagActions('${mg.id}')" aria-label="More options" style="font-size:17px;padding:4px 10px;line-height:1">&#8943;</button>
         </td>
       </tr>`;
     }).join('');
@@ -2520,7 +2520,7 @@ function openMagazineModal(id) {
   const mg = id ? (DB.magazines || []).find(x => x.id === id)
     : { label: '', firearmIds: [], notes: '', active: true, totalRounds: 0, springHistory: [] };
   openModal(`
-    <div class="modal-header"><h3>${id ? 'Edit' : 'Add'} Magazine</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-header"><h3>${id ? 'Edit' : 'Add'} Magazine</h3><button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button></div>
     <div class="modal-body">
       <div class="form-row"><label>Label</label>
         <input id="mg-label" value="${escapeHtml(mg.label)}" placeholder="e.g. A1, S3, E2">
@@ -2595,7 +2595,7 @@ function openSpringModal(magId) {
   const mg = (DB.magazines || []).find(x => x.id === magId);
   if (!mg) return;
   openModal(`
-    <div class="modal-header"><h3>Log Spring Replacement — ${escapeHtml(mg.label)}</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-header"><h3>Log Spring Replacement — ${escapeHtml(mg.label)}</h3><button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button></div>
     <div class="modal-body">
       <p class="text-dim" style="font-size:13px">Rounds at replacement will be recorded as <strong>${(mg.totalRounds||0).toLocaleString()}</strong>. The "Since Spring" counter will reset from this point.</p>
       <div class="form-grid-2">
@@ -2721,7 +2721,7 @@ function firearmCard(f) {
           {label:'+ Log Maintenance', fn: () => openMaintenanceModal(null,\'${f.id}\')},
           {label:'🔒 Insurance', fn: () => toggleInsurancePanel(\'${f.id}\')},
           {label:'Delete', style:'danger', fn: () => deleteFirearm(\'${f.id}\')}
-        ])">&#8943;</button>
+        ])" aria-label="More options">&#8943;</button>
       </div>
       <!-- Insurance panel (collapsed by default) -->
       <div id="ins-panel-${f.id}" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
@@ -2752,7 +2752,7 @@ function firearmCard(f) {
 function openFirearmModal(id) {
   const f = id ? getFirearm(id) : { name:'', model:'', manufacturer:'', caliber:'9mm', dateAcquired:'', startingRoundCount:0, recoilSpringInterval:5000, recoilSpringWeight:'', barrelName:'', barrelInstallDate:'', barrelStartRounds:0, notes:'' };
   openModal(`
-    <div class="modal-header"><h3>${id?'Edit':'Add'} Firearm</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-header"><h3>${id?'Edit':'Add'} Firearm</h3><button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button></div>
     <div class="modal-body">
       <div class="form-row"><label>Name</label><input id="fa-name" value="${escapeHtml(f.name)}" placeholder="e.g. Atlas Erebus"></div>
       <div class="form-grid-2">
@@ -2826,7 +2826,7 @@ function openMaintenanceScheduleModal(firearmId) {
   openModal(`
     <div class="modal-header">
       <h3>Maintenance Schedule — ${escapeHtml(f.name)}</h3>
-      <button class="modal-close" onclick="closeModal()">&times;</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
     </div>
     <div class="modal-body">
       <div class="alert info" style="margin-bottom:16px">
@@ -2904,7 +2904,7 @@ function editSerialNumber(firearmId) {
   if (!f) return;
   const current = f.serialNumber || '';
   openModal(`
-    <div class="modal-header"><h3>Serial Number</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-header"><h3>Serial Number</h3><button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button></div>
     <div class="modal-body">
       <div class="form-row">
         <label>Serial Number</label>
@@ -3137,7 +3137,7 @@ function openOpticModal(id) {
   const o = op || { firearmId: DB.firearms[0]?.id || '', make: '', model: '', installDate: '', zeroDist: '', mountHeight: '', torqueSpec: '', dotSize: '', settingsSnapshot: '', notes: '' };
   const fwOpts = DB.firearms.map(f => `<option value="${f.id}" ${o.firearmId===f.id?'selected':''}>${escapeHtml(f.name)}</option>`).join('');
   openModal(`
-    <div class="modal-header"><h3>${id?'Edit':'Add'} Optic</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-header"><h3>${id?'Edit':'Add'} Optic</h3><button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button></div>
     <div class="modal-body">
       <div class="form-row"><label>Firearm</label><select id="op-firearm">${fwOpts}</select></div>
       <div class="form-grid-2">
@@ -3197,7 +3197,7 @@ function logBattery(opticId) {
   const op = (DB.optics || []).find(o => o.id === opticId);
   if (!op) return;
   openModal(`
-    <div class="modal-header"><h3>Log Battery Change</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-header"><h3>Log Battery Change</h3><button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button></div>
     <div class="modal-body">
       <div style="margin-bottom:12px;color:var(--text-dim);font-size:13px">${escapeHtml(op.make)} ${escapeHtml(op.model)}</div>
       <div class="form-row"><label>Date</label><input id="bt-date" type="date" value="${todayISO()}"></div>
@@ -3221,7 +3221,7 @@ function openPartModal(id) {
   const p = pt || { firearmId: '', name: '', quantity: 1, partNumber: '', datePurchased: '', notes: '' };
   const fwOpts = `<option value="">Any / Universal</option>` + DB.firearms.map(f => `<option value="${f.id}" ${p.firearmId===f.id?'selected':''}>${escapeHtml(f.name)}</option>`).join('');
   openModal(`
-    <div class="modal-header"><h3>${id?'Edit':'Add'} Spare Part</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-header"><h3>${id?'Edit':'Add'} Spare Part</h3><button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button></div>
     <div class="modal-body">
       <div class="form-row"><label>Part Name</label><input id="pt-name" value="${escapeHtml(p.name)}" placeholder="e.g. Recoil Spring, Firing Pin, Extractor"></div>
       <div class="form-row"><label>Firearm (optional)</label><select id="pt-firearm">${fwOpts}</select></div>
@@ -3316,7 +3316,7 @@ function renderAmmo() {
 function openAmmoModal(id) {
   const a = id ? getAmmo(id) : { brand:'', grain:'', bulletType:'FMJ', caliber:'9mm', quantity:0, costPerRound:'', notes:'' };
   openModal(`
-    <div class="modal-header"><h3>${id?'Edit':'Add'} Ammunition</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-header"><h3>${id?'Edit':'Add'} Ammunition</h3><button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button></div>
     <div class="modal-body">
       <div class="form-grid-2">
         <div class="form-row"><label>Brand</label><input id="am-brand" value="${escapeHtml(a.brand)}" placeholder="e.g. Federal"></div>
@@ -3775,13 +3775,13 @@ function sessionCard(s) {
             {label:'&#9745; Checklist', fn: () => openChecklistModal('${s.id}')},
             {label:'Edit Plan', fn: () => openSessionModal('${s.id}')},
             {label:'Delete', style:'danger', fn: () => deleteSession('${s.id}')}
-          ])">&#8943;</button>
+          ])" aria-label="More options">&#8943;</button>
         ` : `
           <button class="btn small secondary" onclick="openSessionModal('${s.id}')">Edit</button>
           <button class="btn small secondary" onclick="showActionSheet('Session', [
             {label:'&#128438; Print', fn: () => printSession('${s.id}')},
             {label:'Delete', style:'danger', fn: () => deleteSession('${s.id}')}
-          ])">&#8943;</button>
+          ])" aria-label="More options">&#8943;</button>
         `}
       </div>
     </div>
@@ -4138,7 +4138,7 @@ function openChecklistModal(sessionId) {
   openModal(`
     <div class="modal-header">
       <h3>&#9745; Session Checklist</h3>
-      <button class="modal-close" onclick="closeModal()">&times;</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
     </div>
     <div class="modal-body" style="max-height:70vh;overflow-y:auto">
       <div style="font-size:13px;color:var(--text-dim);margin-bottom:10px">Check items you plan to bring, then mark each as packed when ready.</div>
@@ -4487,7 +4487,7 @@ function openSessionModal(id, mode, prefillData, sourcePlanId) {
   const isPlanMode = !!s.planned;
 
   openModal(`
-    <div class="modal-header"><h3>${modalTitle}</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-header"><h3>${modalTitle}</h3><button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button></div>
     <div class="modal-body" style="max-height:70vh;overflow-y:auto;overflow-x:hidden">
       <div class="form-grid-3">
         <div class="form-row"><label>Date</label><input id="se-date" type="date" value="${s.date}"></div>
@@ -5069,7 +5069,7 @@ function openAnnotateTool(src, sessionId, imgIndex) {
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;background:var(--panel);border:1px solid var(--border);padding:8px 14px;border-radius:10px">
         <span style="color:var(--text-dim);font-size:13px;margin-right:4px">Circle color:</span>
         ${[['#ff4444','Red'],['#ffee44','Yellow'],['#44dd66','Green'],['#4a9eff','Blue'],['#ffffff','White']].map(([c,n]) =>
-          `<button onclick="setAnnotateColor('${c}')" id="ann-col-${c.replace('#','')}" style="width:24px;height:24px;border-radius:50%;background:${c};border:2px solid transparent;cursor:pointer;transition:border 0.15s" title="${n}"></button>`
+          `<button onclick="setAnnotateColor('${c}')" id="ann-col-${c.replace('#','')}" style="width:24px;height:24px;border-radius:50%;background:${c};border:2px solid transparent;cursor:pointer;transition:border 0.15s" title="${n}" aria-label="${n} circle"></button>`
         ).join('')}
         <span style="color:var(--text-dim);font-size:13px;margin:0 4px">Size:</span>
         <input id="ann-radius" type="range" min="5" max="80" value="20" style="width:80px">
@@ -5352,7 +5352,7 @@ function saveSession(id, sourcePlanId) {
       setTimeout(() => {
         const fName = escapeHtml(f ? f.name : 'this firearm');
         openModal(`
-          <div class="modal-header"><h3>&#9881; Field Strip Reminder</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+          <div class="modal-header"><h3>&#9881; Field Strip Reminder</h3><button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button></div>
           <div class="modal-body" style="text-align:center;padding:24px 20px">
             <div style="font-size:15px;margin-bottom:8px">Log a field strip &amp; clean for <strong>${fName}</strong>?</div>
             <div style="font-size:13px;color:var(--text-dim)">Atlas guidance: clean after every live-fire range session.</div>
@@ -5579,7 +5579,7 @@ function goalRow(g) {
 }
 function openGoalModal() {
   openModal(`
-    <div class="modal-header"><h3>Add Goal</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-header"><h3>Add Goal</h3><button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button></div>
     <div class="modal-body">
       <div class="form-row"><label>Goal</label><input id="g-text" placeholder="e.g. Bill Drill under 2.0 seconds"></div>
       <div class="form-grid-2">
@@ -5680,7 +5680,7 @@ function openSkillAssessment() {
   const last = [...DB.skillAssessments].sort((a,b)=>b.date.localeCompare(a.date))[0];
   const seed = last ? last.ratings : {};
   openModal(`
-    <div class="modal-header"><h3>Skill Self-Assessment</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-header"><h3>Skill Self-Assessment</h3><button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button></div>
     <div class="modal-body">
       <div class="form-row"><label>Date</label><input id="sa-date" type="date" value="${todayISO()}"></div>
       <p class="text-dim" style="font-size:13px;margin-bottom:12px">Rate each area 1 (beginner) to 10 (mastery).</p>
@@ -6376,7 +6376,7 @@ function openMatchModal(id) {
   };
   if (!DB.firearms.length) { showToast('Add a firearm first.'); return; }
   openModal(`
-    <div class="modal-header"><h3>${id?'Edit':'Log'} Match</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-header"><h3>${id?'Edit':'Log'} Match</h3><button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button></div>
     <div class="modal-body" style="max-height:70vh;overflow-y:auto">
       <div class="form-grid-2">
         <div class="form-row"><label>Date</label><input id="mt-date" type="date" value="${m.date}"></div>
@@ -6660,7 +6660,7 @@ function openClassifierModal(id) {
   };
   if (!DB.firearms.length) { showToast('Add a firearm first.'); return; }
   openModal(`
-    <div class="modal-header"><h3>${id?'Edit':'Log'} Classifier</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-header"><h3>${id?'Edit':'Log'} Classifier</h3><button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button></div>
     <div class="modal-body" style="max-height:70vh;overflow-y:auto">
       <div class="form-grid-3">
         <div class="form-row"><label>Date</label><input id="cl-date" type="date" value="${c.date}"></div>
@@ -7234,7 +7234,7 @@ function openPurchaseModal(id) {
     rounds: '', ammoId: '', addToInventory: true
   };
   openModal(`
-    <div class="modal-header"><h3>${id ? 'Edit' : 'Add'} Purchase</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-header"><h3>${id ? 'Edit' : 'Add'} Purchase</h3><button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button></div>
     <div class="modal-body">
       <div class="form-grid-2">
         <div class="form-row"><label>Date</label><input id="pu-date" type="date" value="${p.date}"></div>
@@ -7696,7 +7696,7 @@ function openStandaloneMalfunctionModal() {
   if (!DB.firearms.length) { showToast('Add a firearm first.'); return; }
   const firstFwId = DB.firearms[0].id;
   openModal(`
-    <div class="modal-header"><h3>Log Malfunction</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-header"><h3>Log Malfunction</h3><button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button></div>
     <div class="modal-body">
       <div class="form-grid-2">
         <div class="form-row"><label>Date</label><input id="mf-date" type="date" value="${todayISO()}"></div>
@@ -7897,7 +7897,7 @@ function openMaintenanceModal(id, firearmId) {
     date: todayISO(), firearmId: firearmId || DB.firearms[0]?.id || '', type: 'field_strip', notes: '', performedBy: 'Self', partsReplaced:''
   };
   openModal(`
-    <div class="modal-header"><h3>${id?'Edit':'Log'} Maintenance</h3><button class="modal-close" onclick="closeModal()">&times;</button></div>
+    <div class="modal-header"><h3>${id?'Edit':'Log'} Maintenance</h3><button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button></div>
     <div class="modal-body">
       <div class="form-grid-2">
         <div class="form-row"><label>Date</label><input id="ma-date" type="date" value="${m.date}"></div>
@@ -8809,7 +8809,7 @@ function resetAll() {
   openModal(`
     <div class="modal-header">
       <h3 style="color:var(--danger)">Reset All Data</h3>
-      <button class="modal-close" onclick="closeModal()">&#10005;</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close">&#10005;</button>
     </div>
     <div class="modal-body">
       <p style="font-size:15px;margin-bottom:14px">This will permanently delete <strong>everything</strong> stored in this app:</p>
@@ -9125,7 +9125,7 @@ function showTourStep() {
   openModal(`
     <div class="modal-header">
       <h3>&#9654; Tour &mdash; ${_tourStep + 1} / ${TOUR_STEPS.length}</h3>
-      <button class="modal-close" onclick="closeModal()">&times;</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close">&times;</button>
     </div>
     <div class="modal-body" style="min-height:120px">
       <h3 style="font-size:17px;margin-bottom:12px;color:var(--accent)">${step.title}</h3>
@@ -9418,7 +9418,7 @@ function renderWizardStep() {
 
   overlay.innerHTML = `
     <div style="background:var(--panel);border-radius:16px;padding:28px 32px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;position:relative">
-      <button onclick="closeOnboarding()" style="position:absolute;top:14px;right:16px;background:none;border:none;color:var(--text-dim);font-size:22px;cursor:pointer;line-height:1" title="Close">&times;</button>
+      <button onclick="closeOnboarding()" style="position:absolute;top:14px;right:16px;background:none;border:none;color:var(--text-dim);font-size:22px;cursor:pointer;line-height:1" title="Close" aria-label="Close">&times;</button>
       ${progressBar}
       ${content}
     </div>
