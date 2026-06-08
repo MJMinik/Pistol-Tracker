@@ -4321,7 +4321,10 @@ function buildPrintDocument(sessions) {
     .header-right { text-align: right; }
     .header-right .rounds { font-size: 28pt; font-weight: bold; line-height: 1; }
     .header-right .rounds-label { font-size: 9pt; color: #555; }
-    .app-label { font-size: 8pt; color: #aaa; text-align: right; margin-bottom: 4px; }
+    .page-header { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1.5px solid #111; padding-bottom: 8px; margin-bottom: 18px; font-family: Arial, sans-serif; }
+    .page-header-left { font-size: 10pt; font-weight: 700; color: #111; }
+    .page-header-right { font-size: 9pt; color: #555; text-align: right; }
+    .page-footer { display: flex; justify-content: space-between; align-items: baseline; border-top: 1px solid #ddd; padding-top: 8px; margin-top: 20px; font-family: Arial, sans-serif; font-size: 8.5pt; color: #888; }
     .section { margin-top: 14px; }
     .section-title { font-size: 8pt; text-transform: uppercase; letter-spacing: 1px; color: #888; font-family: Arial, sans-serif; margin-bottom: 6px; border-bottom: 1px solid #ddd; padding-bottom: 3px; }
     .row { display: flex; gap: 24px; flex-wrap: wrap; margin-top: 4px; font-size: 11pt; }
@@ -4349,9 +4352,15 @@ function buildPrintDocument(sessions) {
     }
   `;
 
-  const sessionBlocks = sessions.map(s => {
+  const printDateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const ownerName = (DB.settings.ownerName || '').trim();
+  const totalSessions = sessions.length;
+
+  const sessionBlocks = sessions.map((s, idx) => {
     const f = getFirearm(s.firearmId);
     const typeLabel = { practice: 'Practice', competition: 'Competition', class: 'Class / Training', dry_fire: 'Dry Fire' }[s.type] || s.type;
+    const linkedMatch = s.type === 'competition' ? (DB.matches || []).find(x => x.date === s.date) : null;
+    const matchNameStr = linkedMatch ? linkedMatch.name : '';
     const firearmDisplay = (s.firearmSplits && s.firearmSplits.length)
       ? s.firearmSplits.map(sp => { const fw = getFirearm(sp.firearmId); return `${fw ? fw.name : '?'} (${sp.rounds} rds)`; }).join(', ')
       : (f ? f.name : '—');
@@ -4410,7 +4419,10 @@ function buildPrintDocument(sessions) {
     const costsLine = (ammoCost || rangeFee) ? `Ammo: $${ammoCost.toFixed(2)}${rangeFee ? ` · Range fee: $${rangeFee.toFixed(2)}` : ''}${cpr != null ? ` · $${cpr.toFixed(3)}/rd` : ''}` : '';
 
     return `<div class="session">
-      <div class="app-label">Pistol Tracker — Training Journal</div>
+      <div class="page-header">
+        <div class="page-header-left">Pistol Tracker — Training Journal</div>
+        <div class="page-header-right">${ownerName ? escapeHtml(ownerName) + ' &nbsp;&middot;&nbsp; ' : ''}Printed ${printDateStr}</div>
+      </div>
       <div class="header">
         <div class="header-left">
           <h1>${formatDate(s.date)} &mdash; ${escapeHtml(typeLabel)}</h1>
@@ -4442,6 +4454,10 @@ function buildPrintDocument(sessions) {
       </div>` : ''}
 
       ${imagesHtml}
+      <div class="page-footer">
+        <div>https://mjminik.github.io/Pistol-Tracker/</div>
+        <div>${matchNameStr ? escapeHtml(matchNameStr) + ' &nbsp;&middot;&nbsp; ' : ''}Session ${idx + 1} of ${totalSessions}</div>
+      </div>
     </div>`;
   }).join('');
 
@@ -8102,6 +8118,15 @@ function renderSettings() {
   v.innerHTML = `
     <div class="view-header"><div><h2>Settings &amp; Data ${sectionHelpBtn('settings')}</h2><div class="sub">iCloud sync, data export, drill library</div></div></div>
     ${sectionHelpPanel('settings')}
+    <!-- Your Information card -->
+    <div class="card">
+      <h3>Your Information</h3>
+      <p class="text-dim" style="font-size:13px;margin-bottom:12px">Used on printed reports.</p>
+      <div class="form-row" style="max-width:360px">
+        <label>Your Name</label>
+        <input type="text" id="st-owner-name" placeholder="e.g. Michael Minik" value="${escapeHtml(DB.settings.ownerName || '')}" onchange="DB.settings.ownerName=this.value.trim();saveDB();showToast('Name saved.');">
+      </div>
+    </div>
     <!-- iCloud Sync card -->
     <div class="card" style="border-color:var(--accent)">
       <h3 style="color:var(--accent)">&#9729; iCloud Sync</h3>
