@@ -403,11 +403,16 @@
     cursor: pointer; position: relative;
   }
   .image-thumb .remove {
-    position: absolute; top: 2px; right: 2px;
-    background: rgba(0,0,0,0.7); color: white;
-    border: none; border-radius: 50%;
-    width: 18px; height: 18px; font-size: 11px;
-    cursor: pointer; line-height: 1;
+    position: absolute; top: 4px; right: 4px;
+    background: rgba(0,0,0,0.75); color: white;
+    border: 2px solid rgba(255,255,255,0.9); border-radius: 50%;
+    width: 28px; height: 28px; font-size: 17px;
+    cursor: pointer; line-height: 1; padding: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  /* Expand the tappable area to 44x44 without growing the visible badge */
+  .image-thumb .remove::after {
+    content: ''; position: absolute; inset: -8px;
   }
 
   .chip-list { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
@@ -755,7 +760,7 @@
       <a href="#" data-view="settings"><span class="icon">⚙️</span> Settings &amp; Data</a>
     </nav>
     <div class="sidebar-footer">
-      v1.9.68 &middot; <a href="#" id="export-data" style="color:var(--accent)">Export Data</a>
+      v1.9.69 &middot; <a href="#" id="export-data" style="color:var(--accent)">Export Data</a>
       &middot; <button onclick="toggleTheme()" id="theme-toggle-btn" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:11px;padding:0">&#9790; Dark</button>
     </div>
   </aside>
