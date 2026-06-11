@@ -6,7 +6,7 @@
    through to the browser unchanged — no caching, no interception.
    ============================================================ */
 
-const CACHE_NAME = 'pistol-tracker-v1.9.61';
+const CACHE_NAME = 'pistol-tracker-v1.9.63';
 
 const ASSETS = [
   './',

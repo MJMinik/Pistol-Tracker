@@ -162,6 +162,17 @@
   .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .tab:focus-visible, nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .toggle-input:focus-visible + .toggle-track { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  /* Accessibility (#104): honor the system Reduce Motion setting */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
   code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; color: var(--accent); }
   .btn.secondary { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); }
   @media (hover: hover) { .btn.secondary:hover { background: var(--border); } }
@@ -771,7 +782,7 @@
 </div>
 
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
-  <img id="lightbox-img" alt="">
+  <img id="lightbox-img" alt="Enlarged photo">
   <button class="lightbox-close" id="lightbox-close-btn" onclick="closeLightbox()" title="Close" aria-label="Close">&times;</button>
   <div class="lightbox-hint">Tap anywhere &middot; swipe down to close</div>
 </div>
@@ -1295,7 +1306,7 @@ function recentlyDeletedCard(type) {
   }).join('');
   const uid = 'rdc-' + type;
   return `<div style="margin-bottom:16px">
-    <button onclick="const b=document.getElementById('${uid}');b.style.display=b.style.display==='none'?'block':'none'" style="width:100%;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-dim);padding:10px 16px;background:var(--panel);border:1px solid var(--border);border-radius:8px;cursor:pointer;text-align:left">
+    <button aria-expanded="false" onclick="const b=document.getElementById('${uid}');const open=b.style.display==='none';b.style.display=open?'block':'none';this.setAttribute('aria-expanded',String(open))" style="width:100%;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-dim);padding:10px 16px;background:var(--panel);border:1px solid var(--border);border-radius:8px;cursor:pointer;text-align:left">
       <span style="font-size:17px">🗑</span>
       <span>Recently Deleted (${items.length}) — tap to expand &middot; auto-purge after ${TRASH_TTL_DAYS} days</span>
     </button>
@@ -2130,7 +2141,9 @@ function filterHelpSections(keyword) {
         // Auto-expand matching sections when searching
         const body = s.querySelector('.help-section-body');
         const chevron = s.querySelector('.help-chevron');
+        const toggleBtn = s.querySelector('.help-section-toggle');
         if (body) body.hidden = false;
+        if (toggleBtn) toggleBtn.setAttribute('aria-expanded', 'true');
         if (chevron) chevron.style.transform = 'rotate(90deg)';
       }
     }
@@ -2144,6 +2157,7 @@ function toggleHelpSection(btn) {
   const chevron = btn.querySelector('.help-chevron');
   const isOpen = !body.hidden;
   body.hidden = isOpen;
+  btn.setAttribute('aria-expanded', String(!isOpen));
   chevron.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(90deg)';
 }
 
@@ -2154,10 +2168,11 @@ function toggleSectionHelp(section, btn) {
   const isOpen = panel.classList.contains('open');
   panel.classList.toggle('open', !isOpen);
   btn.classList.toggle('active', !isOpen);
+  btn.setAttribute('aria-expanded', String(!isOpen));
 }
 
 function sectionHelpBtn(section) {
-  return `<button class="help-btn" onclick="toggleSectionHelp('${section}', this)" title="Help for this section" aria-label="Help for this section">?</button>`;
+  return `<button class="help-btn" aria-expanded="false" onclick="toggleSectionHelp('${section}', this)" title="Help for this section" aria-label="Help for this section">?</button>`;
 }
 
 function sectionHelpPanel(section) {
@@ -2194,12 +2209,18 @@ function renderView(name) {
 }
 document.querySelectorAll('nav a').forEach(a => a.addEventListener('click', (e) => { e.preventDefault(); setView(a.dataset.view); }));
 
-/* Accessibility (#104): Enter/Space activates any tab — tabs are divs, so
-   keyboard users and VoiceOver need explicit activation support */
+/* Accessibility (#104): Enter/Space activates tabs and div-based buttons
+   (e.g. magazine group headers) — they aren't native buttons, so keyboard
+   users and VoiceOver need explicit activation support */
 document.addEventListener('keydown', (e) => {
-  if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('tab')) {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const t = e.target;
+  if (!t || t.tagName === 'BUTTON' || t.tagName === 'A' || t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT') return;
+  const isTab = t.classList && t.classList.contains('tab');
+  const isDivButton = t.getAttribute && t.getAttribute('role') === 'button';
+  if (isTab || isDivButton) {
     e.preventDefault();
-    e.target.click();
+    t.click();
   }
 });
 
@@ -2558,7 +2579,7 @@ function renderMagazinesPane() {
     const groupKey = 'mag-group-' + g.firearmIds.slice().sort().join('-');
     const isCollapsed = !window._collapsedMagGroups || window._collapsedMagGroups[groupKey] !== false;
     return `<div class="card" style="margin-bottom:16px">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;cursor:pointer;gap:8px" onclick="toggleMagGroup('${groupKey}')">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;cursor:pointer;gap:8px" role="button" tabindex="0" aria-expanded="${!isCollapsed}" onclick="toggleMagGroup('${groupKey}')">
         <h3 style="min-width:0;word-break:break-word;margin:0">${escapeHtml(poolNames)} — ${g.mags.length} magazine${g.mags.length!==1?'s':''}</h3>
         <span style="font-size:13px;color:var(--text-dim);white-space:nowrap;padding-top:2px">${isCollapsed ? '▶ Show' : '▼ Hide'}</span>
       </div>
@@ -2578,9 +2599,11 @@ function toggleMagGroup(groupKey) {
   if (!window._collapsedMagGroups) window._collapsedMagGroups = {};
   window._collapsedMagGroups[groupKey] = (window._collapsedMagGroups[groupKey] === false) ? true : false;
   const el = document.getElementById(groupKey);
-  const btn = el && el.previousElementSibling && el.previousElementSibling.querySelector('span');
+  const header = el && el.previousElementSibling;
+  const btn = header && header.querySelector('span');
   if (el) el.style.display = window._collapsedMagGroups[groupKey] ? 'none' : 'block';
   if (btn) btn.textContent = window._collapsedMagGroups[groupKey] ? '▶ Show' : '▼ Hide';
+  if (header) header.setAttribute('aria-expanded', String(!window._collapsedMagGroups[groupKey]));
 }
 
 function showMagActions(id) {
@@ -2809,7 +2832,7 @@ function firearmCard(f) {
           <div id="ins-photos-${f.id}" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
             ${(f.insurancePhotos || []).map((id, i) => `
               <div style="position:relative">
-                <img src="${imgSrc(id)}" style="width:80px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer" onclick="viewInsurancePhoto('${f.id}',${i})">
+                <img src="${imgSrc(id)}" alt="Insurance photo ${i + 1} of ${escapeHtml(f.name)}" style="width:80px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer" onclick="viewInsurancePhoto('${f.id}',${i})">
                 <button onclick="deleteInsurancePhoto('${f.id}',${i})" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--danger);border:none;color:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">&times;</button>
               </div>
             `).join('')}
@@ -3029,7 +3052,7 @@ function addInsurancePhoto(firearmId, input) {
 function buildInsurancePhotosHTML(f) {
   return (f.insurancePhotos || []).map((id, i) => `
     <div style="position:relative">
-      <img src="${imgSrc(id)}" style="width:80px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer" onclick="viewInsurancePhoto('${f.id}',${i})">
+      <img src="${imgSrc(id)}" alt="Insurance photo ${i + 1} of ${escapeHtml(f.name)}" style="width:80px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer" onclick="viewInsurancePhoto('${f.id}',${i})">
       <button onclick="deleteInsurancePhoto('${f.id}',${i})" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--danger);border:none;color:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">&times;</button>
     </div>
   `).join('') + `
@@ -3089,7 +3112,7 @@ function printInsuranceRecord(firearmId) {
     <tr><td>Date Acquired</td><td>${f.dateAcquired ? new Date(f.dateAcquired).toLocaleDateString() : '—'}</td></tr>
     <tr><td>Notes</td><td>${escapeHtml(f.notes || '—')}</td></tr>
   </table>
-  ${(f.insurancePhotos || []).length ? `<h3>Photos</h3><div class="photos">${(f.insurancePhotos || []).map(id => `<img src="${imgSrc(id)}">`).join('')}</div>` : '<p style="color:#999;font-style:italic">No photos on file.</p>'}
+  ${(f.insurancePhotos || []).length ? `<h3>Photos</h3><div class="photos">${(f.insurancePhotos || []).map((id, i) => `<img src="${imgSrc(id)}" alt="Insurance photo ${i + 1} of ${escapeHtml(f.name)}">`).join('')}</div>` : '<p style="color:#999;font-style:italic">No photos on file.</p>'}
   <div class="footer">Generated by Pistol Tracker — https://mjminik.github.io/Pistol-Tracker/</div>
   </body></html>`);
   win.document.close();
@@ -5153,7 +5176,7 @@ function openAnnotateTool(src, sessionId, imgIndex) {
         <button class="btn small secondary" onclick="closeAnnotateTool()">Cancel</button>
       </div>
       <div style="position:relative;display:inline-block;cursor:crosshair">
-        <img id="annotate-img" style="max-width:90vw;max-height:75vh;display:block;user-select:none">
+        <img id="annotate-img" alt="Target photo being annotated" style="max-width:90vw;max-height:75vh;display:block;user-select:none">
         <canvas id="annotate-canvas" style="position:absolute;top:0;left:0;cursor:crosshair"></canvas>
       </div>
       <div style="color:var(--text-dim);font-size:11px;margin-top:8px">Tap and drag to draw a circle. Tap Undo to remove the last circle.</div>
@@ -6278,7 +6301,7 @@ function matchCard(m) {
       ${finishLabel ? `<div style="font-size:13px;color:var(--text-dim);margin-bottom:8px"><strong style="color:var(--text)">Finish:</strong> ${finishLabel}</div>` : ''}
       ${m.practiScoreUrl ? `<div style="margin-bottom:10px"><a href="${escapeHtml(m.practiScoreUrl)}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:6px;color:var(--accent);font-size:13px;font-weight:600;text-decoration:none;border:1px solid var(--accent);border-radius:6px;padding:5px 12px">&#9654; View PractiScore Results</a></div>` : ''}
       ${stages.length ? `<div style="margin-top:8px">
-        <button onclick="(function(b){var body=b.nextElementSibling,ch=b.querySelector('.mcard-chev');body.hidden=!body.hidden;ch.style.transform=body.hidden?'rotate(0deg)':'rotate(90deg)'})(this)" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--accent);padding:0 0 6px">
+        <button aria-expanded="false" onclick="(function(b){var body=b.nextElementSibling,ch=b.querySelector('.mcard-chev');body.hidden=!body.hidden;b.setAttribute('aria-expanded',String(!body.hidden));ch.style.transform=body.hidden?'rotate(0deg)':'rotate(90deg)'})(this)" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--accent);padding:0 0 6px">
           <span class="mcard-chev" style="transition:transform 0.2s;display:inline-block">›</span> Stage breakdown (${stages.length})
         </button>
         <div hidden style="overflow:hidden"><table><thead><tr><th>#</th><th>Name</th><th>Points</th><th>Time</th><th>HF</th><th>Stage %</th></tr></thead><tbody>${stages.map(st => `<tr><td>${st.number||''}</td><td>${escapeHtml(st.name||'')}</td><td>${st.points||'—'}</td><td>${st.time||'—'}</td><td>${(st.hitFactor!=null && !isNaN(st.hitFactor)) ? Number(st.hitFactor).toFixed(3) : (calcHitFactor(st.points,st.time)||0).toFixed(3)}</td><td>${st.stagePercent!=null ? Number(st.stagePercent).toFixed(2)+'%' : '—'}</td></tr>`).join('')}</tbody></table></div>
@@ -7434,9 +7457,9 @@ function renderHelp() {
     // Strip HTML tags for search indexing
     const searchText = (title + ' ' + content.replace(/<[^>]+>/g, ' ')).toLowerCase();
     return `<div class="help-section" data-search="${searchText.replace(/"/g,'&quot;')}" style="margin-bottom:0">
-      <button class="help-section-toggle" onclick="toggleHelpSection(this)">
+      <button class="help-section-toggle" aria-expanded="false" onclick="toggleHelpSection(this)">
         <span>${icon} ${escapeHtml(title)}</span>
-        <span class="help-chevron">›</span>
+        <span class="help-chevron" aria-hidden="true">›</span>
       </button>
       <div class="help-section-body" hidden>
         <div style="padding:12px 0 12px 4px;font-size:13px;color:var(--text-dim);line-height:1.8">${content}</div>
@@ -7999,7 +8022,7 @@ function openMaintenanceModal(id, firearmId) {
       <div class="form-row"><label>Notes</label><textarea id="ma-notes">${escapeHtml(m.notes)}</textarea></div>
 
       <div style="margin-top:8px">
-        <button onclick="(function(b){var body=b.nextElementSibling,ch=b.querySelector('.marecs-chev');body.hidden=!body.hidden;ch.style.transform=body.hidden?'rotate(0deg)':'rotate(90deg)'})(this)" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--accent);padding:4px 0">
+        <button aria-expanded="false" onclick="(function(b){var body=b.nextElementSibling,ch=b.querySelector('.marecs-chev');body.hidden=!body.hidden;b.setAttribute('aria-expanded',String(!body.hidden));ch.style.transform=body.hidden?'rotate(0deg)':'rotate(90deg)'})(this)" style="background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--accent);padding:4px 0">
           <span class="marecs-chev" style="transition:transform 0.2s;display:inline-block">›</span> Show Atlas-recommended steps for this type
         </button>
         <div id="ma-recs" hidden></div>
