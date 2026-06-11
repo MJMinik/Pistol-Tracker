@@ -761,7 +761,7 @@
       <a href="#" data-view="settings"><span class="icon">⚙️</span> Settings &amp; Data</a>
     </nav>
     <div class="sidebar-footer">
-      v1.9.71 &middot; <a href="#" id="export-data" style="color:var(--accent)">Export Data</a>
+      v1.9.72 &middot; <a href="#" id="export-data" style="color:var(--accent)">Export Data</a>
       &middot; <button onclick="toggleTheme()" id="theme-toggle-btn" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:11px;padding:0">&#9790; Dark</button>
     </div>
   </aside>
@@ -9278,7 +9278,9 @@ function showTourStep() {
 }
 function tourNav(dir) { _tourStep = Math.max(0, Math.min(TOUR_STEPS.length - 1, _tourStep + dir)); showTourStep(); }
 
-saveDB();
+// F4 part 2 (v1.9.72): persist any loadDB() migrations WITHOUT bumping _lastModified,
+// so launching the app never makes local data look newer than the auto-sync copy.
+try { localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); } catch (e) { console.error(e); }
 initImageDB(); // Dashboard renders once via DOMContentLoaded → setView('dashboard') (F4 fix, v1.9.71)
 
 // Try to restore auto-sync from previous session and pull remote if newer
