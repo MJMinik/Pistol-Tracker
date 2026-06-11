@@ -9,28 +9,37 @@ Share the pass/fail count with Claude before proceeding. Do not skip this step.
 
 ---
 
-## Current Status (as of June 8, 2026)
+## Current Status (as of June 10, 2026)
 
 ### App Version
-**v1.9.53** — live at https://mjminik.github.io/Pistol-Tracker/
-Service worker: `pistol-tracker-v1.9.53`
+**v1.9.63** — live at https://mjminik.github.io/Pistol-Tracker/
+Service worker: `pistol-tracker-v1.9.63`
+(Michael pushes to GitHub himself — give him the git command; do not attempt to run shell/git from Claude this period: workspace VM failing with VZErrorDomain virtualization error.)
 
 ---
 
-## ⚠️ RESUME HERE — Current Work In Progress
+## ⚠️ RESUME HERE
 
-**Apple HIG Audit Group C — continuing.**
+**🎉 APPLE HIG UI AUDIT — COMPLETE.** All 122 items + #123/#124 found during audit. #108 corrected (confirmed by Michael June 10). Accessibility #101–105 done across v1.9.54–63.
 
-Remaining items (priority order):
-1. ~~**#69/#72**~~ — Onboarding wizard ✅ Done
-2. **#13** — Print reports branding
-3. **#120** — App icons
-4. **#101–105** — Accessibility (low priority)
-5. **#108** — Magazine malfunction field (deferred until all UI/UX audit complete)
+**Next:** pick from the feature backlog in PROJECT_NOTES.md (remaining: #14 spare-parts expansion, #15 barrel/frame round split, #16 pre-session checklist, #17 post-session debrief, #21 .ics calendar export, #22 predictive analytics, #23 more trend alerts, #24 heatmap intensity by rounds).
+
+**Open item (deferred):** personal data (serial number, insurance photos) in two JSON files committed to the public repo — see PROJECT_NOTES.md "Open Item — JSON Privacy."
 
 ---
 
-## What Was Accomplished This Session (June 8, 2026)
+## What Was Accomplished June 10, 2026 (accessibility session)
+
+- Discovered v1.9.54–59 were never recorded in notes; reconstructed from git log (see PROJECT_NOTES version table)
+- **v1.9.60** — #104 aria-live toast announcements (VoiceOver speaks all toasts); tests 42/0/0 ✅ confirmed
+- **v1.9.61** — #104 keyboard/VoiceOver sidebar nav (real links, aria-current) + all tab rows (role=tab, aria-selected, Enter/Space, focus ring); tests 42/0/0 ✅ confirmed
+- **v1.9.62** — #104 aria-expanded on all 6 collapsible patterns; mag group headers keyboard-operable; tests 42/0/0 ✅ confirmed
+- **v1.9.63** — #104 prefers-reduced-motion; alt text (insurance/lightbox/annotation images); toggle switch focus ring — ⚠️ Michael still to push + test on device
+- JSON privacy review: no API keys anywhere; serial + insurance photos in 2 public-repo JSONs — Michael deferred
+
+---
+
+## What Was Accomplished June 8, 2026
 
 **Competition test data file created**
 - `pistol-tracker-test-competition-data.json` — full DB backup with 4 USPSA matches + 5 classifiers added
@@ -72,7 +81,7 @@ Remaining items (priority order):
 
 ### Group A — CSS / Single-line fixes ✅ COMPLETE
 ### Group B — Behavior changes ✅ COMPLETE
-### Group C — Structural (in progress)
+### Group C — Structural ✅ COMPLETE (June 10, 2026)
 
 | # | Item | Status |
 |---|------|--------|
@@ -88,8 +97,13 @@ Remaining items (priority order):
 | #123 | iOS auto-zoom on input focus | ✅ Done v1.9.46 |
 | #13 | Print reports branding | ✅ Done v1.9.52 |
 | #69/#72 | Onboarding wizard — Next/Exit button position | ✅ Done (prior session) |
-| #101–105 | Accessibility | Low priority |
-| #108 | Magazine malfunction field | Deferred until audit complete |
+| #101 | aria-label on icon-only buttons | ✅ Done v1.9.54 |
+| #102 | Modal dialog semantics + focus mgmt | ✅ Done v1.9.55 |
+| #103 | SVG charts role=img + labels | ✅ Done v1.9.56 |
+| #104 | Live toasts, keyboard nav/tabs, aria-expanded, reduced motion, alt text | ✅ Done v1.9.60–63 |
+| #105 | Modal focus trap + return focus | ✅ Done v1.9.59 |
+| #108 | Magazine malfunction field | ✅ Corrected (Michael, Jun 10) |
+| #124 | Badge text contrast WCAG AA | ✅ Done v1.9.57–58 |
 | #120 | App icons — Help section emoji fixes | ✅ Done v1.9.53 |
 
 ---
@@ -97,9 +111,8 @@ Remaining items (priority order):
 ## Next Session Priority (do in order)
 
 1. ✅ **Run tests first** — https://mjminik.github.io/Pistol-Tracker/tests.html
-2. ~~**#69/#72**~~ — Onboarding wizard ✅ Done
-3. **#13** — Print reports branding
-4. **#120** — App icons
+2. Confirm v1.9.63 was pushed and tested on device (if not done at end of June 10 session)
+3. Pick next feature from PROJECT_NOTES.md Active Backlog (#14–#24 remaining)
 
 ---
 
@@ -107,6 +120,15 @@ Remaining items (priority order):
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.9.63 | Jun 10 2026 | #104 reduced motion, image alt text, toggle focus ring |
+| v1.9.62 | Jun 10 2026 | #104 aria-expanded on all collapsibles |
+| v1.9.61 | Jun 10 2026 | #104 keyboard/VoiceOver nav + tabs |
+| v1.9.60 | Jun 10 2026 | #104 aria-live toast announcements |
+| v1.9.59 | Jun 8 2026 | #105 modal focus trap + return focus |
+| v1.9.57–58 | Jun 8 2026 | #124 badge contrast; mobile drift fix |
+| v1.9.56 | Jun 8 2026 | #103 SVG chart roles/labels |
+| v1.9.55 | Jun 8 2026 | #102 modal dialog semantics |
+| v1.9.54 | Jun 8 2026 | #101 icon button aria-labels |
 | v1.9.53 | Jun 8 2026 | #120 Help section emoji: 🔀 Multi-Firearm, ✨ UI Features |
 | v1.9.52 | Jun 8 2026 | #13 Print report header/footer; Your Name field in Settings |
 | v1.9.51 | Jun 8 2026 | .row-actions nowrap; magazine table min-width 620px |

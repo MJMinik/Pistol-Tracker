@@ -20,7 +20,7 @@ A single-file HTML/JS app (`index.html`) that runs entirely in the browser with 
 **Owner:** Michael (mjminik@mac.com)  
 **Dog:** Chelsea  
 **Training started:** January 2025  
-**Current version:** v1.9.53  
+**Current version:** v1.9.63  
 **Competition:** USPSA Carry Optics / Minor power factor. Current classification: C class, working toward B.  
 **Home range:** SoCal Practical Shooters, Angeles Shooting Ranges, Sylmar CA  
 **Magazine labels:** A01–A12 (Erebus/Apollo pool), other pools follow same zero-padded convention (28 total)
@@ -72,6 +72,17 @@ A single-file HTML/JS app (`index.html`) that runs entirely in the browser with 
 | v1.9.49 | Removed overflow-x:hidden from .card global CSS (was blocking iOS table scroll). Flex-wrap on maintenance schedule row (v1.9.35) handles the original overflow without card-level clip. |
 | v1.9.50 | Magazine table row actions: Edit + ⋯ menu (replaces Edit + Log Spring + Delete). showMagActions() shows action sheet with Log Spring Replacement + Delete. |
 | v1.9.51 | .row-actions changed from flex-wrap:wrap to flex-wrap:nowrap (prevents button stacking in all tables). Magazine table min-width increased from 540px to 620px. |
+| v1.9.52 | #13 Print report header/footer; Your Name field in Settings. |
+| v1.9.53 | #120 Help section emoji fixes (🔀 Multi-Firearm, ✨ UI Features). |
+| v1.9.54 | #101 Accessibility: aria-label on all icon-only buttons (47 total). *(Recovered from git log — was not recorded in notes at the time.)* |
+| v1.9.55 | #102 Accessibility: modal role=dialog, aria-modal, aria-labelledby, focus management. |
+| v1.9.56 | #103 Accessibility: role=img + aria-label on all 12 SVG charts. |
+| v1.9.57–58 | #124 Badge text color contrast (WCAG AA variables); overflow-x:hidden on main fixes horizontal drift on mobile. |
+| v1.9.59 | #105 Modal focus trap + return focus to trigger element on close. |
+| v1.9.60 | #104 Accessibility: toast is an aria-live="polite"/role="status" region created at page load; VoiceOver announces all toast messages; text cleared after fade. |
+| v1.9.61 | #104 Accessibility: sidebar nav links are real links (href + preventDefault), keyboard focusable, Enter-activatable, aria-current="page" on active section. All tab rows (Firearms, Costs, Progress, Competition) get role=tablist/tab, tabindex=0, aria-selected kept in sync; global Enter/Space key handler activates tabs; focus-visible outline on tabs and nav. |
+| v1.9.62 | #104 Accessibility: aria-expanded on all collapsibles — Help accordions, section ? help buttons, magazine group headers (now also keyboard-operable via role=button + Enter/Space), match Stage Breakdown, maintenance Atlas-recommended steps, Recently Deleted card. |
+| v1.9.63 | #104 Accessibility: @media (prefers-reduced-motion: reduce) disables animations/transitions app-wide; alt text on insurance photos (cards + print record), lightbox, and annotation images; focus-visible ring on iOS toggle switches. |
 | v1.8 | Auto-sync via File System Access API (Settings → iCloud Sync, "Set Up Auto-Sync" button; persists across browser restarts via IndexedDB; debounced writes on every saveDB; auto-reads remote on app load if newer); Range Fee category routing (purchases with category "Range Fee" now flow into Range Fees bucket in Costs, not Gear & Purchases); Field strip reminders exclude dry-fire sessions (only practice/competition/class trigger the prompt and "needs field strip" alerts); Ammo SKU consolidation (Ammunition page → "↻ Consolidate Duplicates" button merges rows with matching brand/caliber/grain/bullet-type, sums quantities, repoints session/malfunction/purchase references); FIFO ammo costing (per-session cost/round derived from purchase ledger in date order — each round consumes the oldest unspent lot of that SKU; new Ammunition Cost/round column shows weighted avg of remaining lots; session cards show per-session cost/round + total $; replaces flat costPerRound for cost calculations); Purchase modal Ammo-Purchase fields (Rounds + Linked Ammo SKU + optional auto-add to can inventory); Doubles 5yd / Doubles 7yd drills added to library; one-time migration `rename-dot-torture-and-press-out-to-doubles-5yd-2026-05` renames existing session drill entries (tracked via DB.settings.migrationsRun) |
 
 ---
@@ -231,11 +242,11 @@ User has indicated rough priority for the next batch: **#3 (search/filter), #9 (
 
 ---
 
-## Apple HIG UI Audit (started June 2026)
+## Apple HIG UI Audit (started June 2026) — ✅ COMPLETE (June 10, 2026)
 
-122 issues identified. Groups A and B complete. Group C in progress.
+122 issues identified. Groups A, B, and C all complete. Accessibility items (#101–105) completed v1.9.54–63. #108 was corrected (per Michael, June 10). #124 (badge contrast, found during audit) also done.
 
-### Group C — Remaining Items
+### Group C — Final Status
 
 | # | Item | Status |
 |---|------|--------|
@@ -249,8 +260,13 @@ User has indicated rough priority for the next batch: **#3 (search/filter), #9 (
 | #69/#72 | Onboarding wizard improvements — Next/Exit button position | ✅ Done (prior session) |
 | #82 | Match modal section grouping | ✅ Done v1.9.44 |
 | #84 | Classifier datalist | ✅ Done v1.9.45 |
-| #101–105 | Accessibility | Low priority |
-| #108 | Magazine malfunction field | Deferred — fix after all UI/UX work done |
+| #101 | aria-label on icon-only buttons | ✅ Done v1.9.54 |
+| #102 | Modal dialog semantics + focus management | ✅ Done v1.9.55 |
+| #103 | SVG charts role=img + aria-label | ✅ Done v1.9.56 |
+| #104 | aria-live toasts; keyboard/VoiceOver nav+tabs; aria-expanded collapsibles; reduced motion; alt text; toggle focus ring | ✅ Done v1.9.60–63 |
+| #105 | Modal focus trap + return focus | ✅ Done v1.9.59 |
+| #108 | Magazine malfunction field | ✅ Corrected (confirmed by Michael, June 10 2026) |
+| #124 | Badge text contrast (WCAG AA) — found during audit | ✅ Done v1.9.57–58 |
 | #120 | App icons — Help section emoji fixes | ✅ Done v1.9.53 |
 | #122 | Magazine table firearm names truncated on iPhone | ✅ Done v1.9.47–51 |
 | #123 | iOS auto-zoom on input focus (all modals) | ✅ Done v1.9.46 |
@@ -261,6 +277,12 @@ User has indicated rough priority for the next batch: **#3 (search/filter), #9 (
 - Magazine groups default collapsed → v1.9.48
 - Magazine table .card overflow-x:hidden blocking iOS scroll → removed v1.9.49
 - Magazine row actions → ⋯ menu v1.9.50; row-actions nowrap v1.9.51
+
+---
+
+## ⚠️ Open Item — JSON Privacy (deferred by Michael, June 10 2026)
+
+`pistol-tracker-backup-2026-06-02.json` and `pistol-tracker-test-competition-data.json` are committed to the **public** GitHub repo and contain a real firearm serial number ("AE 10933"), embedded insurance photos, range locations, and full training history. No API keys/passwords in any JSON. Michael chose to leave as-is for now. Remediation when ready: git rm --cached both files + .gitignore rule; full removal requires history scrub.
 
 ---
 

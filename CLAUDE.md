@@ -49,6 +49,7 @@ Key priority notes:
 8. **Phone is the principal use device.** Design all UI decisions for iPhone/iPad first. Desktop is secondary.
 9. **Do not soften disagreement.** When Michael asks for an opinion, give it directly. No hedging.
 10. **Make recommendations rather than asking which option to choose.**
+11. **PROPOSE → OK → PROCEED (added June 10, 2026).** Before making ANY change (code, files, anything), tell Michael: (a) what you intend to do, (b) what it will affect, and (c) your recommendation — then STOP and wait for his explicit OK before proceeding. Do not edit files first and explain after. This applies even when the overall direction was already approved; each individual change still needs its own OK.
 
 ## Development Rules
 - Never use external libraries or CDNs — the app must remain self-contained
@@ -56,7 +57,8 @@ Key priority notes:
 - The `loadDB()` function handles safe migration of new data fields
 - Keep everything in the single `index.html` file unless a new file is truly necessary
 - Use the existing CSS variable color scheme — Apple HIG semantic colors, indigo accent
-- **Bump service worker CACHE_NAME with every push** — increment the patch version in sw.js every time index.html changes are pushed. Current: `pistol-tracker-v1.9.36`
+- **Bump service worker CACHE_NAME with every push** — increment the patch version in sw.js every time index.html changes are pushed
+- **Bump the sidebar footer version label with every push** (added v1.9.67) — the footer in index.html shows the full version (e.g. "v1.9.68") so Michael can verify on-device which version is running. Keep it in sync with sw.js CACHE_NAME
 - **At the end of every work session, update PROJECT_NOTES.md and RESUME_SESSION.md** — after writing, read back the version number and current status to confirm the write succeeded before telling Michael it's done. If the files cannot be found or written, say so immediately — do not say the update is complete when it isn't.
 
 ## Testing Rules — REQUIRED

@@ -402,18 +402,19 @@
     border-radius: 8px; border: 1px solid var(--border);
     cursor: pointer; position: relative;
   }
-  .image-thumb .remove {
+  .image-thumb .remove, .photo-remove {
     position: absolute; top: 4px; right: 4px;
-    background: rgba(0,0,0,0.75); color: white;
+    background: var(--danger); color: white;
     border: 2px solid rgba(255,255,255,0.9); border-radius: 50%;
     width: 28px; height: 28px; font-size: 17px;
     cursor: pointer; line-height: 1; padding: 0;
     display: flex; align-items: center; justify-content: center;
   }
   /* Expand the tappable area to 44x44 without growing the visible badge */
-  .image-thumb .remove::after {
+  .image-thumb .remove::after, .photo-remove::after {
     content: ''; position: absolute; inset: -8px;
   }
+  .photo-remove { top: -8px; right: -8px; }
 
   .chip-list { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
   .chip {
@@ -760,7 +761,7 @@
       <a href="#" data-view="settings"><span class="icon">⚙️</span> Settings &amp; Data</a>
     </nav>
     <div class="sidebar-footer">
-      v1.9.69 &middot; <a href="#" id="export-data" style="color:var(--accent)">Export Data</a>
+      v1.9.70 &middot; <a href="#" id="export-data" style="color:var(--accent)">Export Data</a>
       &middot; <button onclick="toggleTheme()" id="theme-toggle-btn" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:11px;padding:0">&#9790; Dark</button>
     </div>
   </aside>
@@ -2838,7 +2839,7 @@ function firearmCard(f) {
             ${(f.insurancePhotos || []).map((id, i) => `
               <div style="position:relative">
                 <img src="${imgSrc(id)}" alt="Insurance photo ${i + 1} of ${escapeHtml(f.name)}" style="width:80px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer" onclick="viewInsurancePhoto('${f.id}',${i})">
-                <button onclick="deleteInsurancePhoto('${f.id}',${i})" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--danger);border:none;color:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">&times;</button>
+                <button class="photo-remove" onclick="deleteInsurancePhoto('${f.id}',${i})" aria-label="Remove insurance photo">&times;</button>
               </div>
             `).join('')}
             <label style="width:80px;height:60px;border:1px dashed var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim);font-size:22px" title="Add photo">
@@ -3058,7 +3059,7 @@ function buildInsurancePhotosHTML(f) {
   return (f.insurancePhotos || []).map((id, i) => `
     <div style="position:relative">
       <img src="${imgSrc(id)}" alt="Insurance photo ${i + 1} of ${escapeHtml(f.name)}" style="width:80px;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);cursor:pointer" onclick="viewInsurancePhoto('${f.id}',${i})">
-      <button onclick="deleteInsurancePhoto('${f.id}',${i})" style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--danger);border:none;color:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">&times;</button>
+      <button class="photo-remove" onclick="deleteInsurancePhoto('${f.id}',${i})" aria-label="Remove insurance photo">&times;</button>
     </div>
   `).join('') + `
     <label style="width:80px;height:60px;border:1px dashed var(--border);border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-dim);font-size:22px" title="Add photo">
@@ -5074,17 +5075,21 @@ function renderSessionImages() {
   `).join('');
 }
 function removeSessionImage(i) {
-  const id = (window._tempSession.targetImages || [])[i];
-  window._tempSession.targetImages.splice(i, 1);
-  // If this photo belongs to the already-saved session, defer the real delete
-  // until Save — cancelling the edit must keep the photo intact.
-  const saved = window._tempSession.id ? DB.sessions.find(s => s.id === window._tempSession.id) : null;
-  if (saved && (saved.targetImages || []).includes(id)) {
-    (window._tempSession._imagesToDelete = window._tempSession._imagesToDelete || []).push(id);
-  } else {
-    deleteImage(id); // uploaded during this edit and never saved — safe to discard now
-  }
-  renderSessionImages();
+  showActionSheet('Remove this photo?', [
+    { label: 'Remove Photo', style: 'danger', fn: () => {
+      const id = (window._tempSession.targetImages || [])[i];
+      window._tempSession.targetImages.splice(i, 1);
+      // If this photo belongs to the already-saved session, defer the real delete
+      // until Save — cancelling the edit must keep the photo intact.
+      const saved = window._tempSession.id ? DB.sessions.find(s => s.id === window._tempSession.id) : null;
+      if (saved && (saved.targetImages || []).includes(id)) {
+        (window._tempSession._imagesToDelete = window._tempSession._imagesToDelete || []).push(id);
+      } else {
+        deleteImage(id); // uploaded during this edit and never saved — safe to discard now
+      }
+      renderSessionImages();
+    } }
+  ]);
 }
 function handleImageUpload(evt) {
   const files = evt.target.files;
