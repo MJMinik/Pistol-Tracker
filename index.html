@@ -161,6 +161,7 @@
   .btn:active { opacity: 0.75; transform: scale(0.98); }
   .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .tab:focus-visible, nav a:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
   code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; color: var(--accent); }
   .btn.secondary { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); }
   @media (hover: hover) { .btn.secondary:hover { background: var(--border); } }
@@ -724,23 +725,23 @@
       <input type="search" placeholder="Search…" onclick="openGlobalSearch()" readonly style="cursor:pointer">
     </div>
     <nav>
-      <a data-view="dashboard" class="active"><span class="icon">📊</span> Dashboard</a>
+      <a href="#" data-view="dashboard" class="active" aria-current="page"><span class="icon">📊</span> Dashboard</a>
       <div class="nav-group-label">Equipment</div>
-      <a data-view="firearms"><span class="icon">🔫</span> Firearms</a>
-      <a data-view="optics"><span class="icon">🔭</span> Optics</a>
-      <a data-view="ammo"><span class="icon">🎯</span> Ammunition</a>
+      <a href="#" data-view="firearms"><span class="icon">🔫</span> Firearms</a>
+      <a href="#" data-view="optics"><span class="icon">🔭</span> Optics</a>
+      <a href="#" data-view="ammo"><span class="icon">🎯</span> Ammunition</a>
       <div class="nav-group-label">Training</div>
-      <a data-view="sessions"><span class="icon">📋</span> Sessions</a>
-      <a data-view="progress"><span class="icon">📈</span> Progress</a>
-      <a data-view="competition"><span class="icon">🏆</span> Competition</a>
+      <a href="#" data-view="sessions"><span class="icon">📋</span> Sessions</a>
+      <a href="#" data-view="progress"><span class="icon">📈</span> Progress</a>
+      <a href="#" data-view="competition"><span class="icon">🏆</span> Competition</a>
       <div class="nav-group-label">Records</div>
-      <a data-view="costs"><span class="icon">💰</span> Costs & Purchases</a>
-      <a data-view="malfunctions"><span class="icon">⚠️</span> Malfunctions</a>
-      <a data-view="maintenance"><span class="icon">🔧</span> Maintenance</a>
+      <a href="#" data-view="costs"><span class="icon">💰</span> Costs & Purchases</a>
+      <a href="#" data-view="malfunctions"><span class="icon">⚠️</span> Malfunctions</a>
+      <a href="#" data-view="maintenance"><span class="icon">🔧</span> Maintenance</a>
       <div class="nav-group-label">Reference</div>
-      <a data-view="reference"><span class="icon">📖</span> Atlas Reference</a>
-      <a data-view="help"><span class="icon">❓</span> Help</a>
-      <a data-view="settings"><span class="icon">⚙️</span> Settings &amp; Data</a>
+      <a href="#" data-view="reference"><span class="icon">📖</span> Atlas Reference</a>
+      <a href="#" data-view="help"><span class="icon">❓</span> Help</a>
+      <a href="#" data-view="settings"><span class="icon">⚙️</span> Settings &amp; Data</a>
     </nav>
     <div class="sidebar-footer">
       v1.9 &middot; <a href="#" id="export-data" style="color:var(--accent)">Export Data</a>
@@ -1782,11 +1783,11 @@ const VIEW_LABELS = {
 };
 function setView(name) {
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+  document.querySelectorAll('nav a').forEach(a => { a.classList.remove('active'); a.removeAttribute('aria-current'); });
   const view = document.getElementById('view-' + name);
   const link = document.querySelector(`nav a[data-view="${name}"]`);
   if (view) view.classList.add('active');
-  if (link) link.classList.add('active');
+  if (link) { link.classList.add('active'); link.setAttribute('aria-current', 'page'); }
   const titleEl = document.querySelector('.mobile-header .brand-title');
   if (titleEl) titleEl.textContent = VIEW_LABELS[name] || 'Pistol Tracker';
   // Reset scroll so section heading is never clipped by the mobile header
@@ -2191,7 +2192,16 @@ function renderView(name) {
   };
   if (fns[name]) fns[name]();
 }
-document.querySelectorAll('nav a').forEach(a => a.addEventListener('click', () => setView(a.dataset.view)));
+document.querySelectorAll('nav a').forEach(a => a.addEventListener('click', (e) => { e.preventDefault(); setView(a.dataset.view); }));
+
+/* Accessibility (#104): Enter/Space activates any tab — tabs are divs, so
+   keyboard users and VoiceOver need explicit activation support */
+document.addEventListener('keydown', (e) => {
+  if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('tab')) {
+    e.preventDefault();
+    e.target.click();
+  }
+});
 
 /* ============================================================
    MODAL
@@ -2488,9 +2498,9 @@ function renderFirearms() {
       ${tab === 'firearms' ? `<button class="btn" onclick="openFirearmModal()">+ Add Firearm</button>` : `<button class="btn" onclick="openMagazineModal()">+ Add Magazine</button>`}
     </div>
     ${sectionHelpPanel('firearms')}
-    <div class="tabs" style="margin-bottom:16px">
-      <div class="tab ${tab==='firearms'?'active':''}" onclick="switchFirearmsTab('firearms')">&#9654; Firearms</div>
-      <div class="tab ${tab==='magazines'?'active':''}" onclick="switchFirearmsTab('magazines')">&#9632; Magazines (${(DB.magazines||[]).filter(m=>m.active!==false).length})</div>
+    <div class="tabs" style="margin-bottom:16px" role="tablist">
+      <div class="tab ${tab==='firearms'?'active':''}" role="tab" tabindex="0" aria-selected="${tab==='firearms'}" onclick="switchFirearmsTab('firearms')">&#9654; Firearms</div>
+      <div class="tab ${tab==='magazines'?'active':''}" role="tab" tabindex="0" aria-selected="${tab==='magazines'}" onclick="switchFirearmsTab('magazines')">&#9632; Magazines (${(DB.magazines||[]).filter(m=>m.active!==false).length})</div>
     </div>
     ${tab === 'firearms' ? `<div class="grid grid-2">${DB.firearms.map(f => firearmCard(f)).join('')}</div>` : renderMagazinesPane()}
   `;
@@ -5523,12 +5533,12 @@ function renderProgress() {
       <div><h2>Personal Progress ${sectionHelpBtn('progress')}</h2><div class="sub">Personal records, goals, and skill development</div></div>
     </div>
     ${sectionHelpPanel('progress')}
-    <div class="tabs" id="prog-tabs">
-      <div class="tab active" data-pane="prs">Personal Records</div>
-      <div class="tab" data-pane="goals">Goals</div>
-      <div class="tab" data-pane="skills">Skill Assessment</div>
-      <div class="tab" data-pane="trends">Trends</div>
-      <div class="tab" data-pane="calendar">Calendar</div>
+    <div class="tabs" id="prog-tabs" role="tablist">
+      <div class="tab active" role="tab" tabindex="0" aria-selected="true" data-pane="prs">Personal Records</div>
+      <div class="tab" role="tab" tabindex="0" aria-selected="false" data-pane="goals">Goals</div>
+      <div class="tab" role="tab" tabindex="0" aria-selected="false" data-pane="skills">Skill Assessment</div>
+      <div class="tab" role="tab" tabindex="0" aria-selected="false" data-pane="trends">Trends</div>
+      <div class="tab" role="tab" tabindex="0" aria-selected="false" data-pane="calendar">Calendar</div>
     </div>
 
     <div id="pane-prs" class="tab-pane active">${renderPRsPane()}</div>
@@ -5539,9 +5549,10 @@ function renderProgress() {
   `;
   document.querySelectorAll('#prog-tabs .tab').forEach(t => {
     t.addEventListener('click', () => {
-      document.querySelectorAll('#prog-tabs .tab').forEach(x => x.classList.remove('active'));
+      document.querySelectorAll('#prog-tabs .tab').forEach(x => { x.classList.remove('active'); x.setAttribute('aria-selected', 'false'); });
       document.querySelectorAll('.tab-pane').forEach(x => x.classList.remove('active'));
       t.classList.add('active');
+      t.setAttribute('aria-selected', 'true');
       document.getElementById('pane-' + t.dataset.pane).classList.add('active');
     });
   });
@@ -5985,11 +5996,11 @@ function renderCompetition() {
       </div>
     </div>
     ${sectionHelpPanel('competition')}
-    <div class="tabs" id="comp-tabs">
-      <div class="tab active" data-pane="matches">Matches (${(DB.matches||[]).length})</div>
-      <div class="tab" data-pane="classifiers">Classifiers (${(DB.classifiers||[]).length})</div>
-      <div class="tab" data-pane="classification">Classification</div>
-      <div class="tab" data-pane="stage-timeline">Stage Timeline</div>
+    <div class="tabs" id="comp-tabs" role="tablist">
+      <div class="tab active" role="tab" tabindex="0" aria-selected="true" data-pane="matches">Matches (${(DB.matches||[]).length})</div>
+      <div class="tab" role="tab" tabindex="0" aria-selected="false" data-pane="classifiers">Classifiers (${(DB.classifiers||[]).length})</div>
+      <div class="tab" role="tab" tabindex="0" aria-selected="false" data-pane="classification">Classification</div>
+      <div class="tab" role="tab" tabindex="0" aria-selected="false" data-pane="stage-timeline">Stage Timeline</div>
     </div>
 
     <div id="pane-matches" class="tab-pane active">${renderMatchesPane()}</div>
@@ -5999,9 +6010,10 @@ function renderCompetition() {
   `;
   document.querySelectorAll('#comp-tabs .tab').forEach(t => {
     t.addEventListener('click', () => {
-      document.querySelectorAll('#comp-tabs .tab').forEach(x => x.classList.remove('active'));
+      document.querySelectorAll('#comp-tabs .tab').forEach(x => { x.classList.remove('active'); x.setAttribute('aria-selected', 'false'); });
       document.querySelectorAll('#view-competition .tab-pane').forEach(x => x.classList.remove('active'));
       t.classList.add('active');
+      t.setAttribute('aria-selected', 'true');
       document.getElementById('pane-' + t.dataset.pane).classList.add('active');
     });
   });
@@ -7038,9 +7050,9 @@ function renderCosts() {
       <button class="btn" onclick="openPurchaseModal()">+ Add Purchase</button>
     </div>
     ${sectionHelpPanel('costs')}
-    <div class="tabs" style="margin-bottom:16px">
-      <div class="tab ${tab==='dashboard'?'active':''}" onclick="switchCostsTab('dashboard')">&#9685; Dashboard</div>
-      <div class="tab ${tab==='log'?'active':''}" onclick="switchCostsTab('log')">&#9776; Log</div>
+    <div class="tabs" style="margin-bottom:16px" role="tablist">
+      <div class="tab ${tab==='dashboard'?'active':''}" role="tab" tabindex="0" aria-selected="${tab==='dashboard'}" onclick="switchCostsTab('dashboard')">&#9685; Dashboard</div>
+      <div class="tab ${tab==='log'?'active':''}" role="tab" tabindex="0" aria-selected="${tab==='log'}" onclick="switchCostsTab('log')">&#9776; Log</div>
     </div>
 
     ${tab === 'dashboard' ? renderCostsDashboard({
