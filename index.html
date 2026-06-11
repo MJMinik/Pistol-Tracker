@@ -755,7 +755,7 @@
       <a href="#" data-view="settings"><span class="icon">⚙️</span> Settings &amp; Data</a>
     </nav>
     <div class="sidebar-footer">
-      v1.9.67 &middot; <a href="#" id="export-data" style="color:var(--accent)">Export Data</a>
+      v1.9.68 &middot; <a href="#" id="export-data" style="color:var(--accent)">Export Data</a>
       &middot; <button onclick="toggleTheme()" id="theme-toggle-btn" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:11px;padding:0">&#9790; Dark</button>
     </div>
   </aside>
@@ -5071,7 +5071,14 @@ function renderSessionImages() {
 function removeSessionImage(i) {
   const id = (window._tempSession.targetImages || [])[i];
   window._tempSession.targetImages.splice(i, 1);
-  deleteImage(id); // async fire-and-forget; only deletes if not yet saved to a session
+  // If this photo belongs to the already-saved session, defer the real delete
+  // until Save — cancelling the edit must keep the photo intact.
+  const saved = window._tempSession.id ? DB.sessions.find(s => s.id === window._tempSession.id) : null;
+  if (saved && (saved.targetImages || []).includes(id)) {
+    (window._tempSession._imagesToDelete = window._tempSession._imagesToDelete || []).push(id);
+  } else {
+    deleteImage(id); // uploaded during this edit and never saved — safe to discard now
+  }
   renderSessionImages();
 }
 function handleImageUpload(evt) {
@@ -5425,6 +5432,11 @@ function saveSession(id, sourcePlanId) {
       }
     }
   }
+
+  // Photos removed during this edit are only now deleted for real (Cancel keeps them).
+  const imagesToDelete = t._imagesToDelete || [];
+  delete t._imagesToDelete;
+  for (const imgId of imagesToDelete) deleteImage(imgId);
 
   if (id) {
     const idx = DB.sessions.findIndex(x => x.id === id);
