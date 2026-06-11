@@ -7020,17 +7020,32 @@ function sessionCostPerRound(s) {
  * the ammo record only when no FIFO data exists for that session (e.g., sessions that
  * pre-date your purchase tracking).
  */
-function sessionAmmoCost(s) {
+// Fraction of a session's cost attributable to one firearm.
+// Returns 1 when no firearmId is given or the session isn't split across firearms.
+// For split sessions, prorates by that firearm's share of the split rounds so
+// per-firearm totals sum to the session total instead of double-counting.
+function sessionFirearmShare(s, firearmId) {
+  if (!firearmId || !s.firearmSplits || !s.firearmSplits.length) return 1;
+  const totalSplit = s.firearmSplits.reduce((t, sp) => t + (sp.rounds || 0), 0);
+  if (!totalSplit) return 1 / s.firearmSplits.length;
+  const mine = s.firearmSplits.find(sp => sp.firearmId === firearmId);
+  return mine ? (mine.rounds || 0) / totalSplit : 0;
+}
+
+function sessionAmmoCost(s, firearmId) {
   const data = computeFifoCosts();
   const covered = data.sessionRoundsCovered[s.id] || 0;
+  let cost;
   if (covered > 0) {
-    return data.sessionCosts[s.id] || 0;
+    cost = data.sessionCosts[s.id] || 0;
+  } else {
+    // No FIFO coverage — fall back to manually stored cost/round on the ammo record.
+    cost = (s.ammoUsage || []).reduce((sum, u) => {
+      const a = getAmmo(u.ammoId);
+      return sum + (a && a.costPerRound ? (u.rounds || 0) * parseFloat(a.costPerRound) : 0);
+    }, 0);
   }
-  // No FIFO coverage — fall back to manually stored cost/round on the ammo record.
-  return (s.ammoUsage || []).reduce((sum, u) => {
-    const a = getAmmo(u.ammoId);
-    return sum + (a && a.costPerRound ? (u.rounds || 0) * parseFloat(a.costPerRound) : 0);
-  }, 0);
+  return cost * sessionFirearmShare(s, firearmId);
 }
 
 if (!window._costsTab) window._costsTab = 'dashboard';
@@ -7114,7 +7129,7 @@ function renderCostsDashboard({ ammoCost, rangeFees, matchFees, gearTotal, grand
       return s.firearmId === fw.id;
     });
     const fwAmmo  = fwSessions.reduce((s, x) => s + sessionAmmoCost(x, fw.id), 0);
-    const fwRange = fwSessions.reduce((s, x) => s + (parseFloat(x.rangeFee)||0), 0);
+    const fwRange = fwSessions.reduce((s, x) => s + (parseFloat(x.rangeFee)||0) * sessionFirearmShare(x, fw.id), 0);
     const fwMatch = (DB.matches||[]).filter(m => m.firearmId === fw.id).reduce((s,m)=>s+(parseFloat(m.cost)||0),0);
     const fwTotal = fwAmmo + fwRange + fwMatch;
     return { fw, fwAmmo, fwRange, fwMatch, fwTotal };
