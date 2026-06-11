@@ -7767,7 +7767,7 @@ function renderMalfunctions() {
 
     <div class="card">
       <h3>Full Malfunction Log</h3>
-      ${filtered.length ? `<table>
+      ${filtered.length ? `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table style="min-width:760px">
         <thead><tr><th>Date</th><th>Firearm</th><th>Type</th><th>Mag</th><th>Round Count</th><th>Resolution</th><th>Ammo</th><th>Notes</th><th></th></tr></thead>
         <tbody>${filtered.map(m => {
           const f = getFirearm(m.firearmId);
@@ -7785,7 +7785,7 @@ function renderMalfunctions() {
             <td class="row-actions">${m.source !== 'session' ? `<button class="btn small danger" onclick="deleteMalfunction('${m.id}')">Delete</button>` : '<span class="text-dim" style="font-size:11px">in session</span>'}</td>
           </tr>`;
         }).join('')}</tbody>
-      </table>` : `<div class="empty"><div class="icon">⚠️</div>${hasFilter ? 'No malfunctions match the current filters.' : "No malfunctions logged. That's a good thing!"}<br><br>${hasFilter ? `<button class="btn secondary" onclick="clearMalfFilter()">Clear Filters</button>` : '<div class="text-dim" style="font-size:13px">Log them inside sessions or as standalone entries.</div>'}</div>`}
+      </table></div>` : `<div class="empty"><div class="icon">⚠️</div>${hasFilter ? 'No malfunctions match the current filters.' : "No malfunctions logged. That's a good thing!"}<br><br>${hasFilter ? `<button class="btn secondary" onclick="clearMalfFilter()">Clear Filters</button>` : '<div class="text-dim" style="font-size:13px">Log them inside sessions or as standalone entries.</div>'}</div>`}
     </div>
     ${recentlyDeletedCard('malfunction')}
   `;
@@ -7969,7 +7969,7 @@ function renderMaintenance() {
 
     <div class="card">
       <h3>Maintenance Log</h3>
-      ${log.length ? `<table>
+      ${log.length ? `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch"><table style="min-width:560px">
         <thead><tr><th>Date</th><th>Firearm</th><th>Type</th><th>Notes</th><th></th></tr></thead>
         <tbody>${log.map(m => {
           const f = getFirearm(m.firearmId);
@@ -7986,7 +7986,7 @@ function renderMaintenance() {
             </td>
           </tr>`;
         }).join('')}</tbody>
-      </table>` : `<div class="empty"><div class="icon">${hasFilter ? '🔍' : '🔧'}</div>${hasFilter ? 'No records match the current filters.' : 'No maintenance logged yet.'}${hasFilter ? '<br><br><button class="btn secondary" onclick="clearMaintenanceFilter()">Clear Filters</button>' : ''}</div>`}
+      </table></div>` : `<div class="empty"><div class="icon">${hasFilter ? '🔍' : '🔧'}</div>${hasFilter ? 'No records match the current filters.' : 'No maintenance logged yet.'}${hasFilter ? '<br><br><button class="btn secondary" onclick="clearMaintenanceFilter()">Clear Filters</button>' : ''}</div>`}
     </div>
     ${recentlyDeletedCard('maintenance')}
   `;
