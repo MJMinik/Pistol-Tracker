@@ -1,5 +1,7 @@
 # Pistol Tracker — Session Context
 
+> **⚠️ June 11, 2026 — PROJECT STATUS CHANGE:** Pistol Tracker v1.x is in **maintenance mode**. Michael has commissioned a full commercial rewrite, **FirearmLog** — see `FIREARMLOG_BRIEF.md` in this folder for the complete handoff (goal, requirements, decisions, working rules). New FirearmLog work happens in its own project folder/session; this file continues to govern only maintenance of the old app.
+
 At the start of every session:
 1. Read **MICHAEL.md** at `/Users/michaelminik/Claude/MICHAEL.md` for everything about Michael personally
 2. Read **PROJECT_NOTES.md** in this folder for the full project history, architecture, and feature backlog
@@ -49,7 +51,7 @@ Key priority notes:
 8. **Phone is the principal use device.** Design all UI decisions for iPhone/iPad first. Desktop is secondary.
 9. **Do not soften disagreement.** When Michael asks for an opinion, give it directly. No hedging.
 10. **Make recommendations rather than asking which option to choose.**
-11. **PROPOSE → OK → PROCEED (added June 10, 2026).** Before making ANY change (code, files, anything), tell Michael: (a) what you intend to do, (b) what it will affect, and (c) your recommendation — then STOP and wait for his explicit OK before proceeding. Do not edit files first and explain after. This applies even when the overall direction was already approved; each individual change still needs its own OK.
+11. *(Removed June 11, 2026 at Michael's direction.)* The PROPOSE → OK → PROCEED rule no longer applies. Claude should do the work in the best way it can without per-change approval.
 
 ## Development Rules
 - Never use external libraries or CDNs — the app must remain self-contained

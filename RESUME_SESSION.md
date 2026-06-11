@@ -9,22 +9,50 @@ Share the pass/fail count with Claude before proceeding. Do not skip this step.
 
 ---
 
-## Current Status (as of June 10, 2026)
+## Current Status (as of end of day June 10/11, 2026)
 
 ### App Version
-**v1.9.63** — live at https://mjminik.github.io/Pistol-Tracker/
-Service worker: `pistol-tracker-v1.9.63`
-(Michael pushes to GitHub himself — give him the git command; do not attempt to run shell/git from Claude this period: workspace VM failing with VZErrorDomain virtualization error.)
+**v1.9.74** — tests 42/0/0 confirmed by Michael June 11 morning. (If the on-device footer doesn't read v1.9.74, the F6 commit still needs `git add -A && git commit && git push`.)
+Service worker: `pistol-tracker-v1.9.74` in local sw.js.
+(Michael pushes to GitHub himself — give him the git command; workspace VM/shell unavailable this period.)
+
+**FIRST: check footer version on Michael's device.** If it shows v1.9.73, give him the push command for v1.9.74 (commit message: "v1.9.74: F6 - clear stale ammo fields when purchase category changes") and the F6 test steps (Costs & Purchases: create Ammo Purchase w/ rounds+ammo link → edit, change category to Gear, save → card shows no rounds/ammo link, inventory restored).
+
+**⚠️ NEW MANDATORY RULE (CLAUDE.md #11): PROPOSE → OK → PROCEED.** Before ANY change: state intent, impact, recommendation — then STOP for Michael's explicit OK. Every individual change, no exceptions.
 
 ---
 
 ## ⚠️ RESUME HERE
 
-**🎉 APPLE HIG UI AUDIT — COMPLETE.** All 122 items + #123/#124 found during audit. #108 corrected (confirmed by Michael June 10). Accessibility #101–105 done across v1.9.54–63.
+**THE NEW TASK (June 11, 2026): FirearmLog.** Michael is commissioning a full commercial rewrite called **FirearmLog** (he owns the name + domain). Everything needed is in **FIREARMLOG_BRIEF.md** in this folder — goal statement, all requirements, decisions (PWA-first/Capacitor-ready; local-first file-based sync, no server), and working rules. First task in the FirearmLog session: read the brief, then write FIREARMLOG_SPEC.md.
 
-**Next:** pick from the feature backlog in PROJECT_NOTES.md (remaining: #14 spare-parts expansion, #15 barrel/frame round split, #16 pre-session checklist, #17 post-session debrief, #21 .ics calendar export, #22 predictive analytics, #23 more trend alerts, #24 heatmap intensity by rounds).
+**The PROPOSE → OK → PROCEED rule was REMOVED June 11 at Michael's direction** (CLAUDE.md rule #11 now marked removed). Work in the best way possible without per-change approval; other working rules still apply.
 
-**Open item (deferred):** personal data (serial number, insurance photos) in two JSON files committed to the public repo — see PROJECT_NOTES.md "Open Item — JSON Privacy."
+**Pistol Tracker v1.x is now in maintenance mode.** Final state: v1.9.74, tests 42/0/0 (June 11). Remaining audit items (F7–F12, R/T/W/V/P/X series in HIG_AUDIT_ROUND2.md) are superseded by the rewrite unless Michael says otherwise.
+
+**In-progress backlog (HIG Round-2 audit — see HIG_AUDIT_ROUND2.md):** Group 2 (functional bugs) was in progress, one fix per push: F1–F6 ✅ done (v1.9.65–74). **Next in queue: F7** (bestPerClassifierTable ~6430 returns stray `</table></div>` when empty — unbalanced HTML in Competition pane), then F8 (heatmap toISOString UTC date-shift), F9–F12, then groups 3–5 (regressions R1c–R1e/R2/R3/R4/R5, touch/copy/visual items, features #14–24).
+
+**Open item (deferred):** personal data (serial number, insurance photos) in two JSON files committed to the public repo — see PROJECT_NOTES.md "Open Item — JSON Privacy." ALSO: CLAUDE.md / PROJECT_NOTES.md / RESUME_SESSION.md turned out to be TRACKED in the public repo (confirmed from Michael's git status June 10) — privacy note proposed but not yet OK'd.
+
+---
+
+## What Was Accomplished June 10–11, 2026 (Round-2 audit + bug-fix session)
+
+- **HIG Round-2 audit complete** — 3 passes over every file, written to `HIG_AUDIT_ROUND2.md` (C/R/F/T/A/W/V/P/X items + fix order)
+- Discovered **manifest.json was empty (0 bytes)** — rebuilt it; explained to Michael
+- **Pistol Tracker.app vanished** (Dock "?") — replaced with `Pistol Tracker.webloc` pointing at the GitHub Pages URL
+- **v1.9.64** — C1 manifest rebuild + R1a/R1b table scroll wrappers; tests 42/0/0 ✅
+- **v1.9.65** — F1 match-type filter built from data ✅ verified by screenshot
+- **v1.9.66** — F2 multi-firearm cost proration (sessionFirearmShare) ✅
+- **v1.9.67** — footer shows full version; sync rule added to CLAUDE.md ✅
+- **v1.9.68** — F3 deferred photo delete (Cancel restores photos) ✅
+- **v1.9.69** — T2/T3 photo ✕ 28px + 44px hit area ✅
+- **v1.9.70** — red ✕ badge both places + "Remove this photo?" sheet in Edit Session ✅ (also fixed Michael's desktop stuck on pre-1.9.67 cache — unregistered old service worker via DevTools; do NOT "Clear site data," it wipes app data)
+- **v1.9.71** — F4 pt 1: removed duplicate dashboard render ✅ 42/0/0
+- **v1.9.72** — F4 pt 2: startup save no longer bumps _lastModified ✅ 42/0/0
+- **v1.9.73** — F5: dupCount ReferenceError in consolidate toast ✅ tests passed
+- **v1.9.74** — F6: clear stale ammo fields on category change — **push/test status UNCONFIRMED**
+- **CLAUDE.md rule #11 added** (PROPOSE → OK → PROCEED) at Michael's direction
 
 ---
 
@@ -111,8 +139,9 @@ Service worker: `pistol-tracker-v1.9.63`
 ## Next Session Priority (do in order)
 
 1. ✅ **Run tests first** — https://mjminik.github.io/Pistol-Tracker/tests.html
-2. Confirm v1.9.63 was pushed and tested on device (if not done at end of June 10 session)
-3. Pick next feature from PROJECT_NOTES.md Active Backlog (#14–#24 remaining)
+2. Confirm v1.9.74 was pushed + F6 tested on Phone (footer must say v1.9.74)
+3. **Ask Michael about the NEW TASK he said he'd start this morning** — it takes priority
+4. Otherwise resume HIG Round-2 fix queue at **F7** (then F8–F12, groups 3–5)
 
 ---
 
@@ -120,6 +149,17 @@ Service worker: `pistol-tracker-v1.9.63`
 
 | Version | Date | Changes |
 |---------|------|---------|
+| v1.9.74 | Jun 11 2026 | F6 clear stale ammo fields on purchase category change — push unconfirmed |
+| v1.9.73 | Jun 11 2026 | F5 dupCount ReferenceError in consolidate toast |
+| v1.9.72 | Jun 11 2026 | F4 pt 2: startup save doesn't bump _lastModified |
+| v1.9.71 | Jun 11 2026 | F4 pt 1: remove duplicate dashboard render |
+| v1.9.70 | Jun 11 2026 | Red photo-remove badge everywhere + confirm sheet in session editor |
+| v1.9.69 | Jun 10 2026 | T2/T3 photo ✕ 28px, 44px hit area |
+| v1.9.68 | Jun 10 2026 | F3 deferred photo delete until Save |
+| v1.9.67 | Jun 10 2026 | Footer shows full version string |
+| v1.9.66 | Jun 10 2026 | F2 multi-firearm cost proration |
+| v1.9.65 | Jun 10 2026 | F1 match-type filter from data |
+| v1.9.64 | Jun 10 2026 | C1 manifest rebuild + R1a/R1b table scroll wrappers |
 | v1.9.63 | Jun 10 2026 | #104 reduced motion, image alt text, toggle focus ring |
 | v1.9.62 | Jun 10 2026 | #104 aria-expanded on all collapsibles |
 | v1.9.61 | Jun 10 2026 | #104 keyboard/VoiceOver nav + tabs |
@@ -162,7 +202,7 @@ Wait ~2 min for GitHub Pages to deploy. Force-close and reopen the iPhone PWA to
 - **Always use the GitHub Pages URL** — never open index.html as a local file
 - **Back up regularly** — Settings → Download JSON Backup
 - **CLAUDE.md, RESUME_SESSION.md, PROJECT_NOTES.md** belong in the Pistol Practice and Maintenance folder — do NOT let them end up in a different project folder
-- These files are NOT committed to git (they're local tracking files only)
+- ⚠️ CORRECTION (June 10, 2026): these files ARE tracked in the public GitHub repo (confirmed via Michael's git status). Treat them as public; privacy fix proposed but not yet OK'd
 - **Private browser window** bypasses service worker cache — useful for verifying live GitHub Pages content
 - **Safari hard refresh:** Cmd+Option+R (not Cmd+Shift+R, which opens Reader Mode)
 

@@ -761,7 +761,7 @@
       <a href="#" data-view="settings"><span class="icon">⚙️</span> Settings &amp; Data</a>
     </nav>
     <div class="sidebar-footer">
-      v1.9.72 &middot; <a href="#" id="export-data" style="color:var(--accent)">Export Data</a>
+      v1.9.74 &middot; <a href="#" id="export-data" style="color:var(--accent)">Export Data</a>
       &middot; <button onclick="toggleTheme()" id="theme-toggle-btn" style="background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:11px;padding:0">&#9790; Dark</button>
     </div>
   </aside>
@@ -3596,6 +3596,7 @@ function _doConsolidateAmmo(merges) {
 
   // 7) Delete the merged duplicate records
   const toDelete = new Set(Object.keys(remap));
+  const dupCount = toDelete.size; // F5 fix (v1.9.73): was referencing a variable from the outer function
   DB.ammunition = DB.ammunition.filter(a => !toDelete.has(a.id));
 
   saveDB();
@@ -7440,6 +7441,12 @@ function savePurchase(id) {
     data.rounds = parseFloat(document.getElementById('pu-rounds').value) || 0;
     data.ammoId = document.getElementById('pu-ammoId').value || '';
     data.addToInventory = !!document.getElementById('pu-addToInv').checked;
+  } else {
+    // F6 fix (v1.9.74): clear stale ammo fields when category changes away from
+    // Ammo Purchase so old rounds/ammoId don't pollute FIFO cost-per-round math.
+    data.rounds = 0;
+    data.ammoId = '';
+    data.addToInventory = false;
   }
   if (!data.item) { showToast('Item name required'); return; }
   if (!DB.purchases) DB.purchases = [];

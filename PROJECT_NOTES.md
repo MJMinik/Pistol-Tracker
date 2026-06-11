@@ -20,7 +20,7 @@ A single-file HTML/JS app (`index.html`) that runs entirely in the browser with 
 **Owner:** Michael (mjminik@mac.com)  
 **Dog:** Chelsea  
 **Training started:** January 2025  
-**Current version:** v1.9.63  
+**Current version:** v1.9.74 (v1.9.74 awaiting Michael's push + on-device test as of June 11 morning)  
 **Competition:** USPSA Carry Optics / Minor power factor. Current classification: C class, working toward B.  
 **Home range:** SoCal Practical Shooters, Angeles Shooting Ranges, Sylmar CA  
 **Magazine labels:** A01–A12 (Erebus/Apollo pool), other pools follow same zero-padded convention (28 total)
@@ -83,6 +83,17 @@ A single-file HTML/JS app (`index.html`) that runs entirely in the browser with 
 | v1.9.61 | #104 Accessibility: sidebar nav links are real links (href + preventDefault), keyboard focusable, Enter-activatable, aria-current="page" on active section. All tab rows (Firearms, Costs, Progress, Competition) get role=tablist/tab, tabindex=0, aria-selected kept in sync; global Enter/Space key handler activates tabs; focus-visible outline on tabs and nav. |
 | v1.9.62 | #104 Accessibility: aria-expanded on all collapsibles — Help accordions, section ? help buttons, magazine group headers (now also keyboard-operable via role=button + Enter/Space), match Stage Breakdown, maintenance Atlas-recommended steps, Recently Deleted card. |
 | v1.9.63 | #104 Accessibility: @media (prefers-reduced-motion: reduce) disables animations/transitions app-wide; alt text on insurance photos (cards + print record), lightbox, and annotation images; focus-visible ring on iOS toggle switches. |
+| v1.9.64 | HIG Round-2 audit fixes C1 + R1a/R1b: rebuilt empty manifest.json (was 0 bytes); Full Malfunction Log and Maintenance Log tables wrapped in horizontal-scroll containers (min-width 760px / 560px). Also created HIG_AUDIT_ROUND2.md (full second audit, 3 passes) and Pistol Tracker.webloc (replaces vanished Pistol Tracker.app launcher). |
+| v1.9.65 | F1: Match Type filter dropdown now built from all distinct match types in DB (was hardcoded), preserving current selection. |
+| v1.9.66 | F2: multi-firearm cost split — new sessionFirearmShare(s, firearmId) helper; sessionAmmoCost and per-firearm range-fee share now prorated by firearmSplits round counts instead of double-counting full cost per firearm. |
+| v1.9.67 | Sidebar footer now shows full version string (was stuck at "v1.9"); new rule: keep footer label in sync with sw.js CACHE_NAME on every push. |
+| v1.9.68 | F3: removing a photo in Edit Session no longer deletes it from IndexedDB immediately — deletion deferred via _tempSession._imagesToDelete and committed only on Save, so Cancel restores photos. |
+| v1.9.69 | T2/T3: session photo remove ✕ enlarged 18px → 28px with ::after hit area = 44px tap target. |
+| v1.9.70 | Photo remove ✕ is now a red (danger) badge with white ring in BOTH Edit Session and insurance photos (shared .photo-remove / .image-thumb .remove CSS); Edit Session ✕ now shows "Remove this photo?" action sheet (matching insurance) instead of removing instantly. |
+| v1.9.71 | F4 part 1: removed duplicate dashboard render at startup (initImageDB().then(renderView) — DOMContentLoaded setView('dashboard') already renders it). |
+| v1.9.72 | F4 part 2: startup save no longer bumps _lastModified — persists loadDB() migrations via direct localStorage.setItem so launching never makes local data look newer than the auto-sync copy. |
+| v1.9.73 | F5: _doConsolidateAmmo referenced dupCount from the outer function (ReferenceError killed the confirmation toast after merge); now recomputed locally from remap size. |
+| v1.9.74 | F6: savePurchase clears rounds/ammoId/addToInventory when category is changed away from Ammo Purchase, so stale ammo fields stop polluting FIFO cost-per-round math. |
 | v1.8 | Auto-sync via File System Access API (Settings → iCloud Sync, "Set Up Auto-Sync" button; persists across browser restarts via IndexedDB; debounced writes on every saveDB; auto-reads remote on app load if newer); Range Fee category routing (purchases with category "Range Fee" now flow into Range Fees bucket in Costs, not Gear & Purchases); Field strip reminders exclude dry-fire sessions (only practice/competition/class trigger the prompt and "needs field strip" alerts); Ammo SKU consolidation (Ammunition page → "↻ Consolidate Duplicates" button merges rows with matching brand/caliber/grain/bullet-type, sums quantities, repoints session/malfunction/purchase references); FIFO ammo costing (per-session cost/round derived from purchase ledger in date order — each round consumes the oldest unspent lot of that SKU; new Ammunition Cost/round column shows weighted avg of remaining lots; session cards show per-session cost/round + total $; replaces flat costPerRound for cost calculations); Purchase modal Ammo-Purchase fields (Rounds + Linked Ammo SKU + optional auto-add to can inventory); Doubles 5yd / Doubles 7yd drills added to library; one-time migration `rename-dot-torture-and-press-out-to-doubles-5yd-2026-05` renames existing session drill entries (tracked via DB.settings.migrationsRun) |
 
 ---
